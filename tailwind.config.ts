@@ -1,4 +1,4 @@
-import type {Config} from 'tailwindcss';
+import type { Config } from 'tailwindcss';
 
 export default {
   darkMode: ['class'],
@@ -10,8 +10,8 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        body: ['Inter', 'sans-serif'],
-        headline: ['Inter', 'sans-serif'],
+        body: ['"PT Sans"', 'sans-serif'],
+        headline: ['"Playfair Display"', 'serif'],
         code: ['monospace'],
       },
       colors: {
@@ -88,10 +88,30 @@ export default {
             height: '0',
           },
         },
+        'breathe-glow': {
+          '0%, 100%': {
+            boxShadow:
+              '0 0 15px 5px rgba(208, 144, 255, 0.4), 0 0 25px 10px rgba(106, 0, 201, 0.3)',
+          },
+          '50%': {
+            boxShadow:
+              '0 0 25px 10px rgba(208, 144, 255, 0.6), 0 0 40px 15px rgba(106, 0, 201, 0.4)',
+          },
+        },
+        'siri-wave': {
+          '0%': { transform: 'scale(0.9)', opacity: '0' },
+          '50%': { opacity: '0.8' },
+          '100%': { transform: 'scale(1.6)', opacity: '0' },
+        },
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
+        'breathe-glow': 'breathe-glow 3.5s infinite ease-in-out',
+        'siri-wave-1': 'siri-wave 2s infinite ease-out',
+        'siri-wave-2': 'siri-wave 2s 0.4s infinite ease-out',
+        'siri-wave-3': 'siri-wave 2s 0.8s infinite ease-out',
+        'siri-wave-4': 'siri-wave 2s 1.2s infinite ease-out',
       },
     },
   },
