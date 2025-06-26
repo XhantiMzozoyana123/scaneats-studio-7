@@ -14,10 +14,10 @@ export default function DashboardPage() {
 
       <div id="logo-container" className="absolute top-5 left-5 z-10">
         <Image
-          src="/scaneats-logo.png"
+          src="/scaneats-logo-2.png"
           alt="ScanEats Logo"
-          width={80}
-          height={80}
+          width={60}
+          height={60}
         />
       </div>
 
@@ -34,7 +34,7 @@ export default function DashboardPage() {
         <h2 className="mt-2 font-body text-base font-light text-gray-200 md:text-xl">
           Welcome home, wink wink
         </h2>
-        <p className="mt-4 max-w-sm text-base text-gray-300 md:max-w-md md:text-lg">
+        <p className="mt-4 max-w-sm text-lg text-gray-300 md:max-w-md md:text-xl">
           Meet Sally, your personal assistant who’ll help you stay on track with
           your meals and let you know if you&apos;re eating well — without the
           need to constantly go for health foods.
@@ -42,7 +42,7 @@ export default function DashboardPage() {
 
         <Button
           asChild
-          className="mt-8 h-52 w-52 rounded-3xl bg-primary/90 text-base uppercase tracking-widest text-white shadow-[0_10px_60px_15px_rgba(127,0,255,0.7)] transition-all hover:scale-105 hover:shadow-[0_12px_70px_20px_rgba(140,30,255,0.8)] md:h-64 md:w-64 md:text-lg"
+          className="mt-8 h-40 w-72 rounded-3xl bg-primary/90 text-base uppercase tracking-widest text-white shadow-[0_10px_60px_15px_rgba(127,0,255,0.7)] transition-all hover:scale-105 hover:shadow-[0_12px_70px_20px_rgba(140,30,255,0.8)] md:h-48 md:w-80 md:text-lg"
         >
           <Link href="/dashboard/scan-food">Scan Food</Link>
         </Button>
