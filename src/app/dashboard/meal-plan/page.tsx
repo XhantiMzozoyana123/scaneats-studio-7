@@ -1,7 +1,29 @@
-import { BackgroundImage } from '@/components/background-image';
-import { Beef, Mic, Milk, Wheat } from 'lucide-react';
+'use client';
+
+import { useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
+import { BackgroundImage } from '@/components/background-image';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useToast } from '@/hooks/use-toast';
+import {
+  Beef,
+  Loader2,
+  Mic,
+  Milk,
+  Utensils,
+  Wheat,
+} from 'lucide-react';
+
+type ScannedFood = {
+  id: number;
+  name: string;
+  calories: number;
+  protein: number;
+  fat: number;
+  carbs: number;
+};
 
 const MacroCard = ({
   label,
@@ -23,6 +45,74 @@ const MacroCard = ({
 );
 
 export default function MealPlanPage() {
+  const [foods, setFoods] = useState<ScannedFood[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const router = useRouter();
+  const { toast } = useToast();
+
+  useEffect(() => {
+    const fetchFoodHistory = async () => {
+      const token = localStorage.getItem('authToken');
+      if (!token) {
+        router.push('/login');
+        return;
+      }
+
+      try {
+        const response = await fetch(
+          'https://localhost:7066/api/Food/references',
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        if (response.ok) {
+          const data = await response.json();
+          setFoods(data);
+        } else {
+          toast({
+            variant: 'destructive',
+            title: 'Error',
+            description: 'Failed to fetch meal history.',
+          });
+        }
+      } catch (error) {
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: 'Could not connect to the server.',
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchFoodHistory();
+  }, [router, toast]);
+
+  const totals = useMemo(() => {
+    return foods.reduce(
+      (acc, food) => {
+        acc.calories += food.calories || 0;
+        acc.protein += food.protein || 0;
+        acc.fat += food.fat || 0;
+        acc.carbs += food.carbs || 0;
+        return acc;
+      },
+      { calories: 0, protein: 0, fat: 0, carbs: 0 }
+    );
+  }, [foods]);
+
+  if (isLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+      </div>
+    );
+  }
+
   return (
     <>
       <BackgroundImage
@@ -30,7 +120,7 @@ export default function MealPlanPage() {
         data-ai-hint="abstract food pattern"
         className="blur-sm"
       />
-      <div className="z-10 flex w-full flex-grow flex-col items-center p-4">
+      <div className="z-10 flex h-screen w-full flex-col items-center overflow-y-auto p-4 pb-28">
         <header className="mb-4 flex w-full max-w-lg items-center justify-between self-start">
           <Image
             src="/scaneats-logo.svg"
@@ -40,22 +130,50 @@ export default function MealPlanPage() {
           />
         </header>
 
-        <section className="my-8 text-center">
+        <section className="my-4 text-center">
           <div className="text-5xl font-bold text-white [text-shadow:_0_0_10px_white]">
-            2300
+            {totals.calories.toFixed(0)}
           </div>
           <div className="mt-2 inline-block rounded-full bg-black/50 px-3 py-1 text-sm text-gray-200">
-            Total Calories
+            Total Calories Today
           </div>
         </section>
 
         <section className="mb-8 flex w-full max-w-md flex-wrap justify-center gap-4">
-          <MacroCard label="Protein" value="50g" icon={Beef} />
-          <MacroCard label="Fat" value="80g" icon={Milk} />
-          <MacroCard label="Carbs" value="200g" icon={Wheat} />
+          <MacroCard label="Protein" value={`${totals.protein.toFixed(0)}g`} icon={Beef} />
+          <MacroCard label="Fat" value={`${totals.fat.toFixed(0)}g`} icon={Milk} />
+          <MacroCard label="Carbs" value={`${totals.carbs.toFixed(0)}g`} icon={Wheat} />
         </section>
 
-        <section className="mt-auto flex flex-col items-center gap-4 pb-4">
+        <Card className="w-full max-w-md border-primary/50 bg-background/70 backdrop-blur-sm">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-accent">
+              <Utensils className="h-5 w-5" />
+              Meal History
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {foods.length > 0 ? (
+              <ul className="space-y-3">
+                {foods.map((food) => (
+                  <li
+                    key={food.id}
+                    className="flex justify-between rounded-md bg-black/30 p-3 text-white"
+                  >
+                    <span>{food.name}</span>
+                    <span>{food.calories.toFixed(0)} kcal</span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-center text-muted-foreground">
+                No meals scanned yet.
+              </p>
+            )}
+          </CardContent>
+        </Card>
+
+        <section className="mt-auto flex flex-col items-center gap-4 pt-8 pb-4">
           <Link
             href="/dashboard/sally"
             className="flex h-28 w-28 flex-col items-center justify-center rounded-full bg-gradient-to-r from-purple-800 to-indigo-900 animate-breathe-glow shadow-2xl transition-transform hover:scale-105"
