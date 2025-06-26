@@ -19,6 +19,16 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogClose
+} from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
 import {
   AlertDialog,
@@ -32,9 +42,11 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { cn } from '@/lib/utils';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 const SettingsItem = ({
   icon: Icon,
@@ -84,10 +96,41 @@ export default function SettingsPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [userName, setUserName] = useState('');
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      const token = localStorage.getItem('authToken');
+      if (!token) return;
+
+      try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/profile`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        if (response.ok) {
+          const data = await response.json();
+          if (data && data.length > 0) {
+            setUserName(data[0].name);
+          }
+        }
+      } catch (error) {
+        console.error("Failed to fetch user's name for password change", error);
+      }
+    };
+    fetchProfile();
+  }, []);
 
   const handleLogout = () => {
     localStorage.removeItem('authToken');
     localStorage.removeItem('userId');
+    localStorage.removeItem('userEmail');
     toast({
       title: 'Logged Out',
       description: 'You have been successfully logged out.',
@@ -138,6 +181,84 @@ export default function SettingsPage() {
     }
   };
 
+  const handlePasswordChange = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newPassword !== confirmPassword) {
+      toast({
+        variant: 'destructive',
+        title: 'Passwords do not match',
+        description: 'Please ensure your new passwords match.',
+      });
+      return;
+    }
+    if (!currentPassword || !newPassword) {
+      toast({
+        variant: 'destructive',
+        title: 'Fields required',
+        description: 'Please fill out all password fields.',
+      });
+      return;
+    }
+
+    setIsChangingPassword(true);
+
+    const token = localStorage.getItem('authToken');
+    const userId = localStorage.getItem('userId');
+    const email = localStorage.getItem('userEmail');
+
+    if (!token || !userId || !email || !userName) {
+      toast({
+        variant: 'destructive',
+        title: 'Authentication Error',
+        description: 'Could not verify user information. Please log in again.',
+      });
+      setIsChangingPassword(false);
+      return;
+    }
+    
+    const payload = {
+        Id: userId,
+        UserName: userName,
+        NewEmail: email, // API requires this, sending current email
+        CurrentPassword: currentPassword,
+        NewPassword: newPassword,
+    };
+
+    try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/Auth/update`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify(payload),
+        });
+
+        if (response.ok) {
+            toast({
+                title: 'Password Changed',
+                description: 'Your password has been updated successfully.',
+            });
+            setIsPasswordDialogOpen(false);
+            setCurrentPassword('');
+            setNewPassword('');
+            setConfirmPassword('');
+        } else {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Failed to change password.');
+        }
+
+    } catch (error: any) {
+        toast({
+            variant: 'destructive',
+            title: 'Update Failed',
+            description: error.message,
+        });
+    } finally {
+        setIsChangingPassword(false);
+    }
+  };
+
   return (
     <>
       <BackgroundImage
@@ -162,12 +283,47 @@ export default function SettingsPage() {
                 href="/dashboard/profile"
               />
               <Separator className="bg-white/10" />
-              <SettingsItem
-                icon={Lock}
-                label="Change Password"
-                onClick={() => {}}
-                action={<ChevronRight className="h-5 w-5 text-muted-foreground" />}
-              />
+              <Dialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen}>
+                <DialogTrigger asChild>
+                    <div className='cursor-pointer'>
+                        <SettingsItem
+                            icon={Lock}
+                            label="Change Password"
+                            action={<ChevronRight className="h-5 w-5 text-muted-foreground" />}
+                        />
+                    </div>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Change Password</DialogTitle>
+                    <DialogDescription>
+                      Enter your current password and a new password below.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <form onSubmit={handlePasswordChange} className="space-y-4 py-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="current-password">Current Password</Label>
+                        <Input id="current-password" type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} required />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="new-password">New Password</Label>
+                        <Input id="new-password" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="confirm-password">Confirm New Password</Label>
+                        <Input id="confirm-password" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required />
+                    </div>
+                  </form>
+                  <DialogFooter>
+                    <DialogClose asChild>
+                      <Button variant="outline">Cancel</Button>
+                    </DialogClose>
+                    <Button type="submit" onClick={handlePasswordChange} disabled={isChangingPassword}>
+                      {isChangingPassword ? <Loader2 className="animate-spin" /> : 'Save Changes'}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
             </CardContent>
           </Card>
 

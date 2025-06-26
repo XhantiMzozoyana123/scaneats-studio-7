@@ -43,6 +43,7 @@ export default function LoginPage() {
         const data = await response.json();
         localStorage.setItem('authToken', data.token);
         localStorage.setItem('userId', data.userId);
+        localStorage.setItem('userEmail', email);
         
         toast({
           title: 'Login Successful!',
