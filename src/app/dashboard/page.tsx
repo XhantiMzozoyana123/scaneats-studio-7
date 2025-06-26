@@ -5,7 +5,7 @@ import { BackgroundImage } from '@/components/background-image';
 
 export default function DashboardPage() {
   return (
-    <main className="relative flex h-full flex-col items-center justify-center text-white">
+    <main className="relative flex h-full flex-col items-center justify-center pb-28 text-white">
       <BackgroundImage
         src="https://placehold.co/1920x1080.png"
         data-ai-hint="healthy food abstract"
@@ -21,7 +21,7 @@ export default function DashboardPage() {
         />
       </div>
 
-      <div className="z-10 flex flex-col items-center px-4 pb-28 text-center">
+      <div className="z-10 flex flex-col items-center px-4 text-center">
         <h1
           className="title-gradient font-headline text-4xl font-bold md:text-6xl"
           style={{
