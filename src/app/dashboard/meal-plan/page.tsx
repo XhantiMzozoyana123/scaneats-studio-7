@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useMemo, useState, useEffect, useRef } from 'react';
@@ -314,7 +313,7 @@ export default function MealPlanPage() {
         )}
       </div>
 
-      {audioUrl && <audio ref={audioUrl} src={audioUrl} hidden />}
+      {audioUrl && <audio ref={audioRef} src={audioUrl} hidden />}
     </>
   );
 }
