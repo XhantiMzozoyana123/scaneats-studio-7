@@ -8,11 +8,7 @@ export default function SallyPage() {
       <Link
         href="/dashboard"
         aria-label="Close"
-        className="absolute top-6 left-6 z-50 flex h-9 w-9 items-center justify-center rounded-full bg-white/25 text-gray-200 shadow-md backdrop-blur-md transition-all hover:scale-105 hover:bg-white/40 hover:text-white"
-        style={{
-          textShadow:
-            '1px 1px 2px rgba(0, 0, 0, 0.7), 0 0 4px rgba(0, 0, 0, 0.5)',
-        }}
+        className="absolute top-6 left-6 z-50 flex h-9 w-9 items-center justify-center rounded-full bg-white/25 text-gray-800 shadow-md backdrop-blur-md transition-all hover:scale-105 hover:bg-white/40 hover:text-black"
       >
         <X size={18} />
       </Link>
