@@ -1,9 +1,9 @@
 'use client';
 
 import Image from 'next/image';
-import { useState, useEffect, type ChangeEvent } from 'react';
+import { useState, type ChangeEvent } from 'react';
 import { useRouter } from 'next/navigation';
-import { format, parseISO } from 'date-fns';
+import { format } from 'date-fns';
 import { Calendar as CalendarIcon, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
@@ -39,73 +39,19 @@ type Profile = {
 };
 
 export default function ProfilePage() {
-  const router = useRouter();
   const { toast } = useToast();
+  // Pre-populate with mock data for UI design
   const [profile, setProfile] = useState<Profile>({
-    id: null,
-    name: '',
-    age: '',
-    gender: '',
-    weight: '',
-    height: '',
-    goals: '',
-    birthDate: null,
+    id: 1,
+    name: 'Alex Doe',
+    age: 30,
+    gender: 'Male',
+    weight: 75,
+    height: 180,
+    goals: 'Lose 5kg, build muscle, improve cardiovascular health.',
+    birthDate: new Date('1994-08-15'),
   });
-  const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-
-  useEffect(() => {
-    const fetchProfile = async () => {
-      const token = localStorage.getItem('authToken');
-      if (!token) {
-        router.push('/login');
-        return;
-      }
-
-      try {
-        const response = await fetch('https://api.scaneats.app/api/Profile', {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          if (data && data.length > 0) {
-            const userProfile = data[0];
-            setProfile({
-              id: userProfile.id,
-              name: userProfile.name || '',
-              age: userProfile.age || '',
-              gender: userProfile.gender || '',
-              weight: userProfile.weight || '',
-              height: userProfile.height || '', // Assuming height is part of the profile
-              goals: userProfile.goals || '',
-              birthDate: userProfile.birthDate
-                ? parseISO(userProfile.birthDate)
-                : null,
-            });
-          }
-        } else {
-          toast({
-            variant: 'destructive',
-            title: 'Error',
-            description: 'Failed to fetch profile data.',
-          });
-        }
-      } catch (error) {
-        toast({
-          variant: 'destructive',
-          title: 'Error',
-          description: 'Could not connect to the server.',
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchProfile();
-  }, [router, toast]);
 
   const handleInputChange = (
     e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -125,72 +71,17 @@ export default function ProfilePage() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSaving(true);
-
-    const token = localStorage.getItem('authToken');
-    if (!token) {
-      setIsSaving(false);
-      router.push('/login');
-      return;
-    }
-
-    const { id, ...profileData } = profile;
-    const url = id
-      ? `https://api.scaneats.app/api/Profile/${id}`
-      : 'https://api.scaneats.app/api/Profile';
-    const method = id ? 'PUT' : 'POST';
-
-    // The API expects a specific structure, including fields that might not be in the form
-    const payload = {
-      ...profileData,
-      id: id,
-      age: Number(profileData.age) || 0,
-      weight: String(profileData.weight), // API expects string for weight
-      height: String(profileData.height), // Assuming height is handled as a string
-      birthDate: profileData.birthDate?.toISOString(),
-    };
-
-    try {
-      const response = await fetch(url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(payload),
-      });
-
-      if (response.ok) {
-        toast({
-          title: 'Success',
-          description: 'Your profile has been saved successfully.',
-        });
-        if (!id) {
-          const newProfile = await response.json();
-          setProfile((prev) => ({ ...prev, id: newProfile.id }));
-        }
-      } else {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to save profile.');
-      }
-    } catch (error) {
+    console.log('Saving profile (mock):', profile);
+    
+    // Simulate API call
+    setTimeout(() => {
       toast({
-        variant: 'destructive',
-        title: 'Error',
-        description:
-          error instanceof Error ? error.message : 'An unknown error occurred.',
+        title: 'Success',
+        description: 'Your profile has been saved successfully.',
       });
-    } finally {
       setIsSaving(false);
-    }
+    }, 1000);
   };
-
-  if (isLoading) {
-    return (
-      <div className="flex h-screen items-center justify-center">
-        <Loader2 className="h-12 w-12 animate-spin text-primary" />
-      </div>
-    );
-  }
 
   return (
     <>

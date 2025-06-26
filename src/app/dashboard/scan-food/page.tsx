@@ -3,15 +3,12 @@
 import { useState, useRef, type ChangeEvent } from 'react';
 import Image from 'next/image';
 import {
-  foodScanNutrition,
   type FoodScanNutritionOutput,
 } from '@/ai/flows/food-scan-nutrition';
 import {
-  personalizedDietarySuggestions,
   type PersonalizedDietarySuggestionsOutput,
 } from '@/ai/flows/personalized-dietary-suggestions';
 import {
-  getMealInsights,
   type GetMealInsightsOutput,
 } from '@/ai/flows/meal-insights';
 import { Button } from '@/components/ui/button';
@@ -71,110 +68,50 @@ export default function ScanFoodPage() {
     setError(null);
     setResult(null);
 
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = async () => {
-      try {
-        const photoDataUri = reader.result as string;
+    // Simulate Genkit analysis with mock data for UI design
+    setTimeout(() => {
+      const mockNutritionResult: FoodScanNutritionOutput = {
+        foodIdentification: {
+          name: 'Delicious Mock Meal',
+          confidence: 0.95,
+        },
+        nutritionInformation: {
+          calories: 450,
+          protein: 25,
+          fat: 20,
+          carbohydrates: 40,
+          allergens: ['Gluten', 'Dairy'],
+        },
+      };
 
-        // Perform Genkit analysis for UI
-        const nutritionResult = await foodScanNutrition({ photoDataUri });
+      const mockInsightsResult: GetMealInsightsOutput = {
+        calories: 450,
+        protein: 25,
+        fat: 20,
+        carbs: 40,
+        ingredients: 'Mock bread, mock cheese, mock tomato sauce',
+        allergens: 'Gluten, Dairy',
+        healthBenefits: 'Provides a good balance of macronutrients for sustained energy. Rich in mock-lycopene.',
+        potentialRisks: 'High in sodium and saturated fat. Not suitable for individuals with gluten or lactose intolerance.',
+      };
 
-        let insightsResult, suggestionsResult;
+      const mockSuggestionsResult: PersonalizedDietarySuggestionsOutput = {
+        suggestions: `This meal fits well into a balanced diet. Consider pairing it with a side salad to increase your vegetable intake. Based on your goal of "${dietaryInfo.goals || 'general health'}", this is a good choice.`,
+      };
 
-        if (nutritionResult.foodIdentification.name) {
-          const [insights, suggestions] = await Promise.all([
-            getMealInsights({
-              foodDescription: nutritionResult.foodIdentification.name,
-            }),
-            personalizedDietarySuggestions({
-              foodItemName: nutritionResult.foodIdentification.name,
-              nutritionalInformation: `Calories: ${nutritionResult.nutritionInformation.calories}, Protein: ${nutritionResult.nutritionInformation.protein}g, Fat: ${nutritionResult.nutritionInformation.fat}g, Carbs: ${nutritionResult.nutritionInformation.carbohydrates}g, Allergens: ${nutritionResult.nutritionInformation.allergens.join(', ')}`,
-              dietaryGoals:
-                dietaryInfo.goals || 'general health improvement',
-              userPreferences:
-                dietaryInfo.preferences || 'no specific preferences',
-            }),
-          ]);
-          insightsResult = insights;
-          suggestionsResult = suggestions;
-        }
+      setResult({
+        nutrition: mockNutritionResult,
+        insights: mockInsightsResult,
+        suggestions: mockSuggestionsResult,
+      });
 
-        // Set UI result first so user sees it quickly
-        setResult({
-          nutrition: nutritionResult,
-          insights: insightsResult,
-          suggestions: suggestionsResult,
-        });
+      toast({
+          title: 'Meal Saved (Mock)',
+          description: 'This meal has been added to your history for design review.',
+      });
 
-        // Then, sync with backend API
-        const token = localStorage.getItem('authToken');
-        if (token && nutritionResult.foodIdentification.name) {
-          try {
-            const foodName = nutritionResult.foodIdentification.name;
-            let foodId = 0;
-            const foodInfoResponse = await fetch(
-              `https://api.scaneats.app/api/food/info/${encodeURIComponent(foodName)}`,
-              {
-                headers: { Authorization: `Bearer ${token}` },
-              }
-            );
-            if (foodInfoResponse.ok) {
-              foodId = await foodInfoResponse.json();
-            }
-
-            const payload = {
-              Base64: photoDataUri,
-              Logging: {
-                FoodId: foodId,
-              },
-            };
-
-            const scanResponse = await fetch(
-              'https://api.scaneats.app/api/scan/scan',
-              {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                  Authorization: `Bearer ${token}`,
-                },
-                body: JSON.stringify(payload),
-              }
-            );
-
-            if (scanResponse.ok) {
-              toast({
-                title: 'Meal Saved',
-                description: 'This meal has been added to your history.',
-              });
-            } else {
-              const errorText = await scanResponse.text();
-              toast({
-                variant: 'destructive',
-                title: 'Sync Failed',
-                description: errorText || 'Could not save the meal to your history.',
-              });
-            }
-          } catch (syncError) {
-            console.error('Failed to sync meal with backend', syncError);
-            toast({
-              variant: 'destructive',
-              title: 'Sync Error',
-              description: 'Could not connect to the server to save the meal.',
-            });
-          }
-        }
-      } catch (e) {
-        console.error(e);
-        setError('An error occurred during analysis. Please try again.');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    reader.onerror = () => {
-      setError('Failed to read the file.');
       setIsLoading(false);
-    };
+    }, 1500);
   };
 
   const MacroCard = ({

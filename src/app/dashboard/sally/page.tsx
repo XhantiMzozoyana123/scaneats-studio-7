@@ -16,16 +16,8 @@ type Message = {
   content: string;
 };
 
-type ConversationDto = {
-  agentName?: string;
-  clientName?: string;
-  agentDialogue?: string;
-  clientDialogue?: string;
-};
-
 export default function SallyPage() {
   const searchParams = useSearchParams();
-  const { toast } = useToast();
   const intent = searchParams.get('intent');
 
   const getInitialMessage = () => {
@@ -62,72 +54,15 @@ export default function SallyPage() {
     setInput('');
     setIsLoading(true);
 
-    const token = localStorage.getItem('authToken');
-    if (!token) {
-      toast({
-        variant: 'destructive',
-        title: 'Authentication Error',
-        description: 'You must be logged in to chat with Sally.',
-      });
+    // Simulate API call with a canned response for UI design
+    setTimeout(() => {
+      const sallyResponse: Message = {
+        role: 'sally',
+        content: `This is a mock response to: "${userMessage.content}". API calls are disabled for design purposes.`,
+      };
+      setMessages((prev) => [...prev, sallyResponse]);
       setIsLoading(false);
-      return;
-    }
-
-    const endpoint =
-      intent === 'meal-plan'
-        ? 'https://api.scaneats.app/api/Sally/meal-planner'
-        : 'https://api.scaneats.app/api/Sally/body-assessment';
-
-    const payload: ConversationDto = {
-      agentName: 'Sally',
-      clientDialogue: input,
-    };
-
-    try {
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(payload),
-      });
-
-      if (response.ok) {
-        const data: ConversationDto = await response.json();
-        const sallyResponse: Message = {
-          role: 'sally',
-          content:
-            data.agentDialogue ||
-            'Sorry, I had trouble thinking of a response.',
-        };
-        setMessages((prev) => [...prev, sallyResponse]);
-      } else {
-        let errorDescription = 'An unexpected error occurred.';
-        if (response.status === 429) {
-          errorDescription = 'You have reached your daily request limit.';
-        } else {
-          try {
-            const errorData = await response.json();
-            errorDescription =
-              errorData.error || errorData.message || errorDescription;
-          } catch {}
-        }
-        toast({
-          variant: 'destructive',
-          title: 'Error',
-          description: errorDescription,
-        });
-      }
-    } catch (error) {
-      toast({
-        variant: 'destructive',
-        title: 'Network Error',
-        description: 'Could not connect to the server.',
-      });
-    } finally {
-      setIsLoading(false);
-    }
+    }, 1500);
   };
 
   return (

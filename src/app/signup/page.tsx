@@ -23,35 +23,15 @@ export default function SignUpPage() {
     event.preventDefault();
     setIsLoading(true);
 
-    try {
-      const response = await fetch('https://api.scaneats.app/api/Auth/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ userName: username, email, password }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        toast({
-          title: 'Success!',
-          description: data.message || 'Registration successful. Please log in.',
-        });
-        router.push('/login');
-      } else {
-        throw new Error(data.error || 'Registration failed.');
-      }
-    } catch (error) {
+    // Simulate API call for UI design
+    setTimeout(() => {
       toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'An unknown error occurred.',
+        title: 'Success!',
+        description: 'Registration successful. Please log in. (This is a mock registration)',
       });
-    } finally {
+      router.push('/login');
       setIsLoading(false);
-    }
+    }, 1000);
   };
 
   return (

@@ -27,40 +27,19 @@ export default function LoginPage() {
     event.preventDefault();
     setIsLoading(true);
 
-    try {
-      const response = await fetch('https://api.scaneats.app/api/Auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        // In a real app, securely store the token (e.g., in an HttpOnly cookie)
-        // For this prototype, we'll use localStorage.
-        localStorage.setItem('authToken', data.token);
-        localStorage.setItem('userId', data.userId);
-        
-        toast({
-          title: 'Login Successful!',
-          description: 'Welcome back.',
-        });
-        router.push('/dashboard');
-      } else {
-        throw new Error(data.error || 'Login failed.');
-      }
-    } catch (error) {
+    // Simulate API call for UI design
+    setTimeout(() => {
+      // Mock a successful login to allow designers to proceed
+      localStorage.setItem('authToken', 'mock-auth-token-for-design');
+      localStorage.setItem('userId', 'mock-user-id-for-design');
+      
       toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'An unknown error occurred.',
+        title: 'Login Successful!',
+        description: 'Welcome back. (This is a mock login)',
       });
-    } finally {
+      router.push('/dashboard');
       setIsLoading(false);
-    }
+    }, 1000);
   };
 
   return (

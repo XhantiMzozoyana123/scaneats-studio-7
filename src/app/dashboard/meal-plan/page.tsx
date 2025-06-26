@@ -1,12 +1,11 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { BackgroundImage } from '@/components/background-image';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useToast } from '@/hooks/use-toast';
 import {
   Beef,
   Loader2,
@@ -24,6 +23,15 @@ type ScannedFood = {
   fat: number;
   carbs: number;
 };
+
+// Mock data for UI design
+const mockFoods: ScannedFood[] = [
+  { id: 1, name: 'Avocado Toast', calories: 290, protein: 12, fat: 15, carbs: 30 },
+  { id: 2, name: 'Grilled Chicken Salad', calories: 450, protein: 40, fat: 25, carbs: 15 },
+  { id: 3, name: 'Spaghetti Bolognese', calories: 600, protein: 30, fat: 20, carbs: 75 },
+  { id: 4, name: 'Fruit Smoothie', calories: 250, protein: 5, fat: 8, carbs: 45 },
+];
+
 
 const MacroCard = ({
   label,
@@ -45,52 +53,7 @@ const MacroCard = ({
 );
 
 export default function MealPlanPage() {
-  const [foods, setFoods] = useState<ScannedFood[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const router = useRouter();
-  const { toast } = useToast();
-
-  useEffect(() => {
-    const fetchFoodHistory = async () => {
-      const token = localStorage.getItem('authToken');
-      if (!token) {
-        router.push('/login');
-        return;
-      }
-
-      try {
-        const response = await fetch(
-          'https://api.scaneats.app/api/Food/references',
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-
-        if (response.ok) {
-          const data = await response.json();
-          setFoods(data);
-        } else {
-          toast({
-            variant: 'destructive',
-            title: 'Error',
-            description: 'Failed to fetch meal history.',
-          });
-        }
-      } catch (error) {
-        toast({
-          variant: 'destructive',
-          title: 'Error',
-          description: 'Could not connect to the server.',
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchFoodHistory();
-  }, [router, toast]);
+  const [foods, setFoods] = useState<ScannedFood[]>(mockFoods);
 
   const totals = useMemo(() => {
     return foods.reduce(
@@ -104,14 +67,6 @@ export default function MealPlanPage() {
       { calories: 0, protein: 0, fat: 0, carbs: 0 }
     );
   }, [foods]);
-
-  if (isLoading) {
-    return (
-      <div className="flex h-screen items-center justify-center">
-        <Loader2 className="h-12 w-12 animate-spin text-primary" />
-      </div>
-    );
-  }
 
   return (
     <>
