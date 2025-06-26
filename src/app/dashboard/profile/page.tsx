@@ -1,3 +1,4 @@
+
 'use client';
 
 import Image from 'next/image';
@@ -144,7 +145,7 @@ export default function ProfilePage() {
     const profileData = {
       ...profile,
       age: parseInt(profile.age as string, 10) || 0,
-      weight: profile.weight.toString(),
+      weight: profile.weight,
     };
 
     try {
