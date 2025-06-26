@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -7,6 +8,7 @@ import {
   CreditCard,
   Lock,
   Trash2,
+  Loader2,
 } from 'lucide-react';
 import Link from 'next/link';
 import { BackgroundImage } from '@/components/background-image';
@@ -30,6 +32,9 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { cn } from '@/lib/utils';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useToast } from '@/hooks/use-toast';
 
 const SettingsItem = ({
   icon: Icon,
@@ -76,6 +81,62 @@ const SettingsItem = ({
 export default function SettingsPage() {
   const subscriptionActive = true;
   const renewalDate = 'August 24, 2024';
+  const router = useRouter();
+  const { toast } = useToast();
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleLogout = () => {
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('userId');
+    toast({
+      title: 'Logged Out',
+      description: 'You have been successfully logged out.',
+    });
+    router.push('/login');
+  };
+
+  const handleDeleteAccount = async () => {
+    setIsDeleting(true);
+    const token = localStorage.getItem('authToken');
+
+    if (!token) {
+      toast({
+        variant: 'destructive',
+        title: 'Authentication Error',
+        description: 'You are not logged in.',
+      });
+      setIsDeleting(false);
+      return;
+    }
+
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/Auth/delete`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        toast({
+          title: 'Account Deleted',
+          description: 'Your account has been permanently deleted.',
+        });
+        handleLogout();
+      } else {
+        const errorData = await response.json().catch(() => ({ error: 'Failed to delete account.' }));
+        throw new Error(errorData.error || 'Failed to delete account.');
+      }
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Deletion Failed',
+        description: error.message,
+      });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   return (
     <>
@@ -161,6 +222,7 @@ export default function SettingsPage() {
             <Button
               variant="secondary"
               className="w-full bg-stone-700/80 py-2.5 text-base text-white hover:bg-stone-600/90"
+              onClick={handleLogout}
             >
               <LogOut className="mr-2 h-5 w-5" />
               Log Out
@@ -188,7 +250,10 @@ export default function SettingsPage() {
                   <AlertDialogCancel>Cancel</AlertDialogCancel>
                   <AlertDialogAction
                     className={buttonVariants({ variant: 'destructive' })}
+                    onClick={handleDeleteAccount}
+                    disabled={isDeleting}
                   >
+                    {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                     Delete My Account
                   </AlertDialogAction>
                 </AlertDialogFooter>
