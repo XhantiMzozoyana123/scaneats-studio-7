@@ -2,10 +2,9 @@
 
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Mic, Loader2 } from 'lucide-react';
+import { X, Mic, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { Button } from '@/components/ui/button';
-import { BackgroundImage } from '@/components/background-image';
+import { cn } from '@/lib/utils';
 import { textToSpeech } from '@/ai/flows/text-to-speech';
 
 declare global {
@@ -17,7 +16,7 @@ declare global {
 
 export default function SallyPage() {
   const [sallyResponse, setSallyResponse] = useState<string>(
-    "I'm your personal assistant. Ask me anything about your body."
+    "I'm your personal assistant, ask me anything about your body."
   );
   const [isRecording, setIsRecording] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -69,12 +68,11 @@ export default function SallyPage() {
   }, [toast]);
 
   const handleMicClick = () => {
-    if (isRecording) {
+    if (isRecording || isLoading) {
       recognitionRef.current?.stop();
     } else {
       setAudioUrl(null);
       setIsRecording(true);
-      setSallyResponse('Listening...');
       recognitionRef.current?.start();
     }
   };
@@ -83,7 +81,6 @@ export default function SallyPage() {
     if (!userInput.trim()) return;
 
     setIsLoading(true);
-    setSallyResponse(`Thinking about: "${userInput}"`);
 
     const token = localStorage.getItem('authToken');
     if (!token) {
@@ -143,48 +140,70 @@ export default function SallyPage() {
   };
 
   return (
-    <>
-      <BackgroundImage
-        src="https://placehold.co/1920x1080.png"
-        data-ai-hint="abstract purple"
-        className="blur-sm"
-      />
-      <div className="z-10 flex h-screen flex-col">
-        <header className="flex items-center justify-between border-b border-white/10 bg-black/30 p-4 backdrop-blur-sm">
-          <Link href="/dashboard" className="flex items-center gap-2 text-white">
-            <ArrowLeft size={20} />
-            <span className="font-bold">Sally AI Assistant</span>
-          </Link>
-        </header>
+    <div className="flex min-h-screen w-full items-center justify-center overflow-hidden bg-gradient-to-br from-purple-50 via-indigo-100 to-blue-50">
+      <Link
+        href="/dashboard"
+        aria-label="Back to Dashboard"
+        className="absolute top-6 left-6 z-50 flex h-9 w-9 items-center justify-center rounded-full border border-white/30 bg-white/25 text-gray-200 shadow-md backdrop-blur-md transition-all hover:scale-105 hover:bg-white/40 hover:text-white"
+        style={{
+          textShadow:
+            '1px 1px 2px rgba(0, 0, 0, 0.7), 0 0 4px rgba(0, 0, 0, 0.5)',
+        }}
+      >
+        <X className="h-5 w-5" />
+      </Link>
 
-        <main className="flex flex-1 flex-col items-center justify-center p-4 text-center">
-          <div className="mb-6 h-24 w-24 flex-shrink-0 rounded-full bg-primary shadow-lg"></div>
-          <div className="flex min-h-[100px] w-full max-w-lg items-center justify-center rounded-lg bg-black/30 p-6 backdrop-blur-sm">
-            {isLoading ? (
-              <Loader2 className="h-8 w-8 animate-spin" />
-            ) : (
-              <p className="text-lg text-foreground">{sallyResponse}</p>
+      <div className="flex w-[320px] flex-col items-center gap-6 rounded-3xl border border-white/40 bg-white/70 p-6 shadow-[0_20px_55px_8px_rgba(110,100,150,0.45)] backdrop-blur-2xl backdrop-saturate-150">
+        <div className="relative flex h-[130px] w-[130px] items-center justify-center">
+          <div
+            className="absolute top-1/2 left-1/2 h-[160%] w-[160%] -translate-x-1/2 -translate-y-1/2 animate-breathe-glow-sally rounded-full"
+            style={{
+              background:
+                'radial-gradient(circle at center, rgba(255, 235, 255, 0.7) 10%, rgba(200, 190, 255, 0.8) 40%, rgba(170, 220, 255, 1.0) 65%, rgba(200, 240, 255, 1.0) 72%, rgba(135, 206, 250, 0) 80%)',
+            }}
+          />
+
+          {isRecording && (
+            <div className="pointer-events-none absolute top-1/2 left-1/2 h-[90px] w-[90px] -translate-x-1/2 -translate-y-1/2">
+              <div className="absolute top-0 left-0 h-full w-full animate-siri-wave-1 rounded-full border-2 border-white/60"></div>
+              <div className="absolute top-0 left-0 h-full w-full animate-siri-wave-2 rounded-full border-2 border-white/60"></div>
+              <div className="absolute top-0 left-0 h-full w-full animate-siri-wave-3 rounded-full border-2 border-white/60"></div>
+              <div className="absolute top-0 left-0 h-full w-full animate-siri-wave-4 rounded-full border-2 border-white/60"></div>
+            </div>
+          )}
+
+          <button
+            onClick={handleMicClick}
+            disabled={isLoading}
+            className={cn(
+              'relative z-10 flex h-20 w-20 items-center justify-center rounded-full bg-[#4629B0] shadow-[inset_0_2px_4px_0_rgba(255,255,255,0.4),0_0_15px_5px_rgba(255,255,255,0.8),0_0_30px_15px_rgba(255,255,255,0.5),0_0_50px_25px_rgba(220,230,255,0.3)] transition-all active:scale-95 active:bg-[#3c239a] active:shadow-[inset_0_2px_4px_0_rgba(255,255,255,0.3),0_0_10px_3px_rgba(255,255,255,0.7),0_0_20px_10px_rgba(255,255,255,0.4),0_0_40px_20px_rgba(220,230,255,0.2)]',
+              isLoading && 'cursor-not-allowed'
             )}
-          </div>
-        </main>
+            aria-label="Activate Voice AI"
+          >
+            {isLoading ? (
+              <Loader2 className="h-10 w-10 animate-spin text-white" />
+            ) : (
+              <Mic
+                className="h-10 w-10 text-white"
+                style={{
+                  textShadow:
+                    '0 1px 2px rgba(0,0,0,0.2), 0 0 5px rgba(255,255,255,0.8), 0 0 10px rgba(180,140,255,0.7)',
+                }}
+              />
+            )}
+          </button>
+        </div>
 
-        <footer className="border-t border-white/10 bg-black/30 p-4 backdrop-blur-sm">
-          <div className="flex items-center justify-center gap-2">
-            <Button
-              onClick={handleMicClick}
-              size="icon"
-              className={`h-16 w-16 rounded-full shadow-lg transition-colors ${
-                isRecording
-                  ? 'bg-red-500 hover:bg-red-600'
-                  : 'bg-primary hover:bg-primary/90'
-              }`}
-            >
-              <Mic size={32} />
-            </Button>
-          </div>
-        </footer>
-        {audioUrl && <audio ref={audioRef} src={audioUrl} hidden />}
+        <div className="w-full rounded-2xl border border-white/40 bg-white/80 p-3 text-center shadow-[inset_0_1px_2px_rgba(255,255,255,0.6),0_10px_30px_3px_rgba(100,90,140,0.45)] backdrop-blur-sm backdrop-saturate-150">
+          <p className="text-[13px] leading-tight text-black">
+            <strong>Sally</strong>
+            <span className="text-gray-600"> - {sallyResponse}</span>
+          </p>
+        </div>
       </div>
-    </>
+
+      {audioUrl && <audio ref={audioRef} src={audioUrl} hidden />}
+    </div>
   );
 }
