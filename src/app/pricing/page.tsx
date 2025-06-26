@@ -4,7 +4,7 @@ import { Check } from 'lucide-react';
 
 export default function PricingPage() {
   const features = [
-    '24/7 Personal Assistant: SALLY',
+    '24/7 Personal Assistant: <span class="rounded bg-white/70 px-1.5 py-0.5 font-semibold text-black">SALLY</span>',
     'Unlimited Food Scanning Credits',
     'Detailed Nutritional Analytics',
     'Exclusive Recipe Library Access',
@@ -16,13 +16,13 @@ export default function PricingPage() {
     <div className="relative flex min-h-screen flex-col items-center justify-center bg-black p-6 text-white">
       <Link
         href="/dashboard"
-        className="absolute top-8 left-8 rounded-full bg-white/10 px-4 py-2 text-sm backdrop-blur-sm transition-colors hover:bg-white/20"
+        className="absolute top-8 left-8 z-10 rounded-full bg-white/10 px-4 py-2 text-sm backdrop-blur-sm transition-colors hover:bg-white/20"
       >
         &lt; Back
       </Link>
 
       <h1
-        className="relative z-0 mb-[-2rem] font-headline text-[clamp(3rem,10vw,6rem)] font-medium text-white/80"
+        className="relative z-0 mb-[-1.75rem] font-headline text-[clamp(3rem,10vw,6rem)] font-medium text-white/80"
         style={{
           textShadow: '0 0 4px #fff, 0 0 10px #fff, 0 0 18px #fff',
         }}
@@ -35,7 +35,7 @@ export default function PricingPage() {
           <div className="text-lg font-medium text-gray-300">
             Active Account
           </div>
-          <div className="text-5xl font-semibold">
+          <div className="text-5xl font-semibold text-white">
             $11<span className="text-2xl font-normal text-gray-400">/m</span>
           </div>
         </div>
@@ -48,18 +48,13 @@ export default function PricingPage() {
               </div>
               <span
                 className="text-sm text-gray-200"
-                dangerouslySetInnerHTML={{
-                  __html: feature.replace(
-                    'SALLY',
-                    '<span class="rounded bg-white/70 px-1.5 py-0.5 font-semibold text-black">SALLY</span>'
-                  ),
-                }}
+                dangerouslySetInnerHTML={{ __html: feature }}
               />
             </li>
           ))}
         </ul>
 
-        <Button className="w-full animate-breathe-glow rounded-lg bg-white py-6 text-base font-semibold text-black transition-transform hover:scale-105 hover:bg-gray-200">
+        <Button className="w-full animate-breathe-glow-white rounded-lg bg-white py-6 text-base font-semibold text-black transition-transform hover:scale-105 hover:bg-gray-200">
           Activate Your Account
         </Button>
       </div>
