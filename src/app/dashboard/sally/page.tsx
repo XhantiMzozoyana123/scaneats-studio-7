@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { X, Mic } from 'lucide-react';
+import { ArrowLeft, Mic } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export default function SallyPage() {
@@ -11,14 +11,10 @@ export default function SallyPage() {
       {/* Back button */}
       <Link
         href="/dashboard"
-        aria-label="Close"
-        className="absolute top-6 left-6 z-50 flex h-9 w-9 items-center justify-center rounded-full bg-white/25 text-purple-300 shadow-md backdrop-blur-md transition-all hover:scale-105 hover:bg-white/40"
-        style={{
-          textShadow:
-            '1px 1px 2px rgba(0, 0, 0, 0.7), 0 0 8px rgba(192, 132, 252, 0.6)',
-        }}
+        aria-label="Back"
+        className="absolute top-6 left-6 z-50 flex h-10 w-10 items-center justify-center rounded-full bg-[#4629B0] text-white shadow-lg transition-all hover:scale-105 hover:bg-[#3c239a]"
       >
-        <X size={18} />
+        <ArrowLeft size={24} />
       </Link>
 
       {/* AI Card */}
