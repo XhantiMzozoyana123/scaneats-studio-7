@@ -1,10 +1,137 @@
-import { Mic, X } from 'lucide-react';
+'use client';
+
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
+import { X, Send, Bot, User, Loader2 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { cn } from '@/lib/utils';
+
+type Message = {
+  role: 'user' | 'sally';
+  content: string;
+};
+
+type ConversationDto = {
+  agentName?: string;
+  clientName?: string;
+  agentDialogue?: string;
+  clientDialogue?: string;
+};
 
 export default function SallyPage() {
+  const searchParams = useSearchParams();
+  const { toast } = useToast();
+  const intent = searchParams.get('intent');
+
+  const getInitialMessage = () => {
+    if (intent === 'meal-plan') {
+      return "I've analyzed your meal history. What would you like to know?";
+    }
+    return "I'm your personal assistant, Sally. You can ask me anything about your health and nutrition.";
+  };
+
+  const [messages, setMessages] = useState<Message[]>([
+    { role: 'sally', content: getInitialMessage() },
+  ]);
+  const [input, setInput] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (scrollAreaRef.current) {
+      const viewport = scrollAreaRef.current.querySelector(
+        'div[data-radix-scroll-area-viewport]'
+      );
+      if (viewport) {
+        viewport.scrollTop = viewport.scrollHeight;
+      }
+    }
+  }, [messages]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!input.trim() || isLoading) return;
+
+    const userMessage: Message = { role: 'user', content: input };
+    setMessages((prev) => [...prev, userMessage]);
+    setInput('');
+    setIsLoading(true);
+
+    const token = localStorage.getItem('authToken');
+    if (!token) {
+      toast({
+        variant: 'destructive',
+        title: 'Authentication Error',
+        description: 'You must be logged in to chat with Sally.',
+      });
+      setIsLoading(false);
+      return;
+    }
+
+    const endpoint =
+      intent === 'meal-plan'
+        ? 'https://localhost:7066/api/Sally/meal-planner'
+        : 'https://localhost:7066/api/Sally/body-assessment';
+
+    const payload: ConversationDto = {
+      agentName: 'Sally',
+      clientDialogue: input,
+    };
+
+    try {
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (response.ok) {
+        const data: ConversationDto = await response.json();
+        const sallyResponse: Message = {
+          role: 'sally',
+          content:
+            data.agentDialogue ||
+            'Sorry, I had trouble thinking of a response.',
+        };
+        setMessages((prev) => [...prev, sallyResponse]);
+      } else {
+        let errorDescription = 'An unexpected error occurred.';
+        if (response.status === 429) {
+          errorDescription = 'You have reached your daily request limit.';
+        } else {
+          try {
+            const errorData = await response.json();
+            errorDescription =
+              errorData.error || errorData.message || errorDescription;
+          } catch {}
+        }
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: errorDescription,
+        });
+      }
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Network Error',
+        description: 'Could not connect to the server.',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden bg-[linear-gradient(135deg,#f0e8f8_0%,#e8eaf6_50%,#f0f4f8_100%)]">
-      {/* Close Button */}
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[linear-gradient(135deg,#f0e8f8_0%,#e8eaf6_50%,#f0f4f8_100%)]">
       <Link
         href="/dashboard"
         aria-label="Close"
@@ -13,46 +140,79 @@ export default function SallyPage() {
         <X size={18} />
       </Link>
 
-      {/* AI Assistant Card */}
-      <div className="flex w-80 flex-col items-center gap-6 rounded-3xl border border-white/40 bg-white/70 p-6 shadow-[0_20px_55px_8px_rgba(110,100,150,0.45)] backdrop-blur-2xl backdrop-saturate-150">
-        <div className="relative flex h-32 w-32 items-center justify-center">
-          {/* Breathing Glow */}
-          <div className="absolute top-1/2 left-1/2 z-0 h-[160%] w-[160%] animate-breathe-glow-sally rounded-full [background:radial-gradient(circle_at_center,rgba(255,235,255,0.7)_10%,rgba(200,190,255,0.8)_40%,rgba(170,220,255,1.0)_65%,rgba(200,240,255,1.0)_72%,rgba(135,206,250,0)_80%)]"></div>
-
-          {/* Siri Waves */}
-          <div className="pointer-events-none absolute top-1/2 left-1/2 z-10 h-[90px] w-[90px] -translate-x-1/2 -translate-y-1/2">
-            <div className="absolute h-full w-full animate-siri-wave-1 rounded-full border-2 border-white/60"></div>
-            <div className="absolute h-full w-full animate-siri-wave-2 rounded-full border-2 border-white/60"></div>
-            <div className="absolute h-full w-full animate-siri-wave-3 rounded-full border-2 border-white/60"></div>
-            <div className="absolute h-full w-full animate-siri-wave-4 rounded-full border-2 border-white/60"></div>
+      <div className="flex h-[90vh] w-full max-w-md flex-col rounded-3xl border border-white/40 bg-white/70 p-4 shadow-[0_20px_55px_8px_rgba(110,100,150,0.45)] backdrop-blur-2xl backdrop-saturate-150">
+        <div className="flex-shrink-0 p-2 text-center text-lg font-bold text-gray-800">
+          Sally
+        </div>
+        <ScrollArea className="flex-grow" ref={scrollAreaRef}>
+          <div className="space-y-4 p-4">
+            {messages.map((message, index) => (
+              <div
+                key={index}
+                className={cn(
+                  'flex items-start gap-3',
+                  message.role === 'user' ? 'justify-end' : 'justify-start'
+                )}
+              >
+                {message.role === 'sally' && (
+                  <Avatar className="h-8 w-8 flex-shrink-0">
+                    <AvatarFallback className="bg-primary text-primary-foreground">
+                      <Bot size={20} />
+                    </AvatarFallback>
+                  </Avatar>
+                )}
+                <div
+                  className={cn(
+                    'max-w-[75%] rounded-2xl px-4 py-2 text-sm',
+                    message.role === 'user'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-white text-gray-800 shadow-sm'
+                  )}
+                >
+                  {message.content}
+                </div>
+                {message.role === 'user' && (
+                  <Avatar className="h-8 w-8 flex-shrink-0">
+                    <AvatarFallback>
+                      <User size={20} />
+                    </AvatarFallback>
+                  </Avatar>
+                )}
+              </div>
+            ))}
+            {isLoading && (
+              <div className="flex items-start gap-3 justify-start">
+                <Avatar className="h-8 w-8 flex-shrink-0">
+                  <AvatarFallback className="bg-primary text-primary-foreground">
+                    <Bot size={20} />
+                  </AvatarFallback>
+                </Avatar>
+                <div className="max-w-[75%] rounded-2xl px-4 py-2 text-sm bg-white text-gray-800 shadow-sm">
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                </div>
+              </div>
+            )}
           </div>
-
-          {/* Mic Button */}
-          <button
-            role="button"
-            aria-label="Activate Voice AI"
-            className="z-20 flex h-20 w-20 items-center justify-center rounded-full bg-[#4629B0] shadow-[inset_0_2px_4px_0_rgba(255,255,255,0.4),0_0_15px_5px_rgba(255,255,255,0.8),0_0_30px_15px_rgba(255,255,255,0.5),0_0_50px_25px_rgba(220,230,255,0.3)] transition-all active:scale-95 active:bg-[#3c239a] active:shadow-[inset_0_2px_4px_0_rgba(255,255,255,0.3),0_0_10px_3px_rgba(255,255,255,0.7),0_0_20px_10px_rgba(255,255,255,0.4),0_0_40px_20px_rgba(220,230,255,0.2)]"
-          >
-            <Mic
-              className="h-10 w-10 text-white"
-              style={{
-                textShadow:
-                  '0 1px 2px rgba(0,0,0,0.2), 0 0 5px rgba(255,255,255,0.8), 0 0 10px rgba(180,140,255,0.7)',
-              }}
+        </ScrollArea>
+        <form onSubmit={handleSubmit} className="flex-shrink-0 p-2">
+          <div className="relative">
+            <Input
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder="Ask Sally anything..."
+              className="rounded-full pr-12 text-black"
+              disabled={isLoading}
             />
-          </button>
-        </div>
-
-        {/* Info Box */}
-        <div className="w-full rounded-2xl border border-white/40 bg-white/80 p-3 text-center shadow-[inset_0_1px_2px_rgba(255,255,255,0.6),0_10px_30px_3px_rgba(100,90,140,0.45)] backdrop-blur-lg backdrop-saturate-150">
-          <p className="text-sm leading-normal text-black">
-            <strong className="font-bold">Sally</strong>
-            <span className="text-gray-600">
-              {' '}
-              - I&apos;m your personal assistant, ask me anything.
-            </span>
-          </p>
-        </div>
+            <Button
+              type="submit"
+              size="icon"
+              className="absolute right-1 top-1/2 h-8 w-8 -translate-y-1/2 rounded-full"
+              disabled={isLoading}
+            >
+              <Send size={18} />
+            </Button>
+          </div>
+        </form>
       </div>
     </div>
   );

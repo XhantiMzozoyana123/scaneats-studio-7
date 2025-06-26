@@ -175,7 +175,7 @@ export default function MealPlanPage() {
 
         <section className="mt-auto flex flex-col items-center gap-4 pt-8 pb-4">
           <Link
-            href="/dashboard/sally"
+            href="/dashboard/sally?intent=meal-plan"
             className="flex h-28 w-28 flex-col items-center justify-center rounded-full bg-gradient-to-r from-purple-800 to-indigo-900 animate-breathe-glow shadow-2xl transition-transform hover:scale-105"
           >
             <Mic className="h-14 w-14 text-white" />
