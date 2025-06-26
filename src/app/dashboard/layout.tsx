@@ -6,7 +6,7 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="relative min-h-screen pb-28">
+    <div className="relative h-screen overflow-hidden">
       {children}
       <BottomNav />
     </div>
