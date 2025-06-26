@@ -78,7 +78,7 @@ export default function MealPlanPage() {
         data-ai-hint="abstract food pattern"
         className="blur-sm"
       />
-      <div className="z-10 flex h-screen w-full flex-col items-center p-4 pb-28">
+      <div className="z-10 flex h-screen w-full flex-col items-center px-4 pt-12 pb-28">
         <header className="flex w-full max-w-lg items-center justify-between self-start">
           <Image
             src="/scaneats-logo.svg"
@@ -104,15 +104,15 @@ export default function MealPlanPage() {
         </section>
 
         <section className="flex w-full flex-grow flex-col items-center justify-center gap-4">
-          <p className="max-w-xs rounded-lg border-l-4 border-accent bg-background/50 p-2 text-center text-xs text-muted-foreground shadow-md">
-            Ask me about this meal and I&apos;ll tell you everything
-          </p>
           <Link
             href="/dashboard/sally?intent=meal-plan"
             className="flex h-16 w-16 flex-col items-center justify-center rounded-full bg-gradient-to-r from-purple-800 to-indigo-900 shadow-2xl transition-transform hover:scale-105"
           >
             <Mic className="h-8 w-8 text-white" />
           </Link>
+          <p className="max-w-xs rounded-lg border-l-4 border-accent bg-background/50 p-2 text-center text-xs text-muted-foreground shadow-md">
+            Ask me about this meal and I&apos;ll tell you everything
+          </p>
         </section>
       </div>
     </>
