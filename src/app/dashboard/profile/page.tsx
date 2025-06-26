@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { useState, type ChangeEvent } from 'react';
+import { useState, type ChangeEvent, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
 import { Calendar as CalendarIcon, Loader2 } from 'lucide-react';
@@ -37,19 +37,73 @@ type Profile = {
   birthDate: Date | null;
 };
 
+// Initial empty state for the profile
+const initialProfileState: Profile = {
+  id: null,
+  name: '',
+  age: '',
+  gender: 'Prefer not to say',
+  weight: '',
+  goals: '',
+  birthDate: null,
+};
+
 export default function ProfilePage() {
   const { toast } = useToast();
-  // Pre-populate with mock data for UI design
-  const [profile, setProfile] = useState<Profile>({
-    id: 1,
-    name: 'Alex Doe',
-    age: 30,
-    gender: 'Male',
-    weight: 75,
-    goals: 'Lose 5kg, build muscle, improve cardiovascular health.',
-    birthDate: new Date('1994-08-15'),
-  });
+  const [profile, setProfile] = useState<Profile>(initialProfileState);
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(true); // For initial fetch
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      setIsLoading(true);
+      const token = localStorage.getItem('authToken');
+
+      if (!token) {
+        toast({
+          variant: 'destructive',
+          title: 'Authentication Error',
+          description: 'You must be logged in to view your profile.',
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/profile`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch profile.');
+        }
+
+        const data: Profile[] = await response.json();
+        // The API returns a list of profiles, we'll use the first one.
+        if (data && data.length > 0) {
+          const userProfile = data[0];
+          setProfile({
+            ...userProfile,
+            birthDate: userProfile.birthDate ? new Date(userProfile.birthDate) : null,
+          });
+        }
+      } catch (error) {
+        console.error(error);
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: 'Could not fetch your profile. You can create one by saving this form.',
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchProfile();
+  }, [toast]);
+
 
   const handleInputChange = (
     e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -69,17 +123,76 @@ export default function ProfilePage() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSaving(true);
-    console.log('Saving profile (mock):', profile);
     
-    // Simulate API call
-    setTimeout(() => {
-      toast({
-        title: 'Success',
-        description: 'Your profile has been saved successfully.',
-      });
-      setIsSaving(false);
-    }, 1000);
+    const token = localStorage.getItem('authToken');
+    if (!token) {
+        toast({
+            variant: 'destructive',
+            title: 'Authentication Error',
+            description: 'You must be logged in to save your profile.',
+        });
+        setIsSaving(false);
+        return;
+    }
+
+    const method = profile.id ? 'PUT' : 'POST';
+    const url = profile.id 
+      ? `${process.env.NEXT_PUBLIC_API_URL}/api/profile/${profile.id}`
+      : `${process.env.NEXT_PUBLIC_API_URL}/api/profile`;
+      
+    // Prepare data for the API
+    const profileData = {
+      ...profile,
+      age: parseInt(profile.age as string, 10) || 0,
+      weight: profile.weight.toString(),
+    };
+
+    try {
+        const response = await fetch(url, {
+            method: method,
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify(profileData),
+        });
+
+        if (response.ok) {
+            toast({
+              title: 'Success',
+              description: 'Your profile has been saved successfully.',
+            });
+
+            if(method === 'POST') {
+              const newProfile = await response.json();
+              setProfile({
+                ...newProfile,
+                birthDate: newProfile.birthDate ? new Date(newProfile.birthDate) : null,
+              });
+            }
+        } else {
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Failed to save profile.');
+        }
+
+    } catch (error: any) {
+        toast({
+            variant: 'destructive',
+            title: 'Save Failed',
+            description: error.message || 'An unexpected error occurred.',
+        });
+    } finally {
+        setIsSaving(false);
+    }
   };
+  
+  if (isLoading) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center bg-background">
+        <Loader2 className="h-16 w-16 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <>
@@ -94,8 +207,8 @@ export default function ProfilePage() {
             <Image
               src="/profile-goals-logo.png"
               alt="Profile & Personal Goals"
-              width={80}
-              height={80}
+              width={60}
+              height={60}
             />
           </div>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -214,7 +327,7 @@ export default function ProfilePage() {
               <Button
                 type="submit"
                 size="lg"
-                disabled={isSaving}
+                disabled={isSaving || isLoading}
                 className="w-full rounded-md bg-primary py-3 text-lg font-bold shadow-[0_0_8px_2px_hsl(var(--primary)/0.6)] transition-shadow duration-300 hover:shadow-[0_0_12px_6px_hsl(var(--primary)/0.8)] disabled:opacity-50"
               >
                 {isSaving ? <Loader2 className="animate-spin" /> : 'Save Profile'}
