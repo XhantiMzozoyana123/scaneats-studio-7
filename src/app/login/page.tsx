@@ -27,19 +27,41 @@ export default function LoginPage() {
     event.preventDefault();
     setIsLoading(true);
 
-    // Simulate API call for UI design
-    setTimeout(() => {
-      // Mock a successful login to allow designers to proceed
-      localStorage.setItem('authToken', 'mock-auth-token-for-design');
-      localStorage.setItem('userId', 'mock-user-id-for-design');
-      
-      toast({
-        title: 'Login Successful!',
-        description: 'Welcome back. (This is a mock login)',
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/Auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: email,
+          password: password,
+        }),
       });
-      router.push('/dashboard');
+
+      if (response.ok) {
+        const data = await response.json();
+        localStorage.setItem('authToken', data.token);
+        localStorage.setItem('userId', data.userId);
+        
+        toast({
+          title: 'Login Successful!',
+          description: 'Welcome back.',
+        });
+        router.push('/dashboard');
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Login failed.');
+      }
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Login Failed',
+        description: error.message || 'An unexpected error occurred.',
+      });
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   return (

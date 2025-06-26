@@ -23,15 +23,38 @@ export default function SignUpPage() {
     event.preventDefault();
     setIsLoading(true);
 
-    // Simulate API call for UI design
-    setTimeout(() => {
-      toast({
-        title: 'Success!',
-        description: 'Registration successful. Please log in. (This is a mock registration)',
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/Auth/register`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userName: username,
+          email: email,
+          password: password,
+        }),
       });
-      router.push('/login');
+
+      if (response.ok) {
+        toast({
+          title: 'Success!',
+          description: 'Registration successful. Please log in.',
+        });
+        router.push('/login');
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Registration failed');
+      }
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Registration Failed',
+        description: error.message || 'An unexpected error occurred.',
+      });
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   return (
