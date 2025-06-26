@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { BackgroundImage } from '@/components/background-image';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Beef,
   Loader2,
@@ -104,46 +103,16 @@ export default function MealPlanPage() {
           <MacroCard label="Carbs" value={`${totals.carbs.toFixed(0)}g`} icon={Wheat} />
         </section>
 
-        <Card className="flex h-56 w-full max-w-md flex-col border-primary/50 bg-background/70 backdrop-blur-sm">
-          <CardHeader className="py-3">
-            <CardTitle className="flex items-center gap-2 text-base text-accent">
-              <Utensils className="h-4 w-4" />
-              Meal History
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="flex-grow overflow-y-auto px-4 pb-4 pt-0">
-            {foods.length > 0 ? (
-              <ul className="space-y-2">
-                {foods.map((food) => (
-                  <li
-                    key={food.id}
-                    className="flex justify-between rounded-md bg-black/30 p-2 text-sm text-white"
-                  >
-                    <span>{food.name}</span>
-                    <span>{food.calories.toFixed(0)} kcal</span>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <div className="flex h-full items-center justify-center">
-                <p className="text-center text-muted-foreground">
-                  No meals scanned yet.
-                </p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        <section className="mt-auto flex flex-col items-center gap-2 pt-4">
+        <section className="flex w-full flex-grow flex-col items-center justify-center gap-4">
+          <p className="max-w-xs rounded-lg border-l-4 border-accent bg-background/50 p-2 text-center text-xs text-muted-foreground shadow-md">
+            Ask me about this meal and I&apos;ll tell you everything
+          </p>
           <Link
             href="/dashboard/sally?intent=meal-plan"
             className="flex h-16 w-16 flex-col items-center justify-center rounded-full bg-gradient-to-r from-purple-800 to-indigo-900 shadow-2xl transition-transform hover:scale-105"
           >
             <Mic className="h-8 w-8 text-white" />
           </Link>
-          <p className="max-w-xs rounded-lg border-l-4 border-accent bg-background/50 p-2 text-center text-xs text-muted-foreground shadow-md">
-            Ask me about this meal and I&apos;ll tell you everything
-          </p>
         </section>
       </div>
     </>
