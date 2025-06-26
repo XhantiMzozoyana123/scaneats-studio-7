@@ -13,19 +13,11 @@ export default function DashboardPage() {
         data-ai-hint="healthy food abstract"
         className="blur-sm"
       />
-      <header className="absolute top-6 left-6 z-20">
-        <Image
-          src="/scaneats-logo-square.png"
-          alt="ScanEats Logo"
-          width={50}
-          height={50}
-        />
-      </header>
-      <main className="relative flex h-full flex-col items-center justify-between px-4 pt-28 pb-32 text-white">
+      <main className="relative flex h-full flex-col items-center justify-center space-y-20 px-4 pt-28 pb-32 text-white">
         <div className="flex flex-col items-center space-y-8 text-center">
           <div className="space-y-2">
             <h1
-              className="title-gradient font-headline text-6xl font-bold"
+              className="title-gradient font-headline text-4xl font-bold"
               style={{
                 textShadow:
                   '0px 1px 1px rgba(0, 0, 0, 0.25), 0px 0px 8px rgba(190, 100, 255, 0.45)',
