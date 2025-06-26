@@ -3,7 +3,6 @@
 import {
   ChevronRight,
   LogOut,
-  Bell,
   UserCircle,
   CreditCard,
   Lock,
@@ -18,7 +17,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import {
   AlertDialog,
@@ -31,6 +29,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import { cn } from '@/lib/utils';
 
 const SettingsItem = ({
   icon: Icon,
@@ -106,16 +105,15 @@ export default function SettingsPage() {
                 onClick={() => {}}
                 action={<ChevronRight className="h-5 w-5 text-muted-foreground" />}
               />
-              <Separator className="bg-white/10" />
-              <SettingsItem
-                icon={Bell}
-                label="Push Notifications"
-                action={<Switch id="notifications-switch" />}
-              />
             </CardContent>
           </Card>
 
-          <Card className="border-primary/30 bg-black/70 backdrop-blur-md">
+          <Card className={cn(
+            "border-primary/30 bg-black/70 backdrop-blur-md transition-shadow duration-300",
+            subscriptionActive 
+              ? "shadow-[0_0_15px_rgba(34,197,94,0.6)]"
+              : "shadow-[0_0_15px_rgba(239,68,68,0.6)]"
+          )}>
             <CardHeader className="p-4">
               <CardTitle className="text-lg text-white">Subscription</CardTitle>
             </CardHeader>
