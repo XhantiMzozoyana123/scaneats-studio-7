@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { BackgroundImage } from '@/components/background-image';
+import Image from 'next/image';
 
 export default function DashboardPage() {
   return (
@@ -12,6 +13,14 @@ export default function DashboardPage() {
         data-ai-hint="healthy food abstract"
         className="blur-sm"
       />
+      <header className="absolute top-4 left-4 z-10">
+        <Image
+          src="/scaneats-logo.png"
+          alt="ScanEats Logo"
+          width={80}
+          height={80}
+        />
+      </header>
       <main className="relative flex h-full flex-col items-center justify-center space-y-12 px-4 pt-16 pb-32 text-white">
         <div className="flex flex-col items-center space-y-8 text-center">
           <div className="space-y-2">
@@ -38,7 +47,7 @@ export default function DashboardPage() {
         <div className="w-full max-w-xs">
            <Button
             asChild
-            className="h-28 w-full rounded-3xl bg-primary text-lg uppercase tracking-[0.2em] text-white animate-breathe-glow transition-all hover:scale-105"
+            className="h-32 w-full rounded-3xl bg-primary text-lg uppercase tracking-[0.2em] text-white animate-breathe-glow transition-all hover:scale-105"
           >
             <Link href="/dashboard/scan-food">Scan Food</Link>
           </Button>
