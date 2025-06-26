@@ -6,6 +6,7 @@ import { ArrowLeft, Mic, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { BackgroundImage } from '@/components/background-image';
+import { textToSpeech } from '@/ai/flows/text-to-speech';
 
 declare global {
   interface Window {
@@ -20,8 +21,16 @@ export default function SallyPage() {
   );
   const [isRecording, setIsRecording] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const recognitionRef = useRef<any>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (audioUrl && audioRef.current) {
+      audioRef.current.play().catch((e) => console.error('Audio play failed', e));
+    }
+  }, [audioUrl]);
 
   useEffect(() => {
     const SpeechRecognition =
@@ -63,6 +72,7 @@ export default function SallyPage() {
     if (isRecording) {
       recognitionRef.current?.stop();
     } else {
+      setAudioUrl(null);
       setIsRecording(true);
       setSallyResponse('Listening...');
       recognitionRef.current?.start();
@@ -115,6 +125,11 @@ export default function SallyPage() {
 
       const data = await response.json();
       setSallyResponse(data.agentDialogue);
+
+      const audioResponse = await textToSpeech(data.agentDialogue);
+      if (audioResponse?.media) {
+        setAudioUrl(audioResponse.media);
+      }
     } catch (error: any) {
       toast({
         variant: 'destructive',
@@ -168,6 +183,7 @@ export default function SallyPage() {
             </Button>
           </div>
         </footer>
+        {audioUrl && <audio ref={audioRef} src={audioUrl} hidden />}
       </div>
     </>
   );

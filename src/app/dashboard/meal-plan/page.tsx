@@ -6,6 +6,7 @@ import { BackgroundImage } from '@/components/background-image';
 import { Beef, Mic, Milk, Wheat, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
+import { textToSpeech } from '@/ai/flows/text-to-speech';
 
 type ScannedFood = {
   id: number;
@@ -53,9 +54,17 @@ export default function MealPlanPage() {
   );
   const [isRecording, setIsRecording] = useState(false);
   const [isSallyLoading, setIsSallyLoading] = useState(false);
+  const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const recognitionRef = useRef<any>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
 
-  // --- Speech Recognition Setup ---
+  // --- Speech Recognition and Audio Playback ---
+  useEffect(() => {
+    if (audioUrl && audioRef.current) {
+      audioRef.current.play().catch((e) => console.error('Audio play failed', e));
+    }
+  }, [audioUrl]);
+
   useEffect(() => {
     const SpeechRecognition =
       window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -165,6 +174,7 @@ export default function MealPlanPage() {
     if (isRecording) {
       recognitionRef.current?.stop();
     } else {
+      setAudioUrl(null);
       setIsRecording(true);
       setSallyResponse('Listening...');
       recognitionRef.current?.start();
@@ -216,6 +226,11 @@ export default function MealPlanPage() {
 
       const data = await response.json();
       setSallyResponse(data.agentDialogue);
+
+      const audioResponse = await textToSpeech(data.agentDialogue);
+      if (audioResponse?.media) {
+        setAudioUrl(audioResponse.media);
+      }
     } catch (error: any) {
       toast({
         variant: 'destructive',
@@ -314,6 +329,7 @@ export default function MealPlanPage() {
           </Button>
         </footer>
       </div>
+      {audioUrl && <audio ref={audioRef} src={audioUrl} hidden />}
     </>
   );
 }
