@@ -1,10 +1,10 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { BackgroundImage } from '@/components/background-image';
-import { Beef, Mic, Milk, Wheat } from 'lucide-react';
+import { Beef, Mic, Milk, Wheat, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 type ScannedFood = {
@@ -15,17 +15,6 @@ type ScannedFood = {
   fat: number;
   carbs: number;
 };
-
-// Mock data for UI design
-const mockFoods: ScannedFood[] = [
-  { id: 1, name: 'Avocado Toast', calories: 290, protein: 12, fat: 15, carbs: 30 },
-  { id: 2, name: 'Grilled Chicken Salad', calories: 450, protein: 40, fat: 25, carbs: 15 },
-  { id: 3, name: 'Spaghetti Bolognese', calories: 600, protein: 30, fat: 20, carbs: 75 },
-  { id: 4, name: 'Fruit Smoothie', calories: 250, protein: 5, fat: 8, carbs: 45 },
-  { id: 5, name: 'Salmon with Quinoa', calories: 550, protein: 45, fat: 30, carbs: 25 },
-  { id: 6, name: 'Vegetable Stir-fry', calories: 350, protein: 15, fat: 10, carbs: 50 },
-];
-
 
 const MacroCard = ({
   label,
@@ -47,8 +36,64 @@ const MacroCard = ({
 );
 
 export default function MealPlanPage() {
-  const [foods, setFoods] = useState<ScannedFood[]>(mockFoods);
+  const [foods, setFoods] = useState<ScannedFood[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+
+  useEffect(() => {
+    const fetchFoodReferences = async () => {
+      setIsLoading(true);
+      const token = localStorage.getItem('authToken');
+
+      if (!token) {
+        toast({
+          variant: 'destructive',
+          title: 'Authentication Error',
+          description: 'You must be logged in to view your meal plan.',
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/api/food/references`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch meal plan.');
+        }
+
+        const data = await response.json();
+        // Assuming the API returns PascalCase properties, we map them to our camelCase type.
+        const formattedData: ScannedFood[] = data.map((food: any) => ({
+          id: food.Id,
+          name: food.Name,
+          calories: food.Calories,
+          protein: food.Protein,
+          fat: food.Fat,
+          carbs: food.Carbs,
+        }));
+        setFoods(formattedData);
+      } catch (error) {
+        console.error(error);
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: 'Could not fetch your meal plan. Please try again later.',
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchFoodReferences();
+  }, [toast]);
 
   const totals = useMemo(() => {
     return foods.reduce(
@@ -62,6 +107,22 @@ export default function MealPlanPage() {
       { calories: 0, protein: 0, fat: 0, carbs: 0 }
     );
   }, [foods]);
+
+  if (isLoading) {
+    return (
+      <>
+        <BackgroundImage
+          src="https://placehold.co/1920x1080.png"
+          data-ai-hint="abstract food pattern"
+          className="blur-sm"
+        />
+        <div className="z-10 flex h-screen w-full flex-col items-center justify-center">
+          <Loader2 className="h-16 w-16 animate-spin text-white" />
+          <p className="mt-4 text-white">Loading your meal plan...</p>
+        </div>
+      </>
+    );
+  }
 
   return (
     <>
@@ -90,9 +151,17 @@ export default function MealPlanPage() {
         </section>
 
         <section className="mb-4 flex w-full max-w-md flex-wrap justify-center gap-2">
-          <MacroCard label="Protein" value={`${totals.protein.toFixed(0)}g`} icon={Beef} />
+          <MacroCard
+            label="Protein"
+            value={`${totals.protein.toFixed(0)}g`}
+            icon={Beef}
+          />
           <MacroCard label="Fat" value={`${totals.fat.toFixed(0)}g`} icon={Milk} />
-          <MacroCard label="Carbs" value={`${totals.carbs.toFixed(0)}g`} icon={Wheat} />
+          <MacroCard
+            label="Carbs"
+            value={`${totals.carbs.toFixed(0)}g`}
+            icon={Wheat}
+          />
         </section>
 
         <section className="mt-6 flex w-full flex-col items-center gap-5">
