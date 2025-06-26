@@ -3,12 +3,15 @@
 import { useState, useRef, type ChangeEvent } from 'react';
 import Image from 'next/image';
 import {
+  foodScanNutrition,
   type FoodScanNutritionOutput,
 } from '@/ai/flows/food-scan-nutrition';
 import {
+  personalizedDietarySuggestions,
   type PersonalizedDietarySuggestionsOutput,
 } from '@/ai/flows/personalized-dietary-suggestions';
 import {
+  getMealInsights,
   type GetMealInsightsOutput,
 } from '@/ai/flows/meal-insights';
 import { Button } from '@/components/ui/button';
@@ -33,6 +36,15 @@ type AnalysisResult = {
   nutrition: FoodScanNutritionOutput;
   insights?: GetMealInsightsOutput;
   suggestions?: PersonalizedDietarySuggestionsOutput;
+};
+
+const fileToDataUri = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
 };
 
 export default function ScanFoodPage() {
@@ -68,50 +80,50 @@ export default function ScanFoodPage() {
     setError(null);
     setResult(null);
 
-    // Simulate Genkit analysis with mock data for UI design
-    setTimeout(() => {
-      const mockNutritionResult: FoodScanNutritionOutput = {
-        foodIdentification: {
-          name: 'Delicious Mock Meal',
-          confidence: 0.95,
-        },
-        nutritionInformation: {
-          calories: 450,
-          protein: 25,
-          fat: 20,
-          carbohydrates: 40,
-          allergens: ['Gluten', 'Dairy'],
-        },
-      };
+    try {
+      const photoDataUri = await fileToDataUri(file);
 
-      const mockInsightsResult: GetMealInsightsOutput = {
-        calories: 450,
-        protein: 25,
-        fat: 20,
-        carbs: 40,
-        ingredients: 'Mock bread, mock cheese, mock tomato sauce',
-        allergens: 'Gluten, Dairy',
-        healthBenefits: 'Provides a good balance of macronutrients for sustained energy. Rich in mock-lycopene.',
-        potentialRisks: 'High in sodium and saturated fat. Not suitable for individuals with gluten or lactose intolerance.',
-      };
+      // 1. Get nutritional information from the image
+      const nutritionResult = await foodScanNutrition({ photoDataUri });
 
-      const mockSuggestionsResult: PersonalizedDietarySuggestionsOutput = {
-        suggestions: `This meal fits well into a balanced diet. Consider pairing it with a side salad to increase your vegetable intake. Based on your goal of "${dietaryInfo.goals || 'general health'}", this is a good choice.`,
-      };
+      // 2. Get insights and suggestions in parallel
+      const [insightsResult, suggestionsResult] = await Promise.all([
+        getMealInsights({
+          foodDescription: nutritionResult.foodIdentification.name,
+        }),
+        personalizedDietarySuggestions({
+          foodItemName: nutritionResult.foodIdentification.name,
+          nutritionalInformation: JSON.stringify(
+            nutritionResult.nutritionInformation
+          ),
+          dietaryGoals: dietaryInfo.goals || 'Maintain a balanced diet.',
+          userPreferences:
+            dietaryInfo.preferences || 'No specific preferences.',
+        }),
+      ]);
 
       setResult({
-        nutrition: mockNutritionResult,
-        insights: mockInsightsResult,
-        suggestions: mockSuggestionsResult,
+        nutrition: nutritionResult,
+        insights: insightsResult,
+        suggestions: suggestionsResult,
       });
 
       toast({
-          title: 'Meal Saved (Mock)',
-          description: 'This meal has been added to your history for design review.',
+        title: 'Analysis Complete!',
+        description: `${nutritionResult.foodIdentification.name} has been analyzed.`,
       });
-
+    } catch (err) {
+      console.error(err);
+      setError('An error occurred during analysis. Please try again.');
+      toast({
+        variant: 'destructive',
+        title: 'Analysis Failed',
+        description:
+          'Could not analyze the food item. Please try another image.',
+      });
+    } finally {
       setIsLoading(false);
-    }, 1500);
+    }
   };
 
   const MacroCard = ({
