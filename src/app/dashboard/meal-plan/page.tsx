@@ -1,18 +1,10 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { BackgroundImage } from '@/components/background-image';
-import {
-  Beef,
-  Loader2,
-  Mic,
-  Milk,
-  Utensils,
-  Wheat,
-} from 'lucide-react';
+import { Beef, Mic, Milk, Wheat } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 type ScannedFood = {
@@ -81,10 +73,10 @@ export default function MealPlanPage() {
       <div className="z-10 flex h-screen w-full flex-col items-center px-4 pt-12 pb-28">
         <header className="flex w-full max-w-lg items-center justify-between self-start">
           <Image
-            src="/scaneats-logo.svg"
+            src="/scaneats-logo.png"
             alt="ScanEats Logo"
             width={120}
-            height={60}
+            height={120}
           />
         </header>
 
@@ -103,7 +95,7 @@ export default function MealPlanPage() {
           <MacroCard label="Carbs" value={`${totals.carbs.toFixed(0)}g`} icon={Wheat} />
         </section>
 
-        <section className="mt-8 flex w-full flex-col items-center gap-4">
+        <section className="mt-16 flex w-full flex-col items-center gap-4">
           <Link
             href="/dashboard/sally?intent=meal-plan"
             className="flex h-16 w-16 flex-col items-center justify-center rounded-full bg-gradient-to-r from-purple-800 to-indigo-900 shadow-2xl transition-transform hover:scale-105"

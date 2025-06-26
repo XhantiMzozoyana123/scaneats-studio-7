@@ -13,10 +13,10 @@ export default function LandingPage() {
 
       <div className="container z-10 mx-auto flex max-w-lg flex-col items-center justify-center text-center">
         <Image
-          src="/scaneats-logo.svg"
+          src="/scaneats-logo.png"
           alt="ScanEats Logo"
-          width={90}
-          height={90}
+          width={120}
+          height={120}
           className="mb-6"
         />
         <p className="mb-8 text-lg font-bold">

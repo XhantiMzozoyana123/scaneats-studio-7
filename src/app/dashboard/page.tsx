@@ -14,10 +14,10 @@ export default function DashboardPage() {
 
       <div id="logo-container" className="absolute top-5 left-5 z-10">
         <Image
-          src="/scaneats-logo.svg"
+          src="/scaneats-logo.png"
           alt="ScanEats Logo"
           width={120}
-          height={40}
+          height={120}
         />
       </div>
 
