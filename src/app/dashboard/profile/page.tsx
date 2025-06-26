@@ -33,7 +33,6 @@ type Profile = {
   age: number | string;
   gender: string;
   weight: number | string;
-  height: number | string;
   goals: string;
   birthDate: Date | null;
 };
@@ -47,7 +46,6 @@ export default function ProfilePage() {
     age: 30,
     gender: 'Male',
     weight: 75,
-    height: 180,
     goals: 'Lose 5kg, build muscle, improve cardiovascular health.',
     birthDate: new Date('1994-08-15'),
   });
@@ -96,8 +94,8 @@ export default function ProfilePage() {
             <Image
               src="/profile-goals-logo.png"
               alt="Profile & Personal Goals"
-              width={180}
-              height={180}
+              width={80}
+              height={80}
             />
           </div>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -157,20 +155,6 @@ export default function ProfilePage() {
                 value={profile.weight}
                 onChange={handleInputChange}
                 placeholder="e.g., 70"
-                className="border-neutral-600 bg-black/50 text-white placeholder:text-gray-500"
-              />
-            </div>
-
-            <div className="space-y-1">
-              <Label htmlFor="height" className="font-semibold text-gray-300">
-                Height (cm)
-              </Label>
-              <Input
-                id="height"
-                type="number"
-                value={profile.height}
-                onChange={handleInputChange}
-                placeholder="e.g., 175"
                 className="border-neutral-600 bg-black/50 text-white placeholder:text-gray-500"
               />
             </div>
