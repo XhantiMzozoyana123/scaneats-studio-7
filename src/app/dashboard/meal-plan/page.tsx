@@ -88,7 +88,7 @@ export default function MealPlanPage() {
           />
         </header>
 
-        <section className="my-2 text-center">
+        <section className="my-8 text-center">
           <div className="text-4xl font-bold text-white [text-shadow:_0_0_10px_white]">
             {totals.calories.toFixed(0)}
           </div>
@@ -103,7 +103,7 @@ export default function MealPlanPage() {
           <MacroCard label="Carbs" value={`${totals.carbs.toFixed(0)}g`} icon={Wheat} />
         </section>
 
-        <section className="flex w-full flex-grow flex-col items-center justify-center gap-4">
+        <section className="mt-8 flex w-full flex-col items-center gap-4">
           <Link
             href="/dashboard/sally?intent=meal-plan"
             className="flex h-16 w-16 flex-col items-center justify-center rounded-full bg-gradient-to-r from-purple-800 to-indigo-900 shadow-2xl transition-transform hover:scale-105"
