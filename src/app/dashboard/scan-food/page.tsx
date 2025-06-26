@@ -30,6 +30,7 @@ import {
   ShieldAlert,
 } from 'lucide-react';
 import { BackgroundImage } from '@/components/background-image';
+import { useToast } from '@/hooks/use-toast';
 
 type AnalysisResult = {
   nutrition: FoodScanNutritionOutput;
@@ -48,6 +49,7 @@ export default function ScanFoodPage() {
     preferences: '',
   });
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0];
@@ -69,49 +71,110 @@ export default function ScanFoodPage() {
     setError(null);
     setResult(null);
 
-    try {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = async () => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = async () => {
+      try {
         const photoDataUri = reader.result as string;
 
+        // Perform Genkit analysis for UI
         const nutritionResult = await foodScanNutrition({ photoDataUri });
 
         let insightsResult, suggestionsResult;
 
         if (nutritionResult.foodIdentification.name) {
-          insightsResult = await getMealInsights({
-            foodDescription: nutritionResult.foodIdentification.name,
-          });
-
-          const nutritionalInformationString = `Calories: ${nutritionResult.nutritionInformation.calories}, Protein: ${nutritionResult.nutritionInformation.protein}g, Fat: ${nutritionResult.nutritionInformation.fat}g, Carbs: ${nutritionResult.nutritionInformation.carbohydrates}g, Allergens: ${nutritionResult.nutritionInformation.allergens.join(', ')}`;
-
-          suggestionsResult = await personalizedDietarySuggestions({
-            foodItemName: nutritionResult.foodIdentification.name,
-            nutritionalInformation: nutritionalInformationString,
-            dietaryGoals:
-              dietaryInfo.goals || 'general health improvement',
-            userPreferences:
-              dietaryInfo.preferences || 'no specific preferences',
-          });
+          const [insights, suggestions] = await Promise.all([
+            getMealInsights({
+              foodDescription: nutritionResult.foodIdentification.name,
+            }),
+            personalizedDietarySuggestions({
+              foodItemName: nutritionResult.foodIdentification.name,
+              nutritionalInformation: `Calories: ${nutritionResult.nutritionInformation.calories}, Protein: ${nutritionResult.nutritionInformation.protein}g, Fat: ${nutritionResult.nutritionInformation.fat}g, Carbs: ${nutritionResult.nutritionInformation.carbohydrates}g, Allergens: ${nutritionResult.nutritionInformation.allergens.join(', ')}`,
+              dietaryGoals:
+                dietaryInfo.goals || 'general health improvement',
+              userPreferences:
+                dietaryInfo.preferences || 'no specific preferences',
+            }),
+          ]);
+          insightsResult = insights;
+          suggestionsResult = suggestions;
         }
 
+        // Set UI result first so user sees it quickly
         setResult({
           nutrition: nutritionResult,
           insights: insightsResult,
           suggestions: suggestionsResult,
         });
+
+        // Then, sync with backend API
+        const token = localStorage.getItem('authToken');
+        if (token && nutritionResult.foodIdentification.name) {
+          try {
+            const foodName = nutritionResult.foodIdentification.name;
+            let foodId = 0;
+            const foodInfoResponse = await fetch(
+              `https://localhost:7066/api/food/info/${encodeURIComponent(foodName)}`,
+              {
+                headers: { Authorization: `Bearer ${token}` },
+              }
+            );
+            if (foodInfoResponse.ok) {
+              foodId = await foodInfoResponse.json();
+            }
+
+            const payload = {
+              Base64: photoDataUri,
+              Logging: {
+                FoodId: foodId,
+              },
+            };
+
+            const scanResponse = await fetch(
+              'https://localhost:7066/api/scan/scan',
+              {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify(payload),
+              }
+            );
+
+            if (scanResponse.ok) {
+              toast({
+                title: 'Meal Saved',
+                description: 'This meal has been added to your history.',
+              });
+            } else {
+              const errorText = await scanResponse.text();
+              toast({
+                variant: 'destructive',
+                title: 'Sync Failed',
+                description: errorText || 'Could not save the meal to your history.',
+              });
+            }
+          } catch (syncError) {
+            console.error('Failed to sync meal with backend', syncError);
+            toast({
+              variant: 'destructive',
+              title: 'Sync Error',
+              description: 'Could not connect to the server to save the meal.',
+            });
+          }
+        }
+      } catch (e) {
+        console.error(e);
+        setError('An error occurred during analysis. Please try again.');
+      } finally {
         setIsLoading(false);
-      };
-      reader.onerror = () => {
-        setError('Failed to read the file.');
-        setIsLoading(false);
-      };
-    } catch (e) {
-      console.error(e);
-      setError('An error occurred during analysis. Please try again.');
+      }
+    };
+    reader.onerror = () => {
+      setError('Failed to read the file.');
       setIsLoading(false);
-    }
+    };
   };
 
   const MacroCard = ({
@@ -142,7 +205,7 @@ export default function ScanFoodPage() {
         data-ai-hint="food abstract"
         className="blur-md"
       />
-      <main className="container z-10 mx-auto px-4 py-8">
+      <main className="container z-10 mx-auto overflow-y-auto px-4 py-8 pb-28">
         {!result ? (
           <Card className="mx-auto max-w-lg border-primary bg-background/70 backdrop-blur-sm">
             <CardHeader>
@@ -185,6 +248,7 @@ export default function ScanFoodPage() {
                   onChange={(e) =>
                     setDietaryInfo({ ...dietaryInfo, goals: e.target.value })
                   }
+                  className="border-neutral-600 bg-black/50 text-white placeholder:text-gray-500"
                 />
                 <Textarea
                   placeholder="Your preferences & restrictions (e.g., vegetarian, no nuts)"
@@ -192,6 +256,7 @@ export default function ScanFoodPage() {
                   onChange={(e) =>
                     setDietaryInfo({ ...dietaryInfo, preferences: e.target.value })
                   }
+                  className="border-neutral-600 bg-black/50 text-white placeholder:text-gray-500"
                 />
               </div>
 
