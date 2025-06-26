@@ -47,7 +47,7 @@ export default function DashboardPage() {
         <div className="w-full max-w-xs">
            <Button
             asChild
-            className="h-32 w-full rounded-3xl bg-primary text-lg uppercase tracking-[0.2em] text-white animate-breathe-glow transition-all hover:scale-105"
+            className="h-28 w-full rounded-3xl bg-primary text-lg uppercase tracking-[0.2em] text-white animate-breathe-glow transition-all hover:scale-105"
           >
             <Link href="/dashboard/scan-food">Scan Food</Link>
           </Button>
