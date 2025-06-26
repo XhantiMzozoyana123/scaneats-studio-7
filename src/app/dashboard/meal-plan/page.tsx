@@ -104,7 +104,7 @@ export default function MealPlanPage() {
           <MacroCard label="Carbs" value={`${totals.carbs.toFixed(0)}g`} icon={Wheat} />
         </section>
 
-        <Card className="flex min-h-0 w-full max-w-md flex-grow flex-col border-primary/50 bg-background/70 backdrop-blur-sm">
+        <Card className="flex h-56 w-full max-w-md flex-col border-primary/50 bg-background/70 backdrop-blur-sm">
           <CardHeader className="py-3">
             <CardTitle className="flex items-center gap-2 text-base text-accent">
               <Utensils className="h-4 w-4" />
