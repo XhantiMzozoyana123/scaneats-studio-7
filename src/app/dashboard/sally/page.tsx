@@ -7,11 +7,6 @@ import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { BackgroundImage } from '@/components/background-image';
 
-type Message = {
-  sender: 'user' | 'sally';
-  text: string;
-};
-
 declare global {
   interface Window {
     SpeechRecognition: any;
@@ -20,16 +15,12 @@ declare global {
 }
 
 export default function SallyPage() {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      sender: 'sally',
-      text: "I'm your personal assistant. Ask me anything about your body.",
-    },
-  ]);
+  const [sallyResponse, setSallyResponse] = useState<string>(
+    "I'm your personal assistant. Ask me anything about your body."
+  );
   const [isRecording, setIsRecording] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const recognitionRef = useRef<any>(null);
-  const chatContainerRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -67,18 +58,13 @@ export default function SallyPage() {
       });
     }
   }, [toast]);
-  
-  useEffect(() => {
-    if (chatContainerRef.current) {
-      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
-    }
-  }, [messages, isLoading]);
 
   const handleMicClick = () => {
     if (isRecording) {
       recognitionRef.current?.stop();
     } else {
       setIsRecording(true);
+      setSallyResponse('Listening...');
       recognitionRef.current?.start();
     }
   };
@@ -87,7 +73,7 @@ export default function SallyPage() {
     if (!userInput.trim()) return;
 
     setIsLoading(true);
-    setMessages((prev) => [...prev, { sender: 'user', text: userInput }]);
+    setSallyResponse(`Thinking about: "${userInput}"`);
 
     const token = localStorage.getItem('authToken');
     if (!token) {
@@ -122,21 +108,20 @@ export default function SallyPage() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to get a response from Sally.');
+        throw new Error(
+          errorData.error || 'Failed to get a response from Sally.'
+        );
       }
 
       const data = await response.json();
-      setMessages((prev) => [
-        ...prev,
-        { sender: 'sally', text: data.agentDialogue },
-      ]);
+      setSallyResponse(data.agentDialogue);
     } catch (error: any) {
       toast({
         variant: 'destructive',
         title: 'Error',
         description: error.message,
       });
-      setMessages((prev) => prev.slice(0, prev.length - 1));
+      setSallyResponse('Sorry, I had trouble with that. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -157,36 +142,13 @@ export default function SallyPage() {
           </Link>
         </header>
 
-        <main ref={chatContainerRef} className="flex-1 overflow-y-auto p-4">
-          <div className="space-y-4">
-            {messages.map((msg, index) => (
-              <div
-                key={index}
-                className={`flex items-end gap-2 ${
-                  msg.sender === 'user' ? 'justify-end' : 'justify-start'
-                }`}
-              >
-                {msg.sender === 'sally' && (
-                  <div className="h-8 w-8 flex-shrink-0 rounded-full bg-primary"></div>
-                )}
-                <div
-                  className={`max-w-xs rounded-lg px-4 py-2 lg:max-w-md ${
-                    msg.sender === 'user'
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-muted text-foreground'
-                  }`}
-                >
-                  <p>{msg.text}</p>
-                </div>
-              </div>
-            ))}
-            {isLoading && (
-              <div className="flex items-end gap-2 justify-start">
-                <div className="h-8 w-8 flex-shrink-0 rounded-full bg-primary"></div>
-                <div className="max-w-xs rounded-lg bg-muted px-4 py-2 lg:max-w-md">
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                </div>
-              </div>
+        <main className="flex flex-1 flex-col items-center justify-center p-4 text-center">
+          <div className="mb-6 h-24 w-24 flex-shrink-0 rounded-full bg-primary shadow-lg"></div>
+          <div className="flex min-h-[100px] w-full max-w-lg items-center justify-center rounded-lg bg-black/30 p-6 backdrop-blur-sm">
+            {isLoading ? (
+              <Loader2 className="h-8 w-8 animate-spin" />
+            ) : (
+              <p className="text-lg text-foreground">{sallyResponse}</p>
             )}
           </div>
         </main>

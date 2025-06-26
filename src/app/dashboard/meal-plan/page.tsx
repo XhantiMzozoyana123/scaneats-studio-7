@@ -16,11 +16,6 @@ type ScannedFood = {
   carbs: number;
 };
 
-type Message = {
-  sender: 'user' | 'sally';
-  text: string;
-};
-
 declare global {
   interface Window {
     SpeechRecognition: any;
@@ -51,16 +46,11 @@ export default function MealPlanPage() {
   const [foods, setFoods] = useState<ScannedFood[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
-  const chatContainerRef = useRef<HTMLDivElement>(null);
 
-
-  // --- Chat State ---
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      sender: 'sally',
-      text: "Ask me about this meal and I'll tell you everything.",
-    },
-  ]);
+  // --- Sally State ---
+  const [sallyResponse, setSallyResponse] = useState<string>(
+    "Ask me about this meal and I'll tell you everything."
+  );
   const [isRecording, setIsRecording] = useState(false);
   const [isSallyLoading, setIsSallyLoading] = useState(false);
   const recognitionRef = useRef<any>(null);
@@ -157,14 +147,6 @@ export default function MealPlanPage() {
 
     fetchFoodReferences();
   }, [toast]);
-  
-  // --- Scroll to bottom of chat ---
-  useEffect(() => {
-    if (chatContainerRef.current) {
-      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
-    }
-  }, [messages, isSallyLoading]);
-
 
   const totals = useMemo(() => {
     return foods.reduce(
@@ -184,6 +166,7 @@ export default function MealPlanPage() {
       recognitionRef.current?.stop();
     } else {
       setIsRecording(true);
+      setSallyResponse('Listening...');
       recognitionRef.current?.start();
     }
   };
@@ -192,7 +175,7 @@ export default function MealPlanPage() {
     if (!userInput.trim()) return;
 
     setIsSallyLoading(true);
-    setMessages((prev) => [...prev, { sender: 'user', text: userInput }]);
+    setSallyResponse(`Thinking about: "${userInput}"`);
 
     const token = localStorage.getItem('authToken');
     if (!token) {
@@ -226,21 +209,20 @@ export default function MealPlanPage() {
       }
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to get a response from Sally.');
+        throw new Error(
+          errorData.error || 'Failed to get a response from Sally.'
+        );
       }
 
       const data = await response.json();
-      setMessages((prev) => [
-        ...prev,
-        { sender: 'sally', text: data.agentDialogue },
-      ]);
+      setSallyResponse(data.agentDialogue);
     } catch (error: any) {
       toast({
         variant: 'destructive',
         title: 'Error',
         description: error.message,
       });
-      setMessages((prev) => prev.slice(0, prev.length - 1));
+      setSallyResponse('Sorry, I had trouble with that. Please try again.');
     } finally {
       setIsSallyLoading(false);
     }
@@ -306,40 +288,16 @@ export default function MealPlanPage() {
           />
         </section>
 
-        {/* --- Chat UI --- */}
-        <section
-          ref={chatContainerRef}
-          className="mt-4 w-full max-w-lg flex-1 space-y-4 overflow-y-auto rounded-lg bg-black/30 p-4 backdrop-blur-sm"
-        >
-          {messages.map((msg, index) => (
-            <div
-              key={index}
-              className={`flex items-end gap-2 ${
-                msg.sender === 'user' ? 'justify-end' : 'justify-start'
-              }`}
-            >
-              {msg.sender === 'sally' && (
-                <div className="h-8 w-8 flex-shrink-0 rounded-full bg-primary"></div>
-              )}
-              <div
-                className={`max-w-xs rounded-lg px-4 py-2 lg:max-w-md ${
-                  msg.sender === 'user'
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-muted text-foreground'
-                }`}
-              >
-                <p>{msg.text}</p>
-              </div>
-            </div>
-          ))}
-          {isSallyLoading && (
-            <div className="flex items-end gap-2 justify-start">
-              <div className="h-8 w-8 flex-shrink-0 rounded-full bg-primary"></div>
-              <div className="max-w-xs rounded-lg bg-muted px-4 py-2 lg:max-w-md">
-                <Loader2 className="h-5 w-5 animate-spin" />
-              </div>
-            </div>
-          )}
+        {/* --- Sally Response UI --- */}
+        <section className="mt-4 flex w-full max-w-lg flex-1 items-center justify-center space-y-4 rounded-lg bg-black/30 p-4 text-center backdrop-blur-sm">
+          <div className="flex h-full flex-col items-center justify-center">
+            <div className="mb-4 h-12 w-12 flex-shrink-0 rounded-full bg-primary"></div>
+            {isSallyLoading ? (
+              <Loader2 className="h-6 w-6 animate-spin" />
+            ) : (
+              <p className="text-foreground">{sallyResponse}</p>
+            )}
+          </div>
         </section>
 
         <footer className="w-full max-w-lg pt-4">
