@@ -1,12 +1,15 @@
 'use client';
 
 import { useMemo, useState, useEffect, useRef } from 'react';
+import Link from 'next/link';
 import Image from 'next/image';
+import { usePathname } from 'next/navigation';
 import { BackgroundImage } from '@/components/background-image';
-import { Beef, Mic, Milk, Wheat, Loader2 } from 'lucide-react';
+import { Home, UtensilsCrossed, Mic, User, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { textToSpeech } from '@/ai/flows/text-to-speech';
+import { cn } from '@/lib/utils';
 
 type ScannedFood = {
   id: number;
@@ -24,29 +27,18 @@ declare global {
   }
 }
 
-const MacroCard = ({
-  label,
-  value,
-  icon: Icon,
-}: {
-  label: string;
-  value: string;
-  icon: React.ElementType;
-}) => (
-  <div className="flex min-w-[90px] flex-1 flex-col items-center justify-center rounded-xl border border-white/10 bg-primary/80 p-3 text-center text-white shadow-lg transition-transform hover:scale-105">
-    <div className="mb-1 text-base font-medium [text-shadow:_0_0_10px_white]">
-      {label}
-    </div>
-    <div className="text-xl font-semibold [text-shadow:_0_0_10px_white]">
-      {value}
-    </div>
-  </div>
-);
+const navItems = [
+  { href: '/dashboard', icon: Home, label: 'Home' },
+  { href: '/dashboard/meal-plan', icon: UtensilsCrossed, label: 'Meal Plan' },
+  { href: '/dashboard/sally', icon: Mic, label: 'SallyPA' },
+  { href: '/dashboard/profile', icon: User, label: 'Profile' },
+];
 
 export default function MealPlanPage() {
   const [foods, setFoods] = useState<ScannedFood[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  const pathname = usePathname();
 
   // --- Sally State ---
   const [sallyResponse, setSallyResponse] = useState<string>(
@@ -243,92 +235,133 @@ export default function MealPlanPage() {
     }
   };
 
-  if (isLoading) {
-    return (
-      <>
-        <BackgroundImage
-          src="https://placehold.co/1920x1080.png"
-          data-ai-hint="abstract food pattern"
-          className="blur-sm"
-        />
-        <div className="z-10 flex h-screen w-full flex-col items-center justify-center">
-          <Loader2 className="h-16 w-16 animate-spin text-white" />
-          <p className="mt-4 text-white">Loading your meal plan...</p>
-        </div>
-      </>
-    );
-  }
-
   return (
     <>
       <BackgroundImage
         src="https://placehold.co/1920x1080.png"
-        data-ai-hint="abstract food pattern"
+        data-ai-hint="food pattern"
         className="blur-sm"
       />
-      <div className="z-10 flex h-screen w-full flex-col items-center px-4 pt-4 pb-28">
-        <header className="w-full max-w-lg self-start">
-          <Image
-            src="/scaneats-logo.png"
-            alt="ScanEats Logo"
-            width={80}
-            height={80}
-          />
+      <div className="flex h-full w-full flex-col items-center overflow-y-auto bg-black/60 p-5 pb-40 backdrop-blur-sm">
+        <header className="mb-5 flex w-full max-w-2xl shrink-0 items-center justify-between px-4">
+          <div className="h-[75px] w-[150px] shrink-0 text-left">
+            <Image
+              src="/scaneats-logo.png"
+              alt="ScanEats Logo"
+              width={150}
+              height={75}
+              className="block h-full w-full object-contain"
+            />
+          </div>
         </header>
 
-        <section className="mb-4 text-center">
-          <div className="text-4xl font-bold text-white [text-shadow:_0_0_10px_white]">
-            {totals.calories.toFixed(0)}
+        {isLoading ? (
+          <div className="flex flex-1 flex-col items-center justify-center">
+            <Loader2 className="h-16 w-16 animate-spin text-white" />
+            <p className="mt-4 text-white">Loading your meal plan...</p>
           </div>
-          <div className="mt-1 inline-block rounded-full bg-black/50 px-3 py-1 text-xs text-gray-200">
-            Total Calories Today
-          </div>
-        </section>
+        ) : (
+          <>
+            <div className="mb-6 flex shrink-0 flex-col items-center">
+              <div className="mb-2 text-3xl font-medium text-white [text-shadow:0_0_10px_white]">
+                {totals.calories.toFixed(0)}
+              </div>
+              <div className="rounded-full bg-zinc-800/70 px-3 py-1.5 text-sm tracking-wide text-white">
+                Total Calories
+              </div>
+            </div>
 
-        <section className="mb-4 flex w-full max-w-md flex-wrap justify-center gap-2">
-          <MacroCard
-            label="Protein"
-            value={`${totals.protein.toFixed(0)}g`}
-            icon={Beef}
-          />
-          <MacroCard
-            label="Fat"
-            value={`${totals.fat.toFixed(0)}g`}
-            icon={Milk}
-          />
-          <MacroCard
-            label="Carbs"
-            value={`${totals.carbs.toFixed(0)}g`}
-            icon={Wheat}
-          />
-        </section>
+            <div className="mb-6 flex w-full max-w-xl shrink-0 flex-wrap items-stretch justify-around gap-4">
+              <div className="flex min-w-[90px] flex-1 flex-col items-center justify-center rounded-xl border border-white/10 bg-purple-900/80 p-5 text-center text-white shadow-[0_0_10px_rgba(106,27,154,0.5)] transition-transform hover:-translate-y-1">
+                <div className="mb-2 text-lg font-normal text-white [text-shadow:0_0_10px_white]">
+                  Protein
+                </div>
+                <div className="text-2xl font-semibold text-white [text-shadow:0_0_10px_white]">
+                  {totals.protein.toFixed(0)}g
+                </div>
+              </div>
+              <div className="flex min-w-[90px] flex-1 flex-col items-center justify-center rounded-xl border border-white/10 bg-purple-900/80 p-5 text-center text-white shadow-[0_0_10px_rgba(106,27,154,0.5)] transition-transform hover:-translate-y-1">
+                <div className="mb-2 text-lg font-normal text-white [text-shadow:0_0_10px_white]">
+                  Fat
+                </div>
+                <div className="text-2xl font-semibold text-white [text-shadow:0_0_10px_white]">
+                  {totals.fat.toFixed(0)}g
+                </div>
+              </div>
+              <div className="flex min-w-[90px] flex-1 flex-col items-center justify-center rounded-xl border border-white/10 bg-purple-900/80 p-5 text-center text-white shadow-[0_0_10px_rgba(106,27,154,0.5)] transition-transform hover:-translate-y-1">
+                <div className="mb-2 text-lg font-normal text-white [text-shadow:0_0_10px_white]">
+                  Carbs
+                </div>
+                <div className="text-2xl font-semibold text-white [text-shadow:0_0_10px_white]">
+                  {totals.carbs.toFixed(0)}g
+                </div>
+              </div>
+            </div>
 
-        {/* --- Sally Response UI --- */}
-        <section className="mt-4 flex w-full max-w-lg flex-1 items-center justify-center space-y-4 rounded-lg bg-black/30 p-4 text-center backdrop-blur-sm">
-          <div className="flex h-full flex-col items-center justify-center">
-            <div className="mb-4 h-12 w-12 flex-shrink-0 rounded-full bg-primary"></div>
-            {isSallyLoading ? (
-              <Loader2 className="h-6 w-6 animate-spin" />
-            ) : (
-              <p className="text-foreground">{sallyResponse}</p>
-            )}
-          </div>
-        </section>
+            <button
+              onClick={handleMicClick}
+              className={cn(
+                'my-10 flex h-32 w-32 shrink-0 cursor-pointer flex-col items-center justify-center rounded-full border-2 border-white/20 text-white transition-transform',
+                isRecording
+                  ? 'animate-pulse bg-red-600'
+                  : 'animate-breathing-glow-purple bg-gradient-to-r from-purple-900 to-indigo-900'
+              )}
+              disabled={isSallyLoading}
+            >
+              <Mic
+                className="text-6xl [text-shadow:0_0_8px_rgba(255,255,255,0.8)]"
+              />
+            </button>
 
-        <footer className="w-full max-w-lg pt-4">
-          <Button
-            onClick={handleMicClick}
-            size="icon"
-            className={`mx-auto flex h-16 w-16 items-center justify-center rounded-full shadow-lg transition-colors ${
-              isRecording
-                ? 'bg-red-500 hover:bg-red-600'
-                : 'bg-primary hover:bg-primary/90'
-            }`}
-          >
-            <Mic size={32} />
-          </Button>
-        </footer>
+            <div className="inline-block max-w-[85%] shrink-0 rounded-lg border-l-4 border-purple-500 bg-transparent p-3 text-center text-lg font-normal text-white shadow-[0_0_15px_rgba(0,0,0,0.4),_0_0_5px_rgba(0,0,0,0.3)] [text-shadow:0_0_6px_rgba(255,255,255,0.8),_0_0_3px_rgba(255,255,255,0.6)]">
+              {isSallyLoading ? (
+                <Loader2 className="mx-auto h-6 w-6 animate-spin" />
+              ) : (
+                sallyResponse
+              )}
+            </div>
+          </>
+        )}
       </div>
+
+      <div className="fixed bottom-[30px] left-1/2 z-50 flex w-[85%] max-w-[460px] -translate-x-1/2 flex-col items-center">
+        <div className="mb-2.5 text-sm font-normal text-gray-400">
+          Powered by ScanEats
+        </div>
+        <div className="flex w-full items-center justify-around rounded-3xl bg-stone-900/85 p-4 shadow-[0_0_12px_1px_rgba(127,0,255,0.65),0_0_25px_5px_rgba(127,0,255,0.35),0_2px_8px_rgba(0,0,0,0.3)] backdrop-blur-sm">
+          {navItems.map((item) => {
+            const isActive = pathname === item.href;
+            return (
+              <Link
+                href={item.href}
+                key={item.href}
+                className={cn(
+                  'group flex flex-1 cursor-pointer flex-col items-center justify-center border-none bg-transparent p-2 text-center text-white transition-opacity'
+                )}
+              >
+                <div
+                  className={cn(
+                    'mb-1 flex h-16 w-16 items-center justify-center rounded-full bg-transparent text-4xl text-gray-400 transition-all group-hover:scale-110 group-hover:bg-primary group-hover:text-white group-hover:shadow-[0_0_10px_2px_hsl(var(--primary)),_0_0_20px_5px_hsla(var(--primary),0.4)]',
+                    isActive &&
+                      'scale-110 bg-primary text-white shadow-[0_0_10px_2px_hsl(var(--primary)),_0_0_20px_5px_hsla(var(--primary),0.4)]'
+                  )}
+                >
+                  <item.icon className="h-9 w-9" />
+                </div>
+                <span
+                  className={cn(
+                    'mt-0.5 text-base font-normal text-gray-400 transition-colors group-hover:text-white',
+                    isActive && 'text-white'
+                  )}
+                >
+                  {item.label}
+                </span>
+              </Link>
+            );
+          })}
+        </div>
+      </div>
+
       {audioUrl && <audio ref={audioRef} src={audioUrl} hidden />}
     </>
   );

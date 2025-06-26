@@ -123,6 +123,14 @@ export default {
           '50%': { opacity: '0.8' },
           '100%': { transform: 'scale(1.6)', opacity: '0' },
         },
+        'breathing-glow-purple': {
+          '0%, 100%': {
+            boxShadow: '0 0 45px 15px #8e24aa',
+          },
+          '50%': {
+            boxShadow: '0 0 25px 5px #6a1b9a',
+          },
+        },
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
@@ -134,6 +142,7 @@ export default {
         'siri-wave-2': 'siri-wave 2s 0.4s infinite ease-out',
         'siri-wave-3': 'siri-wave 2s 0.8s infinite ease-out',
         'siri-wave-4': 'siri-wave 2s 1.2s infinite ease-out',
+        'breathing-glow-purple': 'breathing-glow-purple 2.5s infinite ease-in-out',
       },
     },
   },

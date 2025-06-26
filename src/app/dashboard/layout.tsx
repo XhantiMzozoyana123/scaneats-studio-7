@@ -9,7 +9,8 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const showBottomNav = pathname !== '/dashboard/sally';
+  const showBottomNav =
+    pathname !== '/dashboard/sally' && pathname !== '/dashboard/meal-plan';
 
   return (
     <div className="relative h-screen overflow-hidden">
