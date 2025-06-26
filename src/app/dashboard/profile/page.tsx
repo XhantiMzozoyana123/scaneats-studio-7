@@ -90,20 +90,20 @@ export default function ProfilePage() {
         data-ai-hint="abstract purple"
         className="blur-sm"
       />
-      <main className="container z-10 mx-auto h-full max-w-md overflow-y-auto px-4 py-4 pb-28">
-        <div className="rounded-2xl bg-black/70 p-6 backdrop-blur-md">
-          <div className="mb-4 flex justify-center">
+      <main className="container z-10 mx-auto h-full max-w-md overflow-y-auto px-4 pt-2 pb-28">
+        <div className="rounded-2xl bg-black/70 p-4 backdrop-blur-md">
+          <div className="mb-2 flex justify-center">
             <Image
               src="/profile-personal-goals.png"
               alt="Profile Personal Goals header"
               width={300}
               height={300}
-              className="h-auto w-full max-w-[250px]"
+              className="h-auto w-full max-w-[200px]"
             />
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="space-y-2">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-1">
               <Label htmlFor="name" className="font-semibold text-gray-300">
                 Name
               </Label>
@@ -116,7 +116,7 @@ export default function ProfilePage() {
               />
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-1">
               <Label htmlFor="age" className="font-semibold text-gray-300">
                 Age
               </Label>
@@ -130,7 +130,7 @@ export default function ProfilePage() {
               />
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-1">
               <Label htmlFor="gender" className="font-semibold text-gray-300">
                 Gender
               </Label>
@@ -149,7 +149,7 @@ export default function ProfilePage() {
               </Select>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-1">
               <Label htmlFor="weight" className="font-semibold text-gray-300">
                 Weight (kg)
               </Label>
@@ -163,7 +163,7 @@ export default function ProfilePage() {
               />
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-1">
               <Label htmlFor="height" className="font-semibold text-gray-300">
                 Height (cm)
               </Label>
@@ -177,7 +177,7 @@ export default function ProfilePage() {
               />
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-1">
               <Label
                 htmlFor="birthDate"
                 className="font-semibold text-gray-300"
@@ -215,7 +215,7 @@ export default function ProfilePage() {
               </Popover>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-1">
               <Label htmlFor="goals" className="font-semibold text-gray-300">
                 Goals
               </Label>
@@ -228,7 +228,7 @@ export default function ProfilePage() {
               />
             </div>
 
-            <div className="pt-6">
+            <div className="pt-4">
               <Button
                 type="submit"
                 size="lg"
