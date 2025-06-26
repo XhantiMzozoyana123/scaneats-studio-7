@@ -12,10 +12,10 @@ export default function SallyPage() {
       <Link
         href="/dashboard"
         aria-label="Close"
-        className="absolute top-6 left-6 z-50 flex h-9 w-9 items-center justify-center rounded-full bg-white/25 text-white shadow-md backdrop-blur-md transition-all hover:scale-105 hover:bg-white/40"
+        className="absolute top-6 left-6 z-50 flex h-9 w-9 items-center justify-center rounded-full bg-white/25 text-purple-300 shadow-md backdrop-blur-md transition-all hover:scale-105 hover:bg-white/40"
         style={{
           textShadow:
-            '1px 1px 2px rgba(0, 0, 0, 0.7), 0 0 4px rgba(0, 0, 0, 0.5)',
+            '1px 1px 2px rgba(0, 0, 0, 0.7), 0 0 8px rgba(192, 132, 252, 0.6)',
         }}
       >
         <X size={18} />
