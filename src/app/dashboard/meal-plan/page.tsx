@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useMemo, useState, useEffect, useRef } from 'react';
@@ -7,7 +8,6 @@ import { usePathname } from 'next/navigation';
 import { BackgroundImage } from '@/components/background-image';
 import { Home, UtensilsCrossed, Mic, User, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { Button } from '@/components/ui/button';
 import { textToSpeech } from '@/ai/flows/text-to-speech';
 import { cn } from '@/lib/utils';
 
@@ -272,7 +272,7 @@ export default function MealPlanPage() {
             </div>
 
             <div className="mb-6 flex w-full max-w-xl shrink-0 flex-wrap items-stretch justify-around gap-4">
-              <div className="flex min-w-[90px] flex-1 flex-col items-center justify-center rounded-xl border border-white/10 bg-purple-900/80 p-5 text-center text-white shadow-[0_0_10px_rgba(106,27,154,0.5)] transition-transform hover:-translate-y-1">
+              <div className="flex min-w-[90px] flex-1 flex-col items-center justify-center rounded-xl border border-white/10 bg-[rgba(74,20,140,0.8)] p-5 text-center text-white shadow-[0_0_10px_rgba(106,27,154,0.5)] transition-transform hover:-translate-y-1">
                 <div className="mb-2 text-lg font-normal text-white [text-shadow:0_0_10px_white]">
                   Protein
                 </div>
@@ -280,7 +280,7 @@ export default function MealPlanPage() {
                   {totals.protein.toFixed(0)}g
                 </div>
               </div>
-              <div className="flex min-w-[90px] flex-1 flex-col items-center justify-center rounded-xl border border-white/10 bg-purple-900/80 p-5 text-center text-white shadow-[0_0_10px_rgba(106,27,154,0.5)] transition-transform hover:-translate-y-1">
+              <div className="flex min-w-[90px] flex-1 flex-col items-center justify-center rounded-xl border border-white/10 bg-[rgba(74,20,140,0.8)] p-5 text-center text-white shadow-[0_0_10px_rgba(106,27,154,0.5)] transition-transform hover:-translate-y-1">
                 <div className="mb-2 text-lg font-normal text-white [text-shadow:0_0_10px_white]">
                   Fat
                 </div>
@@ -288,7 +288,7 @@ export default function MealPlanPage() {
                   {totals.fat.toFixed(0)}g
                 </div>
               </div>
-              <div className="flex min-w-[90px] flex-1 flex-col items-center justify-center rounded-xl border border-white/10 bg-purple-900/80 p-5 text-center text-white shadow-[0_0_10px_rgba(106,27,154,0.5)] transition-transform hover:-translate-y-1">
+              <div className="flex min-w-[90px] flex-1 flex-col items-center justify-center rounded-xl border border-white/10 bg-[rgba(74,20,140,0.8)] p-5 text-center text-white shadow-[0_0_10px_rgba(106,27,154,0.5)] transition-transform hover:-translate-y-1">
                 <div className="mb-2 text-lg font-normal text-white [text-shadow:0_0_10px_white]">
                   Carbs
                 </div>
@@ -300,16 +300,16 @@ export default function MealPlanPage() {
 
             <button
               onClick={handleMicClick}
+              disabled={isSallyLoading || isRecording}
               className={cn(
-                'my-10 flex h-32 w-32 shrink-0 cursor-pointer flex-col items-center justify-center rounded-full border-2 border-white/20 text-white transition-transform',
+                'my-10 flex h-[120px] w-[120px] shrink-0 cursor-pointer flex-col items-center justify-center rounded-full border-2 border-white/20 bg-gradient-to-r from-purple-900 to-indigo-900 text-white transition-transform',
                 isRecording
                   ? 'animate-pulse bg-red-600'
-                  : 'animate-breathing-glow-purple bg-gradient-to-r from-purple-900 to-indigo-900'
+                  : 'animate-breathing-glow-purple'
               )}
-              disabled={isSallyLoading}
             >
               <Mic
-                className="text-6xl [text-shadow:0_0_8px_rgba(255,255,255,0.8)]"
+                className="text-[60px] [text-shadow:0_0_8px_rgba(255,255,255,0.8)]"
               />
             </button>
 
@@ -328,25 +328,23 @@ export default function MealPlanPage() {
         <div className="mb-2.5 text-sm font-normal text-gray-400">
           Powered by ScanEats
         </div>
-        <div className="flex w-full items-center justify-around rounded-3xl bg-stone-900/85 p-4 shadow-[0_0_12px_1px_rgba(127,0,255,0.65),0_0_25px_5px_rgba(127,0,255,0.35),0_2px_8px_rgba(0,0,0,0.3)] backdrop-blur-sm">
+        <div className="flex w-full items-center justify-around rounded-[25px] bg-[rgba(26,16,35,0.85)] p-4 shadow-[0_0_12px_1px_rgba(127,0,255,0.65),0_0_25px_5px_rgba(127,0,255,0.35),0_2px_8px_rgba(0,0,0,0.3)] backdrop-blur-sm">
           {navItems.map((item) => {
             const isActive = pathname === item.href;
             return (
               <Link
                 href={item.href}
                 key={item.href}
-                className={cn(
-                  'group flex flex-1 cursor-pointer flex-col items-center justify-center border-none bg-transparent p-2 text-center text-white transition-opacity'
-                )}
+                className="group flex flex-1 cursor-pointer flex-col items-center justify-center border-none bg-transparent p-0 text-center text-white"
               >
                 <div
                   className={cn(
-                    'mb-1 flex h-16 w-16 items-center justify-center rounded-full bg-transparent text-4xl text-gray-400 transition-all group-hover:scale-110 group-hover:bg-primary group-hover:text-white group-hover:shadow-[0_0_10px_2px_hsl(var(--primary)),_0_0_20px_5px_hsla(var(--primary),0.4)]',
+                    'mb-1 flex h-[60px] w-[60px] items-center justify-center rounded-full bg-transparent text-gray-400 transition-all group-hover:scale-110 group-hover:bg-[#7F00FF] group-hover:text-white group-hover:shadow-[0_0_10px_2px_rgba(127,0,255,0.7),_0_0_20px_5px_rgba(127,0,255,0.4)]',
                     isActive &&
-                      'scale-110 bg-primary text-white shadow-[0_0_10px_2px_hsl(var(--primary)),_0_0_20px_5px_hsla(var(--primary),0.4)]'
+                      'scale-110 bg-[#7F00FF] text-white shadow-[0_0_10px_2px_rgba(127,0,255,0.7),_0_0_20px_5px_rgba(127,0,255,0.4)]'
                   )}
                 >
-                  <item.icon className="h-9 w-9" />
+                  <item.icon className="h-8 w-8" />
                 </div>
                 <span
                   className={cn(
@@ -365,4 +363,5 @@ export default function MealPlanPage() {
       {audioUrl && <audio ref={audioRef} src={audioUrl} hidden />}
     </>
   );
-}
+
+    
