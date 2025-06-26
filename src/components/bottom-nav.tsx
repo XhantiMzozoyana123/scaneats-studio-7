@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, UtensilsCrossed, Mic, User } from 'lucide-react';
+import { Home, UtensilsCrossed, Mic, User, Settings } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navItems = [
@@ -10,6 +10,7 @@ const navItems = [
   { href: '/dashboard/meal-plan', icon: UtensilsCrossed, label: 'Meal Plan' },
   { href: '/dashboard/sally', icon: Mic, label: 'SallyPA' },
   { href: '/dashboard/profile', icon: User, label: 'Profile' },
+  { href: '/dashboard/settings', icon: Settings, label: 'Settings' },
 ];
 
 export function BottomNav() {
@@ -27,7 +28,7 @@ export function BottomNav() {
             <Link
               href={item.href}
               key={item.href}
-              className="flex flex-col items-center gap-1 text-gray-400 transition-colors hover:text-white"
+              className="flex flex-1 flex-col items-center gap-1 text-gray-400 transition-colors hover:text-white"
             >
               <div
                 className={cn(
