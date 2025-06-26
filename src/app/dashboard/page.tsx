@@ -13,7 +13,7 @@ export default function DashboardPage() {
 
       <div className="z-10 flex flex-col items-center px-4 text-center">
         <h1
-          className="title-gradient font-headline text-6xl font-bold md:text-8xl"
+          className="title-gradient font-headline text-8xl font-bold md:text-9xl"
           style={{
             textShadow:
               '0px 2px 2px rgba(0, 0, 0, 0.25), 0px 0px 10px rgba(190, 100, 255, 0.45)',
@@ -21,7 +21,7 @@ export default function DashboardPage() {
         >
           ScanEats
         </h1>
-        <h2 className="mt-4 font-body text-lg text-gray-300">
+        <h2 className="mt-2 font-body text-base text-gray-400">
           Welcome home, wink wink
         </h2>
         <p className="mt-8 max-w-md text-2xl text-gray-300 md:max-w-lg">
