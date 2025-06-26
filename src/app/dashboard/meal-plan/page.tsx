@@ -95,14 +95,14 @@ export default function MealPlanPage() {
           <MacroCard label="Carbs" value={`${totals.carbs.toFixed(0)}g`} icon={Wheat} />
         </section>
 
-        <section className="mt-6 flex w-full flex-col items-center gap-4">
+        <section className="mt-6 flex w-full flex-col items-center gap-5">
           <Link
             href="/dashboard/sally?intent=meal-plan"
-            className="flex h-16 w-16 flex-col items-center justify-center rounded-full bg-gradient-to-r from-purple-800 to-indigo-900 shadow-2xl transition-transform hover:scale-105"
+            className="flex h-20 w-20 flex-col items-center justify-center rounded-full bg-gradient-to-r from-purple-800 to-indigo-900 shadow-2xl transition-transform hover:scale-105"
           >
-            <Mic className="h-8 w-8 text-white" />
+            <Mic className="h-10 w-10 text-white" />
           </Link>
-          <p className="max-w-xs rounded-lg border-l-4 border-accent bg-background/50 p-2 text-center text-xs text-muted-foreground shadow-md">
+          <p className="max-w-xs rounded-lg border-l-4 border-accent bg-background/50 p-3 text-center text-sm text-muted-foreground shadow-md">
             Ask me about this meal and I&apos;ll tell you everything
           </p>
         </section>
