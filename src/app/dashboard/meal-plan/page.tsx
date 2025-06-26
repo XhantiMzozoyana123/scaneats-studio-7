@@ -70,17 +70,17 @@ export default function MealPlanPage() {
         data-ai-hint="abstract food pattern"
         className="blur-sm"
       />
-      <div className="z-10 flex h-screen w-full flex-col items-center px-4 pt-4 pb-28">
+      <div className="z-10 flex h-screen w-full flex-col items-center px-4 pb-28">
         <header className="flex w-full max-w-lg items-center justify-between self-start">
           <Image
             src="/scaneats-logo.png"
             alt="ScanEats Logo"
-            width={100}
-            height={100}
+            width={80}
+            height={80}
           />
         </header>
 
-        <section className="my-8 text-center">
+        <section className="mb-4 text-center">
           <div className="text-4xl font-bold text-white [text-shadow:_0_0_10px_white]">
             {totals.calories.toFixed(0)}
           </div>
@@ -95,7 +95,7 @@ export default function MealPlanPage() {
           <MacroCard label="Carbs" value={`${totals.carbs.toFixed(0)}g`} icon={Wheat} />
         </section>
 
-        <section className="mt-8 flex w-full flex-col items-center gap-4">
+        <section className="mt-6 flex w-full flex-col items-center gap-4">
           <Link
             href="/dashboard/sally?intent=meal-plan"
             className="flex h-16 w-16 flex-col items-center justify-center rounded-full bg-gradient-to-r from-purple-800 to-indigo-900 shadow-2xl transition-transform hover:scale-105"
