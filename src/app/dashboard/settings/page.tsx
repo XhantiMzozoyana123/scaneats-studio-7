@@ -38,6 +38,7 @@ const SettingsItem = ({
   action,
   value,
   onClick,
+  labelClassName,
 }: {
   icon: React.ElementType;
   label: string;
@@ -45,12 +46,13 @@ const SettingsItem = ({
   action?: React.ReactNode;
   value?: string;
   onClick?: () => void;
+  labelClassName?: string;
 }) => {
   const content = (
     <div className="flex items-center px-4 py-3">
       <Icon className="mr-4 h-5 w-5 text-accent" />
       <div className="flex-1">
-        <span className="font-medium text-white">{label}</span>
+        <span className={cn('font-medium text-white', labelClassName)}>{label}</span>
         {value && <p className="text-sm text-muted-foreground">{value}</p>}
       </div>
       {action}
@@ -108,12 +110,7 @@ export default function SettingsPage() {
             </CardContent>
           </Card>
 
-          <Card className={cn(
-            "border-primary/30 bg-black/70 backdrop-blur-md transition-shadow duration-300",
-            subscriptionActive 
-              ? "shadow-[0_0_15px_rgba(34,197,94,0.6)]"
-              : "shadow-[0_0_15px_rgba(239,68,68,0.6)]"
-          )}>
+          <Card className="border-primary/30 bg-black/70 backdrop-blur-md">
             <CardHeader className="p-4">
               <CardTitle className="text-lg text-white">Subscription</CardTitle>
             </CardHeader>
@@ -121,6 +118,11 @@ export default function SettingsPage() {
               <SettingsItem
                 icon={CreditCard}
                 label={subscriptionActive ? 'Active' : 'Inactive'}
+                labelClassName={cn(
+                  subscriptionActive 
+                    ? "text-green-400 [text-shadow:0_0_8px_rgba(34,197,94,0.9)]"
+                    : "text-red-400 [text-shadow:0_0_8px_rgba(239,68,68,0.9)]"
+                )}
                 value={
                   subscriptionActive
                     ? `Renews on ${renewalDate}`
