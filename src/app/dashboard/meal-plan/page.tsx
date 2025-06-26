@@ -41,7 +41,7 @@ export default function MealPlanPage() {
         </header>
 
         <section className="my-8 text-center">
-          <div className="text-6xl font-bold text-white [text-shadow:_0_0_10px_white]">
+          <div className="text-5xl font-bold text-white [text-shadow:_0_0_10px_white]">
             2300
           </div>
           <div className="mt-2 inline-block rounded-full bg-black/50 px-3 py-1 text-sm text-gray-200">
