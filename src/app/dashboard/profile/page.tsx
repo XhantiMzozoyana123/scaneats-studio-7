@@ -90,7 +90,7 @@ export default function ProfilePage() {
         data-ai-hint="abstract purple"
         className="blur-sm"
       />
-      <main className="container z-10 mx-auto max-w-md overflow-y-auto px-4 py-8 pb-28">
+      <main className="container z-10 mx-auto h-full max-w-md overflow-y-auto px-4 py-8 pb-28">
         <div className="rounded-2xl bg-black/70 p-6 backdrop-blur-md">
           <div className="mb-8 flex justify-center">
             <Image
