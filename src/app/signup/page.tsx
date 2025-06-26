@@ -1,12 +1,59 @@
+'use client';
+
 import Link from 'next/link';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { BackgroundImage } from '@/components/background-image';
-import { User, Mail, KeyRound } from 'lucide-react';
+import { User, Mail, KeyRound, Loader2 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 export default function SignUpPage() {
+  const router = useRouter();
+  const { toast } = useToast();
+  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setIsLoading(true);
+
+    try {
+      const response = await fetch('https://localhost:7066/api/Auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userName: username, email, password }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        toast({
+          title: 'Success!',
+          description: data.message || 'Registration successful. Please log in.',
+        });
+        router.push('/login');
+      } else {
+        throw new Error(data.error || 'Registration failed.');
+      }
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'An unknown error occurred.',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="relative flex min-h-screen items-center justify-center p-4">
       <BackgroundImage
@@ -23,12 +70,15 @@ export default function SignUpPage() {
           </h1>
         </div>
 
-        <form className="space-y-6">
+        <form className="space-y-6" onSubmit={handleSubmit}>
           <div className="relative border-b border-white/40">
             <User className="absolute left-0 top-3 h-5 w-5 text-white/70" />
             <Input
               type="text"
               placeholder="Username"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              required
               className="border-0 bg-transparent pl-8 text-base placeholder:text-white/70 focus-visible:ring-0 focus-visible:ring-offset-0"
             />
           </div>
@@ -38,6 +88,9 @@ export default function SignUpPage() {
             <Input
               type="email"
               placeholder="Email Address"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
               className="border-0 bg-transparent pl-8 text-base placeholder:text-white/70 focus-visible:ring-0 focus-visible:ring-offset-0"
             />
           </div>
@@ -47,6 +100,9 @@ export default function SignUpPage() {
             <Input
               type="password"
               placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
               className="border-0 bg-transparent pl-8 text-base placeholder:text-white/70 focus-visible:ring-0 focus-visible:ring-offset-0"
             />
           </div>
@@ -54,6 +110,7 @@ export default function SignUpPage() {
           <div className="flex items-center space-x-2 pt-2">
             <Checkbox
               id="terms"
+              required
               className="border-primary data-[state=checked]:bg-primary"
             />
             <Label htmlFor="terms" className="text-sm text-white/70">
@@ -70,9 +127,10 @@ export default function SignUpPage() {
           <div className="pt-4">
             <Button
               type="submit"
+              disabled={isLoading}
               className="w-full rounded-full bg-stone-900 py-6 text-base font-semibold hover:bg-stone-800"
             >
-              Sign Up
+              {isLoading ? <Loader2 className="animate-spin" /> : 'Sign Up'}
             </Button>
           </div>
         </form>
