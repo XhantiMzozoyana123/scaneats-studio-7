@@ -3,7 +3,7 @@ import Link from 'next/link';
 
 export default function SallyPage() {
   return (
-    <div className="flex min-h-screen items-center justify-center overflow-hidden bg-[linear-gradient(135deg,#f0e8f8_0%,#e8eaf6_50%,#f0f4f8_100%)]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden bg-[linear-gradient(135deg,#f0e8f8_0%,#e8eaf6_50%,#f0f4f8_100%)]">
       {/* Close Button */}
       <Link
         href="/dashboard"
