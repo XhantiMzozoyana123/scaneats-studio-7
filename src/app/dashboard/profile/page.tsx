@@ -90,12 +90,16 @@ export default function ProfilePage() {
         data-ai-hint="abstract purple"
         className="blur-sm"
       />
-      <main className="container z-10 mx-auto h-full max-w-md overflow-y-auto px-4 pb-28 pt-6">
-        <div className="rounded-b-2xl bg-black/70 px-4 pb-4 backdrop-blur-md">
-          <h1 className="mb-6 text-center font-headline text-3xl font-bold text-white">
-            Profile & Personal Goals
-          </h1>
-
+      <main className="container z-10 mx-auto h-full max-w-md overflow-y-auto px-4 pb-28 pt-0">
+        <div className="rounded-b-2xl bg-black/70 px-4 pb-4 pt-4 backdrop-blur-md">
+          <div className="mb-4 flex justify-center">
+            <Image
+              src="/profile-goals-logo.png"
+              alt="Profile & Personal Goals"
+              width={180}
+              height={180}
+            />
+          </div>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-1">
               <Label htmlFor="name" className="font-semibold text-gray-300">
@@ -211,7 +215,7 @@ export default function ProfilePage() {
 
             <div className="space-y-1">
               <Label htmlFor="goals" className="font-semibold text-gray-300">
-                Goals
+                Body Goal
               </Label>
               <Textarea
                 id="goals"
