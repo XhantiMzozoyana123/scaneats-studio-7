@@ -63,7 +63,7 @@ export default function ProfilePage() {
       }
 
       try {
-        const response = await fetch('https://localhost:7066/api/Profile', {
+        const response = await fetch('https://api.scaneats.app/api/Profile', {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -135,8 +135,8 @@ export default function ProfilePage() {
 
     const { id, ...profileData } = profile;
     const url = id
-      ? `https://localhost:7066/api/Profile/${id}`
-      : 'https://localhost:7066/api/Profile';
+      ? `https://api.scaneats.app/api/Profile/${id}`
+      : 'https://api.scaneats.app/api/Profile';
     const method = id ? 'PUT' : 'POST';
 
     // The API expects a specific structure, including fields that might not be in the form

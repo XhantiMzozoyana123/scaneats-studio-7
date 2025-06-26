@@ -114,7 +114,7 @@ export default function ScanFoodPage() {
             const foodName = nutritionResult.foodIdentification.name;
             let foodId = 0;
             const foodInfoResponse = await fetch(
-              `https://localhost:7066/api/food/info/${encodeURIComponent(foodName)}`,
+              `https://api.scaneats.app/api/food/info/${encodeURIComponent(foodName)}`,
               {
                 headers: { Authorization: `Bearer ${token}` },
               }
@@ -131,7 +131,7 @@ export default function ScanFoodPage() {
             };
 
             const scanResponse = await fetch(
-              'https://localhost:7066/api/scan/scan',
+              'https://api.scaneats.app/api/scan/scan',
               {
                 method: 'POST',
                 headers: {

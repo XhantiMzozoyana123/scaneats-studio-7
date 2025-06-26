@@ -75,8 +75,8 @@ export default function SallyPage() {
 
     const endpoint =
       intent === 'meal-plan'
-        ? 'https://localhost:7066/api/Sally/meal-planner'
-        : 'https://localhost:7066/api/Sally/body-assessment';
+        ? 'https://api.scaneats.app/api/Sally/meal-planner'
+        : 'https://api.scaneats.app/api/Sally/body-assessment';
 
     const payload: ConversationDto = {
       agentName: 'Sally',

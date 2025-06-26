@@ -60,7 +60,7 @@ export default function MealPlanPage() {
 
       try {
         const response = await fetch(
-          'https://localhost:7066/api/Food/references',
+          'https://api.scaneats.app/api/Food/references',
           {
             headers: {
               Authorization: `Bearer ${token}`,
