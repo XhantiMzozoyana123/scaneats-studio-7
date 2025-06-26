@@ -70,7 +70,7 @@ export default function MealPlanPage() {
         data-ai-hint="abstract food pattern"
         className="blur-sm"
       />
-      <div className="z-10 flex h-screen w-full flex-col items-center px-4 pt-8 pb-28">
+      <div className="z-10 flex h-screen w-full flex-col items-center px-4 pt-4 pb-28">
         <header className="flex w-full max-w-lg items-center justify-between self-start">
           <Image
             src="/scaneats-logo.png"
