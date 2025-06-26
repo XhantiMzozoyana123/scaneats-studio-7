@@ -1,75 +1,212 @@
 'use client';
 
+import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Mic } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { ArrowLeft, Mic, Loader2 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { Button } from '@/components/ui/button';
+import { BackgroundImage } from '@/components/background-image';
+
+type Message = {
+  sender: 'user' | 'sally';
+  text: string;
+};
+
+declare global {
+  interface Window {
+    SpeechRecognition: any;
+    webkitSpeechRecognition: any;
+  }
+}
 
 export default function SallyPage() {
+  const [messages, setMessages] = useState<Message[]>([
+    {
+      sender: 'sally',
+      text: "I'm your personal assistant. Ask me anything about your body.",
+    },
+  ]);
+  const [isRecording, setIsRecording] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const recognitionRef = useRef<any>(null);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    const SpeechRecognition =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      recognitionRef.current = new SpeechRecognition();
+      recognitionRef.current.continuous = false;
+      recognitionRef.current.lang = 'en-US';
+      recognitionRef.current.interimResults = false;
+
+      recognitionRef.current.onresult = (event: any) => {
+        const transcript = event.results[0][0].transcript;
+        handleApiCall(transcript);
+      };
+
+      recognitionRef.current.onerror = (event: any) => {
+        console.error('Speech recognition error', event.error);
+        toast({
+          variant: 'destructive',
+          title: 'Speech Error',
+          description: `Could not recognize speech: ${event.error}`,
+        });
+        setIsRecording(false);
+      };
+
+      recognitionRef.current.onend = () => {
+        setIsRecording(false);
+      };
+    } else {
+      toast({
+        variant: 'destructive',
+        title: 'Not Supported',
+        description: 'Speech recognition is not supported in this browser.',
+      });
+    }
+  }, [toast]);
+  
+  useEffect(() => {
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+    }
+  }, [messages, isLoading]);
+
+  const handleMicClick = () => {
+    if (isRecording) {
+      recognitionRef.current?.stop();
+    } else {
+      setIsRecording(true);
+      recognitionRef.current?.start();
+    }
+  };
+
+  const handleApiCall = async (userInput: string) => {
+    if (!userInput.trim()) return;
+
+    setIsLoading(true);
+    setMessages((prev) => [...prev, { sender: 'user', text: userInput }]);
+
+    const token = localStorage.getItem('authToken');
+    if (!token) {
+      toast({
+        variant: 'destructive',
+        title: 'Authentication Error',
+        description: 'You must be logged in.',
+      });
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/sally/body-assessment`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            agentName: 'Sally',
+            clientDialogue: userInput,
+          }),
+        }
+      );
+
+      if (response.status === 429) {
+        throw new Error('Daily request limit reached.');
+      }
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to get a response from Sally.');
+      }
+
+      const data = await response.json();
+      setMessages((prev) => [
+        ...prev,
+        { sender: 'sally', text: data.agentDialogue },
+      ]);
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: error.message,
+      });
+      setMessages((prev) => prev.slice(0, prev.length - 1));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
-    // Main container with gradient background
-    <div className="flex min-h-screen w-full items-center justify-center overflow-hidden bg-[linear-gradient(135deg,#f0e8f8_0%,#e8eaf6_50%,#f0f4f8_100%)]">
-      {/* Back button */}
-      <Link
-        href="/dashboard"
-        aria-label="Back"
-        className="absolute top-6 left-6 z-50 flex h-10 w-10 items-center justify-center rounded-full bg-[#4629B0] text-white shadow-lg transition-all hover:scale-105 hover:bg-[#3c239a]"
-      >
-        <ArrowLeft size={24} />
-      </Link>
+    <>
+      <BackgroundImage
+        src="https://placehold.co/1920x1080.png"
+        data-ai-hint="abstract purple"
+        className="blur-sm"
+      />
+      <div className="z-10 flex h-screen flex-col">
+        <header className="flex items-center justify-between border-b border-white/10 bg-black/30 p-4 backdrop-blur-sm">
+          <Link href="/dashboard" className="flex items-center gap-2 text-white">
+            <ArrowLeft size={20} />
+            <span className="font-bold">Sally AI Assistant</span>
+          </Link>
+        </header>
 
-      {/* AI Card */}
-      <div className="flex w-[320px] flex-col items-center gap-6 rounded-[25px] border border-[rgba(220,220,235,0.35)] bg-white/70 p-6 shadow-[0_20px_55px_8px_rgba(110,100,150,0.45)] backdrop-blur-[25px] backdrop-saturate-150">
-        <div className="relative flex h-[130px] w-[130px] items-center justify-center">
-          {/* Breathing Glow Pseudo-element */}
-          <div
-            className="absolute top-1/2 left-1/2 h-[160%] w-[160%] animate-breathe-glow-sally"
-            style={{
-              background:
-                'radial-gradient(circle at center, rgba(255, 235, 255, 0.7) 10%, rgba(200, 190, 255, 0.8) 40%, rgba(170, 220, 255, 1.0) 65%, rgba(200, 240, 255, 1.0) 72%, rgba(135, 206, 250, 0) 80%)',
-              zIndex: 1,
-            }}
-          />
-
-          {/* Siri Waves */}
-          <div
-            className="pointer-events-none absolute top-1/2 left-1/2 h-[90px] w-[90px] -translate-x-1/2 -translate-y-1/2"
-            style={{ zIndex: 2 }}
-          >
-            <div className="absolute top-0 left-0 h-full w-full animate-siri-wave-1 rounded-full border-2 border-white/60 opacity-0" />
-            <div className="absolute top-0 left-0 h-full w-full animate-siri-wave-2 rounded-full border-2 border-white/60 opacity-0" />
-            <div className="absolute top-0 left-0 h-full w-full animate-siri-wave-3 rounded-full border-2 border-white/60 opacity-0" />
-            <div className="absolute top-0 left-0 h-full w-full animate-siri-wave-4 rounded-full border-2 border-white/60 opacity-0" />
+        <main ref={chatContainerRef} className="flex-1 overflow-y-auto p-4">
+          <div className="space-y-4">
+            {messages.map((msg, index) => (
+              <div
+                key={index}
+                className={`flex items-end gap-2 ${
+                  msg.sender === 'user' ? 'justify-end' : 'justify-start'
+                }`}
+              >
+                {msg.sender === 'sally' && (
+                  <div className="h-8 w-8 flex-shrink-0 rounded-full bg-primary"></div>
+                )}
+                <div
+                  className={`max-w-xs rounded-lg px-4 py-2 lg:max-w-md ${
+                    msg.sender === 'user'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-muted text-foreground'
+                  }`}
+                >
+                  <p>{msg.text}</p>
+                </div>
+              </div>
+            ))}
+            {isLoading && (
+              <div className="flex items-end gap-2 justify-start">
+                <div className="h-8 w-8 flex-shrink-0 rounded-full bg-primary"></div>
+                <div className="max-w-xs rounded-lg bg-muted px-4 py-2 lg:max-w-md">
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                </div>
+              </div>
+            )}
           </div>
+        </main>
 
-          {/* Mic Button */}
-          <button
-            role="button"
-            aria-label="Activate Voice AI"
-            className="flex h-20 w-20 items-center justify-center rounded-full border-none bg-[#4629B0] shadow-[inset_0_2px_4px_0_rgba(255,255,255,0.4),0_0_15px_5px_rgba(255,255,255,0.8),0_0_30px_15px_rgba(255,255,255,0.5),0_0_50px_25px_rgba(220,230,255,0.3)] transition-transform duration-200 ease-out active:scale-95 active:bg-[#3c239a] active:shadow-[inset_0_2px_4px_0_rgba(255,255,255,0.3),0_0_10px_3px_rgba(255,255,255,0.7),0_0_20px_10px_rgba(255,255,255,0.4),0_0_40px_20px_rgba(220,230,255,0.2)]"
-            style={{ zIndex: 3 }}
-          >
-            <Mic
-              size={38}
-              className="text-white"
-              style={{
-                textShadow:
-                  '0 1px 2px rgba(0, 0, 0, 0.2), 0 0 5px rgba(255, 255, 255, 0.8), 0 0 10px rgba(180, 140, 255, 0.7)',
-              }}
-            />
-          </button>
-        </div>
-
-        {/* Info Box */}
-        <div className="w-full rounded-[15px] border border-[rgba(220,220,235,0.4)] bg-white/80 p-3 text-center shadow-[inset_0_1px_2px_rgba(255,255,255,0.6),0_10px_30px_3px_rgba(100,90,140,0.45)] backdrop-blur-sm backdrop-saturate-150">
-          <p className="text-[13px] leading-[1.5] text-black">
-            <strong>Sally</strong>
-            <span className="text-stone-600">
-              {' '}
-              - I&apos;m your personal assistant, ask me anything.
-            </span>
-          </p>
-        </div>
+        <footer className="border-t border-white/10 bg-black/30 p-4 backdrop-blur-sm">
+          <div className="flex items-center justify-center gap-2">
+            <Button
+              onClick={handleMicClick}
+              size="icon"
+              className={`h-16 w-16 rounded-full shadow-lg transition-colors ${
+                isRecording
+                  ? 'bg-red-500 hover:bg-red-600'
+                  : 'bg-primary hover:bg-primary/90'
+              }`}
+            >
+              <Mic size={32} />
+            </Button>
+          </div>
+        </footer>
       </div>
-    </div>
+    </>
   );
 }

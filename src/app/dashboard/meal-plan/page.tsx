@@ -1,11 +1,11 @@
 'use client';
 
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
-import Link from 'next/link';
 import { BackgroundImage } from '@/components/background-image';
 import { Beef, Mic, Milk, Wheat, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { Button } from '@/components/ui/button';
 
 type ScannedFood = {
   id: number;
@@ -15,6 +15,18 @@ type ScannedFood = {
   fat: number;
   carbs: number;
 };
+
+type Message = {
+  sender: 'user' | 'sally';
+  text: string;
+};
+
+declare global {
+  interface Window {
+    SpeechRecognition: any;
+    webkitSpeechRecognition: any;
+  }
+}
 
 const MacroCard = ({
   label,
@@ -39,7 +51,58 @@ export default function MealPlanPage() {
   const [foods, setFoods] = useState<ScannedFood[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
+  const chatContainerRef = useRef<HTMLDivElement>(null);
 
+
+  // --- Chat State ---
+  const [messages, setMessages] = useState<Message[]>([
+    {
+      sender: 'sally',
+      text: "Ask me about this meal and I'll tell you everything.",
+    },
+  ]);
+  const [isRecording, setIsRecording] = useState(false);
+  const [isSallyLoading, setIsSallyLoading] = useState(false);
+  const recognitionRef = useRef<any>(null);
+
+  // --- Speech Recognition Setup ---
+  useEffect(() => {
+    const SpeechRecognition =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      recognitionRef.current = new SpeechRecognition();
+      recognitionRef.current.continuous = false;
+      recognitionRef.current.lang = 'en-US';
+      recognitionRef.current.interimResults = false;
+
+      recognitionRef.current.onresult = (event: any) => {
+        const transcript = event.results[0][0].transcript;
+        handleApiCall(transcript);
+      };
+
+      recognitionRef.current.onerror = (event: any) => {
+        console.error('Speech recognition error', event.error);
+        toast({
+          variant: 'destructive',
+          title: 'Speech Error',
+          description: `Could not recognize speech: ${event.error}`,
+        });
+        setIsRecording(false);
+      };
+
+      recognitionRef.current.onend = () => {
+        setIsRecording(false);
+      };
+    } else {
+      toast({
+        variant: 'destructive',
+        title: 'Not Supported',
+        description: 'Speech recognition is not supported in this browser.',
+      });
+    }
+  }, [toast]);
+
+  // --- Data Fetching ---
   useEffect(() => {
     const fetchFoodReferences = async () => {
       setIsLoading(true);
@@ -70,7 +133,6 @@ export default function MealPlanPage() {
         }
 
         const data = await response.json();
-        // Assuming the API returns PascalCase properties, we map them to our camelCase type.
         const formattedData: ScannedFood[] = data.map((food: any) => ({
           id: food.Id,
           name: food.Name,
@@ -85,7 +147,8 @@ export default function MealPlanPage() {
         toast({
           variant: 'destructive',
           title: 'Error',
-          description: 'Could not fetch your meal plan. Please try again later.',
+          description:
+            'Could not fetch your meal plan. Please try again later.',
         });
       } finally {
         setIsLoading(false);
@@ -94,6 +157,14 @@ export default function MealPlanPage() {
 
     fetchFoodReferences();
   }, [toast]);
+  
+  // --- Scroll to bottom of chat ---
+  useEffect(() => {
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+    }
+  }, [messages, isSallyLoading]);
+
 
   const totals = useMemo(() => {
     return foods.reduce(
@@ -107,6 +178,73 @@ export default function MealPlanPage() {
       { calories: 0, protein: 0, fat: 0, carbs: 0 }
     );
   }, [foods]);
+
+  const handleMicClick = () => {
+    if (isRecording) {
+      recognitionRef.current?.stop();
+    } else {
+      setIsRecording(true);
+      recognitionRef.current?.start();
+    }
+  };
+
+  const handleApiCall = async (userInput: string) => {
+    if (!userInput.trim()) return;
+
+    setIsSallyLoading(true);
+    setMessages((prev) => [...prev, { sender: 'user', text: userInput }]);
+
+    const token = localStorage.getItem('authToken');
+    if (!token) {
+      toast({
+        variant: 'destructive',
+        title: 'Authentication Error',
+        description: 'You must be logged in.',
+      });
+      setIsSallyLoading(false);
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/sally/meal-planner`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            agentName: 'Sally',
+            clientDialogue: userInput,
+          }),
+        }
+      );
+
+      if (response.status === 429) {
+        throw new Error('Daily request limit reached.');
+      }
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to get a response from Sally.');
+      }
+
+      const data = await response.json();
+      setMessages((prev) => [
+        ...prev,
+        { sender: 'sally', text: data.agentDialogue },
+      ]);
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: error.message,
+      });
+      setMessages((prev) => prev.slice(0, prev.length - 1));
+    } finally {
+      setIsSallyLoading(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -132,7 +270,7 @@ export default function MealPlanPage() {
         className="blur-sm"
       />
       <div className="z-10 flex h-screen w-full flex-col items-center px-4 pt-4 pb-28">
-        <header className="flex w-full max-w-lg items-center justify-between self-start">
+        <header className="w-full max-w-lg self-start">
           <Image
             src="/scaneats-logo.png"
             alt="ScanEats Logo"
@@ -156,7 +294,11 @@ export default function MealPlanPage() {
             value={`${totals.protein.toFixed(0)}g`}
             icon={Beef}
           />
-          <MacroCard label="Fat" value={`${totals.fat.toFixed(0)}g`} icon={Milk} />
+          <MacroCard
+            label="Fat"
+            value={`${totals.fat.toFixed(0)}g`}
+            icon={Milk}
+          />
           <MacroCard
             label="Carbs"
             value={`${totals.carbs.toFixed(0)}g`}
@@ -164,17 +306,55 @@ export default function MealPlanPage() {
           />
         </section>
 
-        <section className="mt-6 flex w-full flex-col items-center gap-5">
-          <Link
-            href="/dashboard/sally?intent=meal-plan"
-            className="flex h-20 w-20 flex-col items-center justify-center rounded-full bg-gradient-to-r from-purple-800 to-indigo-900 shadow-2xl transition-transform hover:scale-105"
-          >
-            <Mic className="h-10 w-10 text-white" />
-          </Link>
-          <p className="max-w-xs rounded-lg border-l-4 border-accent bg-background/50 p-3 text-center text-sm text-muted-foreground shadow-md">
-            Ask me about this meal and I&apos;ll tell you everything
-          </p>
+        {/* --- Chat UI --- */}
+        <section
+          ref={chatContainerRef}
+          className="mt-4 w-full max-w-lg flex-1 space-y-4 overflow-y-auto rounded-lg bg-black/30 p-4 backdrop-blur-sm"
+        >
+          {messages.map((msg, index) => (
+            <div
+              key={index}
+              className={`flex items-end gap-2 ${
+                msg.sender === 'user' ? 'justify-end' : 'justify-start'
+              }`}
+            >
+              {msg.sender === 'sally' && (
+                <div className="h-8 w-8 flex-shrink-0 rounded-full bg-primary"></div>
+              )}
+              <div
+                className={`max-w-xs rounded-lg px-4 py-2 lg:max-w-md ${
+                  msg.sender === 'user'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-muted text-foreground'
+                }`}
+              >
+                <p>{msg.text}</p>
+              </div>
+            </div>
+          ))}
+          {isSallyLoading && (
+            <div className="flex items-end gap-2 justify-start">
+              <div className="h-8 w-8 flex-shrink-0 rounded-full bg-primary"></div>
+              <div className="max-w-xs rounded-lg bg-muted px-4 py-2 lg:max-w-md">
+                <Loader2 className="h-5 w-5 animate-spin" />
+              </div>
+            </div>
+          )}
         </section>
+
+        <footer className="w-full max-w-lg pt-4">
+          <Button
+            onClick={handleMicClick}
+            size="icon"
+            className={`mx-auto flex h-16 w-16 items-center justify-center rounded-full shadow-lg transition-colors ${
+              isRecording
+                ? 'bg-red-500 hover:bg-red-600'
+                : 'bg-primary hover:bg-primary/90'
+            }`}
+          >
+            <Mic size={32} />
+          </Button>
+        </footer>
       </div>
     </>
   );
