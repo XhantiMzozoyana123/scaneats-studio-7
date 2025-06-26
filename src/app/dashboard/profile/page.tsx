@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useState } from 'react';
 import { format } from 'date-fns';
 import { Calendar as CalendarIcon } from 'lucide-react';
@@ -36,13 +37,14 @@ export default function ProfilePage() {
       />
       <main className="container z-10 mx-auto max-w-md px-4 py-8">
         <div className="rounded-2xl bg-black/70 p-6 backdrop-blur-md">
-          <div className="mb-8 text-center">
-            <h1 className="font-headline text-4xl font-bold text-white">
-              Your Profile
-            </h1>
-            <p className="text-muted-foreground">
-              Update your personal details and goals.
-            </p>
+          <div className="mb-8 flex justify-center">
+            <Image
+              src="/profile-personal-goals.png"
+              alt="Profile Personal Goals header"
+              width={300}
+              height={300}
+              className="h-auto w-full max-w-[250px]"
+            />
           </div>
 
           <form className="space-y-6">
