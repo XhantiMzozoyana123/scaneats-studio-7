@@ -15,8 +15,8 @@ export default function LandingPage() {
         <Image
           src="/scaneats-logo.png"
           alt="ScanEats Logo"
-          width={120}
-          height={120}
+          width={100}
+          height={100}
           className="mb-6"
         />
         <p className="mb-8 text-lg font-bold">

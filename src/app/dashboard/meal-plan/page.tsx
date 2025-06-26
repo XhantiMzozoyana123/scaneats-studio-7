@@ -75,8 +75,8 @@ export default function MealPlanPage() {
           <Image
             src="/scaneats-logo.png"
             alt="ScanEats Logo"
-            width={120}
-            height={120}
+            width={100}
+            height={100}
           />
         </header>
 
@@ -95,7 +95,7 @@ export default function MealPlanPage() {
           <MacroCard label="Carbs" value={`${totals.carbs.toFixed(0)}g`} icon={Wheat} />
         </section>
 
-        <section className="mt-16 flex w-full flex-col items-center gap-4">
+        <section className="mt-8 flex w-full flex-col items-center gap-4">
           <Link
             href="/dashboard/sally?intent=meal-plan"
             className="flex h-16 w-16 flex-col items-center justify-center rounded-full bg-gradient-to-r from-purple-800 to-indigo-900 shadow-2xl transition-transform hover:scale-105"

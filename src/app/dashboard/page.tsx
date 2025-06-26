@@ -16,8 +16,8 @@ export default function DashboardPage() {
         <Image
           src="/scaneats-logo.png"
           alt="ScanEats Logo"
-          width={120}
-          height={120}
+          width={100}
+          height={100}
         />
       </div>
 
