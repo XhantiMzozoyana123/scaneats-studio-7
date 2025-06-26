@@ -2,11 +2,9 @@
 'use client';
 
 import { useMemo, useState, useEffect, useRef } from 'react';
-import Link from 'next/link';
 import Image from 'next/image';
-import { usePathname } from 'next/navigation';
 import { BackgroundImage } from '@/components/background-image';
-import { Home, UtensilsCrossed, Mic, User, Loader2 } from 'lucide-react';
+import { Mic, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { textToSpeech } from '@/ai/flows/text-to-speech';
 import { cn } from '@/lib/utils';
@@ -27,18 +25,10 @@ declare global {
   }
 }
 
-const navItems = [
-  { href: '/dashboard', icon: Home, label: 'Home' },
-  { href: '/dashboard/meal-plan', icon: UtensilsCrossed, label: 'Meal Plan' },
-  { href: '/dashboard/sally', icon: Mic, label: 'SallyPA' },
-  { href: '/dashboard/profile', icon: User, label: 'Profile' },
-];
-
 export default function MealPlanPage() {
   const [foods, setFoods] = useState<ScannedFood[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
-  const pathname = usePathname();
 
   // --- Sally State ---
   const [sallyResponse, setSallyResponse] = useState<string>(
@@ -242,8 +232,8 @@ export default function MealPlanPage() {
         data-ai-hint="food pattern"
         className="blur-sm"
       />
-      <div className="flex h-full w-full flex-col items-center overflow-y-auto bg-black/60 p-5 pb-40 backdrop-blur-sm">
-        <header className="mb-5 flex w-full max-w-2xl shrink-0 items-center justify-between px-4">
+      <div className="flex h-full w-full flex-col items-center overflow-y-auto bg-black/60 p-5 pb-28 backdrop-blur-sm">
+        <header className="mb-5 flex w-full max-w-2xl shrink-0 items-center justify-start px-4">
           <div className="h-[75px] w-[150px] shrink-0 text-left">
             <Image
               src="/scaneats-logo.png"
@@ -263,36 +253,36 @@ export default function MealPlanPage() {
         ) : (
           <>
             <div className="mb-6 flex shrink-0 flex-col items-center">
-              <div className="mb-2 text-3xl font-medium text-white [text-shadow:0_0_10px_white]">
+              <div className="text-5xl font-bold text-white drop-shadow-[0_0_10px_hsl(var(--primary))]">
                 {totals.calories.toFixed(0)}
               </div>
-              <div className="rounded-full bg-zinc-800/70 px-3 py-1.5 text-sm tracking-wide text-white">
+              <div className="mt-2 rounded-full bg-card/50 px-4 py-1.5 text-sm tracking-wide text-muted-foreground">
                 Total Calories
               </div>
             </div>
 
-            <div className="mb-6 flex w-full max-w-xl shrink-0 flex-wrap items-stretch justify-around gap-4">
-              <div className="flex min-w-[90px] flex-1 flex-col items-center justify-center rounded-xl border border-white/10 bg-[rgba(74,20,140,0.8)] p-5 text-center text-white shadow-[0_0_10px_rgba(106,27,154,0.5)] transition-transform hover:-translate-y-1">
-                <div className="mb-2 text-lg font-normal text-white [text-shadow:0_0_10px_white]">
+            <div className="mb-6 grid w-full max-w-xl shrink-0 grid-cols-3 gap-4">
+              <div className="flex flex-col items-center justify-center rounded-xl border border-primary/30 bg-primary/20 p-4 text-center text-white shadow-lg shadow-primary/20 transition-transform hover:-translate-y-1">
+                <div className="mb-1 text-lg font-normal text-accent">
                   Protein
                 </div>
-                <div className="text-2xl font-semibold text-white [text-shadow:0_0_10px_white]">
+                <div className="text-2xl font-semibold">
                   {totals.protein.toFixed(0)}g
                 </div>
               </div>
-              <div className="flex min-w-[90px] flex-1 flex-col items-center justify-center rounded-xl border border-white/10 bg-[rgba(74,20,140,0.8)] p-5 text-center text-white shadow-[0_0_10px_rgba(106,27,154,0.5)] transition-transform hover:-translate-y-1">
-                <div className="mb-2 text-lg font-normal text-white [text-shadow:0_0_10px_white]">
+              <div className="flex flex-col items-center justify-center rounded-xl border border-primary/30 bg-primary/20 p-4 text-center text-white shadow-lg shadow-primary/20 transition-transform hover:-translate-y-1">
+                <div className="mb-1 text-lg font-normal text-accent">
                   Fat
                 </div>
-                <div className="text-2xl font-semibold text-white [text-shadow:0_0_10px_white]">
+                <div className="text-2xl font-semibold">
                   {totals.fat.toFixed(0)}g
                 </div>
               </div>
-              <div className="flex min-w-[90px] flex-1 flex-col items-center justify-center rounded-xl border border-white/10 bg-[rgba(74,20,140,0.8)] p-5 text-center text-white shadow-[0_0_10px_rgba(106,27,154,0.5)] transition-transform hover:-translate-y-1">
-                <div className="mb-2 text-lg font-normal text-white [text-shadow:0_0_10px_white]">
+              <div className="flex flex-col items-center justify-center rounded-xl border border-primary/30 bg-primary/20 p-4 text-center text-white shadow-lg shadow-primary/20 transition-transform hover:-translate-y-1">
+                <div className="mb-1 text-lg font-normal text-accent">
                   Carbs
                 </div>
-                <div className="text-2xl font-semibold text-white [text-shadow:0_0_10px_white]">
+                <div className="text-2xl font-semibold">
                   {totals.carbs.toFixed(0)}g
                 </div>
               </div>
@@ -302,18 +292,18 @@ export default function MealPlanPage() {
               onClick={handleMicClick}
               disabled={isSallyLoading || isRecording}
               className={cn(
-                'my-10 flex h-[120px] w-[120px] shrink-0 cursor-pointer flex-col items-center justify-center rounded-full border-2 border-white/20 bg-gradient-to-r from-purple-900 to-indigo-900 text-white transition-transform',
+                'my-10 flex h-[120px] w-[120px] shrink-0 cursor-pointer flex-col items-center justify-center rounded-full bg-primary text-white shadow-[0_0_15px_5px_hsl(var(--primary)/0.4)] transition-all hover:scale-105',
                 isRecording
                   ? 'animate-pulse bg-red-600'
-                  : 'animate-breathing-glow-purple'
+                  : 'animate-breathe-glow'
               )}
             >
               <Mic
-                className="text-[60px] [text-shadow:0_0_8px_rgba(255,255,255,0.8)]"
+                className="h-16 w-16"
               />
             </button>
 
-            <div className="inline-block max-w-[85%] shrink-0 rounded-lg border-l-4 border-purple-500 bg-transparent p-3 text-center text-lg font-normal text-white shadow-[0_0_15px_rgba(0,0,0,0.4),_0_0_5px_rgba(0,0,0,0.3)] [text-shadow:0_0_6px_rgba(255,255,255,0.8),_0_0_3px_rgba(255,255,255,0.6)]">
+            <div className="max-w-md p-3 text-center text-lg font-normal text-muted-foreground">
               {isSallyLoading ? (
                 <Loader2 className="mx-auto h-6 w-6 animate-spin" />
               ) : (
@@ -324,44 +314,7 @@ export default function MealPlanPage() {
         )}
       </div>
 
-      <div className="fixed bottom-[30px] left-1/2 z-50 flex w-[85%] max-w-[460px] -translate-x-1/2 flex-col items-center">
-        <div className="mb-2.5 text-sm font-normal text-gray-400">
-          Powered by ScanEats
-        </div>
-        <div className="flex w-full items-center justify-around rounded-[25px] bg-[rgba(26,16,35,0.85)] p-4 shadow-[0_0_12px_1px_rgba(127,0,255,0.65),0_0_25px_5px_rgba(127,0,255,0.35),0_2px_8px_rgba(0,0,0,0.3)] backdrop-blur-sm">
-          {navItems.map((item) => {
-            const isActive = pathname === item.href;
-            return (
-              <Link
-                href={item.href}
-                key={item.href}
-                className="group flex flex-1 cursor-pointer flex-col items-center justify-center border-none bg-transparent p-0 text-center text-white"
-              >
-                <div
-                  className={cn(
-                    'mb-1 flex h-[60px] w-[60px] items-center justify-center rounded-full bg-transparent text-gray-400 transition-all group-hover:scale-110 group-hover:bg-[#7F00FF] group-hover:text-white group-hover:shadow-[0_0_10px_2px_rgba(127,0,255,0.7),_0_0_20px_5px_rgba(127,0,255,0.4)]',
-                    isActive &&
-                      'scale-110 bg-[#7F00FF] text-white shadow-[0_0_10px_2px_rgba(127,0,255,0.7),_0_0_20px_5px_rgba(127,0,255,0.4)]'
-                  )}
-                >
-                  <item.icon className="h-8 w-8" />
-                </div>
-                <span
-                  className={cn(
-                    'mt-0.5 text-base font-normal text-gray-400 transition-colors group-hover:text-white',
-                    isActive && 'text-white'
-                  )}
-                >
-                  {item.label}
-                </span>
-              </Link>
-            );
-          })}
-        </div>
-      </div>
-
-      {audioUrl && <audio ref={audioRef} src={audioUrl} hidden />}
+      {audioUrl && <audio ref={audioUrl} src={audioUrl} hidden />}
     </>
   );
-
-    
+}

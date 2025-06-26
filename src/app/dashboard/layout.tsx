@@ -10,7 +10,7 @@ export default function DashboardLayout({
 }) {
   const pathname = usePathname();
   const showBottomNav =
-    pathname !== '/dashboard/sally' && pathname !== '/dashboard/meal-plan';
+    pathname !== '/dashboard/sally';
 
   return (
     <div className="relative h-screen overflow-hidden">
