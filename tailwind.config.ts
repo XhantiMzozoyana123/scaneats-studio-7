@@ -91,11 +91,11 @@ export default {
         'breathe-glow': {
           '0%, 100%': {
             boxShadow:
-              '0 0 15px 5px rgba(208, 144, 255, 0.4), 0 0 25px 10px rgba(106, 0, 201, 0.3)',
+              '0 10px 60px 15px rgba(127, 0, 255, 0.7), 0 0 30px 10px rgba(127, 0, 255, 0.5)',
           },
           '50%': {
             boxShadow:
-              '0 0 25px 10px rgba(208, 144, 255, 0.6), 0 0 40px 15px rgba(106, 0, 201, 0.4)',
+              '0 10px 75px 20px rgba(127, 0, 255, 0.45), 0 0 40px 15px rgba(127, 0, 255, 0.3)',
           },
         },
         'breathe-glow-white': {
