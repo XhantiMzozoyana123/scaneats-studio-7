@@ -28,6 +28,7 @@ import {
   Milk,
   HeartPulse,
   ShieldAlert,
+  ClipboardList,
 } from 'lucide-react';
 import { BackgroundImage } from '@/components/background-image';
 import { useToast } from '@/hooks/use-toast';
@@ -89,7 +90,10 @@ export default function ScanFoodPage() {
       // 2. Get insights and suggestions in parallel
       const [insightsResult, suggestionsResult] = await Promise.all([
         getMealInsights({
-          foodDescription: nutritionResult.foodIdentification.name,
+          foodItemName: nutritionResult.foodIdentification.name,
+          nutritionalInformation: JSON.stringify(
+            nutritionResult.nutritionInformation
+          ),
         }),
         personalizedDietarySuggestions({
           foodItemName: nutritionResult.foodIdentification.name,
@@ -265,18 +269,30 @@ export default function ScanFoodPage() {
               <Card className="border-primary/50 bg-background/70 backdrop-blur-sm">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-accent">
-                    <HeartPulse /> Health Insights
+                    <Sparkles /> Meal Insights
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
-                    <h4 className="font-semibold">Health Benefits</h4>
+                    <h4 className="flex items-center gap-2 font-semibold">
+                      <ClipboardList /> Ingredients
+                    </h4>
+                    <p className="text-muted-foreground">
+                      {result.insights.ingredients}
+                    </p>
+                  </div>
+                  <div>
+                    <h4 className="flex items-center gap-2 font-semibold">
+                      <HeartPulse /> Health Benefits
+                    </h4>
                     <p className="text-muted-foreground">
                       {result.insights.healthBenefits}
                     </p>
                   </div>
                   <div>
-                    <h4 className="font-semibold">Potential Risks</h4>
+                    <h4 className="flex items-center gap-2 font-semibold">
+                      <ShieldAlert /> Potential Risks
+                    </h4>
                     <p className="text-muted-foreground">
                       {result.insights.potentialRisks}
                     </p>
