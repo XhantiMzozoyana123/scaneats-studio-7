@@ -37,7 +37,7 @@ export default function DashboardPage() {
               Welcome home, wink wink
             </h2>
           </div>
-          <p className="max-w-xs text-base font-light text-gray-200">
+          <p className="max-w-xs text-xl font-light text-gray-200">
             Meet Sally, your personal assistant who’ll help you stay on track with
             your meals and let you know if you&apos;re eating well — without the
             need to constantly go for health foods.
