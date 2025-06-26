@@ -13,7 +13,7 @@ export default function DashboardPage() {
         data-ai-hint="healthy food abstract"
         className="blur-sm"
       />
-      <main className="relative flex h-full flex-col items-center justify-center space-y-20 px-4 pt-28 pb-32 text-white">
+      <main className="relative flex h-full flex-col items-center justify-center space-y-12 px-4 pt-28 pb-32 text-white">
         <div className="flex flex-col items-center space-y-8 text-center">
           <div className="space-y-2">
             <h1
