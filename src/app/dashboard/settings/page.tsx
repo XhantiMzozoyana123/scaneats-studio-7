@@ -109,7 +109,7 @@ export default function SettingsPage() {
       if (!token) return;
 
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/profile`, {
+        const response = await fetch(`https://api.scaneats.app/api/profile`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -153,7 +153,7 @@ export default function SettingsPage() {
     }
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/Auth/delete`, {
+      const response = await fetch(`https://api.scaneats.app/api/Auth/delete`, {
         method: 'DELETE',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -225,7 +225,7 @@ export default function SettingsPage() {
     };
 
     try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/Auth/update`, {
+        const response = await fetch(`https://api.scaneats.app/api/Auth/update`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

@@ -95,7 +95,7 @@ export default function SallyPage() {
 
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/sally/body-assessment`,
+        `https://api.scaneats.app/api/sally/body-assessment`,
         {
           method: 'POST',
           headers: {

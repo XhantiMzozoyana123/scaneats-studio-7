@@ -100,7 +100,7 @@ export default function MealPlanPage() {
 
       try {
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/food/references`,
+          `https://api.scaneats.app/api/food/references`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -181,7 +181,7 @@ export default function MealPlanPage() {
 
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/sally/meal-planner`,
+        `https://api.scaneats.app/api/sally/meal-planner`,
         {
           method: 'POST',
           headers: {

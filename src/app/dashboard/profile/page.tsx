@@ -71,7 +71,7 @@ export default function ProfilePage() {
       }
 
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/profile`, {
+        const response = await fetch(`https://api.scaneats.app/api/profile`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -138,8 +138,8 @@ export default function ProfilePage() {
 
     const method = profile.id ? 'PUT' : 'POST';
     const url = profile.id 
-      ? `${process.env.NEXT_PUBLIC_API_URL}/api/profile/${profile.id}`
-      : `${process.env.NEXT_PUBLIC_API_URL}/api/profile`;
+      ? `https://api.scaneats.app/api/profile/${profile.id}`
+      : `https://api.scaneats.app/api/profile`;
       
     // Prepare data for the API
     const profileData = {

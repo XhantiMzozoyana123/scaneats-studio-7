@@ -24,7 +24,7 @@ export default function SignUpPage() {
     setIsLoading(true);
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/Auth/register`, {
+      const response = await fetch(`https://api.scaneats.app/api/Auth/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
