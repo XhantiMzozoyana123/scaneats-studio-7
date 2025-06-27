@@ -119,7 +119,9 @@ export default function ProfilePage() {
   };
 
   const handleDateChange = (date: Date | undefined) => {
-    setProfile((prev) => ({ ...prev, birthDate: date || null }));
+    if (date) {
+      setProfile((prev) => ({ ...prev, birthDate: date }));
+    }
     setIsDatePickerOpen(false);
   };
 
@@ -143,11 +145,11 @@ export default function ProfilePage() {
       ? `https://api.scaneats.app/api/profile/${profile.id}`
       : `https://api.scaneats.app/api/profile`;
       
-    // Prepare data for the API
+    // Prepare data for the API, ensuring correct types
     const profileData = {
       ...profile,
       age: parseInt(profile.age as string, 10) || 0,
-      weight: profile.weight,
+      weight: String(profile.weight || ''), // Ensure weight is sent as a string
     };
 
     try {
@@ -300,12 +302,12 @@ export default function ProfilePage() {
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0">
-                  <Calendar
+                   <Calendar
                     mode="single"
-                    selected={profile.birthDate}
+                    selected={profile.birthDate ?? undefined}
                     onSelect={handleDateChange}
                     disabled={(date) =>
-                      date > new Date() || date < new Date("1900-01-01")
+                      date > new Date() || date < new Date('1900-01-01')
                     }
                     initialFocus
                     captionLayout="dropdown-buttons"
