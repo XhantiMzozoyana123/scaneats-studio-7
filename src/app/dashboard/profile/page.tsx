@@ -54,6 +54,7 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState<Profile>(initialProfileState);
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true); // For initial fetch
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -119,6 +120,7 @@ export default function ProfilePage() {
 
   const handleDateChange = (date: Date | undefined) => {
     setProfile((prev) => ({ ...prev, birthDate: date || null }));
+    setIsDatePickerOpen(false);
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -280,7 +282,7 @@ export default function ProfilePage() {
               >
                 Birth Date
               </Label>
-              <Popover>
+              <Popover open={isDatePickerOpen} onOpenChange={setIsDatePickerOpen}>
                 <PopoverTrigger asChild>
                   <Button
                     variant={'outline'}
@@ -302,6 +304,9 @@ export default function ProfilePage() {
                     mode="single"
                     selected={profile.birthDate}
                     onSelect={handleDateChange}
+                    disabled={(date) =>
+                      date > new Date() || date < new Date("1900-01-01")
+                    }
                     initialFocus
                     captionLayout="dropdown-buttons"
                     fromYear={1900}
