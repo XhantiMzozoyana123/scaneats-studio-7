@@ -31,7 +31,6 @@ import { cn } from '@/lib/utils';
 type Profile = {
   id: number | null;
   name: string;
-  age: number | string;
   gender: string;
   weight: number | string;
   goals: string;
@@ -42,7 +41,6 @@ type Profile = {
 const initialProfileState: Profile = {
   id: null,
   name: '',
-  age: '',
   gender: 'Prefer not to say',
   weight: '',
   goals: '',
@@ -82,7 +80,7 @@ export default function ProfilePage() {
           throw new Error('Failed to fetch profile.');
         }
 
-        const data: Profile[] = await response.json();
+        const data = await response.json();
         // The API returns a list of profiles, we'll use the first one.
         if (data && data.length > 0) {
           const userProfile = data[0];
@@ -150,6 +148,16 @@ export default function ProfilePage() {
         return;
     }
 
+    const calculateAge = (birthDate: Date): number => {
+      const today = new Date();
+      let age = today.getFullYear() - birthDate.getFullYear();
+      const m = today.getMonth() - birthDate.getMonth();
+      if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+      }
+      return age;
+    };
+
     const method = profile.id ? 'PUT' : 'POST';
     const url = profile.id 
       ? `https://api.scaneats.app/api/profile/${profile.id}`
@@ -158,8 +166,8 @@ export default function ProfilePage() {
     // Prepare data for the API, ensuring correct types
     const profileData = {
       ...profile,
-      age: parseInt(profile.age as string, 10) || 0,
-      weight: String(profile.weight || ''), // Ensure weight is sent as a string
+      age: calculateAge(profile.birthDate),
+      weight: String(profile.weight || ''),
     };
 
     try {
@@ -186,7 +194,7 @@ export default function ProfilePage() {
               });
             }
         } else {
-            const errorData = await response.json();
+            const errorData = await response.json().catch(() => ({ error: 'An unknown error occurred.'}));
             throw new Error(errorData.error || 'Failed to save profile.');
         }
 
@@ -236,20 +244,6 @@ export default function ProfilePage() {
                 value={profile.name}
                 onChange={handleInputChange}
                 placeholder="Your Name"
-                className="border-neutral-600 bg-black/50 text-white placeholder:text-gray-500"
-              />
-            </div>
-
-            <div className="space-y-1">
-              <Label htmlFor="age" className="font-semibold text-gray-300">
-                Age
-              </Label>
-              <Input
-                id="age"
-                type="number"
-                value={profile.age}
-                onChange={handleInputChange}
-                placeholder="Your Age"
                 className="border-neutral-600 bg-black/50 text-white placeholder:text-gray-500"
               />
             </div>
