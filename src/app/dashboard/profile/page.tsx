@@ -127,6 +127,16 @@ export default function ProfilePage() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
+    if (!profile.birthDate) {
+      toast({
+        variant: 'destructive',
+        title: 'Validation Error',
+        description: 'Please select your birth date before saving.',
+      });
+      return;
+    }
+
     setIsSaving(true);
     
     const token = localStorage.getItem('authToken');
