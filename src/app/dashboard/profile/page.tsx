@@ -159,17 +159,25 @@ export default function ProfilePage() {
     };
 
     const method = profile.id ? 'PUT' : 'POST';
-    const url = profile.id 
+    const url = profile.id
       ? `https://api.scaneats.app/api/profile/${profile.id}`
       : `https://api.scaneats.app/api/profile`;
       
     // Prepare data for the API, ensuring correct types
     const profileData = {
-      ...profile,
-      age: calculateAge(profile.birthDate),
+      name: profile.name,
+      gender: profile.gender,
       weight: String(profile.weight || ''),
+      goals: profile.goals,
+      birthDate: profile.birthDate ? profile.birthDate.toISOString() : null,
+      age: calculateAge(profile.birthDate),
     };
 
+    if (profile.id) {
+      profileData.id = profile.id;
+    }
+
+    console.log('profileData', profileData);
     try {
         const response = await fetch(url, {
             method: method,

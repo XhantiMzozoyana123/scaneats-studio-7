@@ -115,7 +115,7 @@ export default function ScanFoodPage() {
     };
 
     try {
-      const response = await fetch(`https://api.scaneats.app/api/scan/scan`, {
+      const response = await fetch(`https://api.scaneats.app/api/scan`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -22,7 +22,7 @@ export default function DashboardLayout({
     } else {
       setIsVerifying(false);
     }
-  }, [router]);
+  }, [router, pathname]);
 
   const showBottomNav =
     pathname !== '/dashboard/sally';
