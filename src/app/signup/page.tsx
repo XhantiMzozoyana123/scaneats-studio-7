@@ -41,7 +41,7 @@ export default function SignUpPage() {
           title: 'Success!',
           description: 'Registration successful. Please log in.',
         });
-        router.push('/login');
+        router.push('/');
       } else {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Registration failed');
@@ -141,7 +141,7 @@ export default function SignUpPage() {
         <p className="mt-8 text-center text-sm text-white/70">
           Already have an account?{' '}
           <Link
-            href="/login"
+            href="/"
             className="font-semibold text-white hover:underline"
           >
             Log In

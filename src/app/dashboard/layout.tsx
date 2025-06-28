@@ -18,7 +18,7 @@ export default function DashboardLayout({
     // Check for auth token on the client side
     const token = localStorage.getItem('authToken');
     if (!token) {
-      router.replace('/login');
+      router.replace('/');
     } else {
       setIsVerifying(false);
     }
