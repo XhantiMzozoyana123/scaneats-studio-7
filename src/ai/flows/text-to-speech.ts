@@ -41,7 +41,7 @@ const textToSpeechFlow = ai.defineFlow(
         responseModalities: ['AUDIO'],
         speechConfig: {
           voiceConfig: {
-            prebuiltVoiceConfig: {voiceName: 'vindemiatrix'},
+            prebuiltVoiceConfig: {voiceName: 'Kore'},
           },
         },
       },
