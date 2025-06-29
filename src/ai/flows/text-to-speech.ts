@@ -36,7 +36,7 @@ const textToSpeechFlow = ai.defineFlow(
         responseModalities: ['AUDIO'],
         speechConfig: {
           voiceConfig: {
-            prebuiltVoiceConfig: {voiceName: 'Umbriel'}, // Realistic female voice
+            prebuiltVoiceConfig: {voiceName: 'vindemiatrix'}, // Realistic female voice
           },
         },
       },
