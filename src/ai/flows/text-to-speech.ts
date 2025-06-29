@@ -5,23 +5,21 @@
  * - textToSpeech - A function that handles converting text to speech.
  */
 import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
-import wav from 'wav';
 import {googleAI} from '@genkit-ai/googleai';
+import wav from 'wav';
+import {z} from 'zod';
 
 const TextToSpeechInputSchema = z.object({
   text: z.string().describe('The text to convert to speech.'),
 });
-type TextToSpeechInput = z.infer<typeof TextToSpeechInputSchema>;
 
 const TextToSpeechOutputSchema = z.object({
   media: z.string().describe('The base64 encoded audio data URI.'),
 });
-type TextToSpeechOutput = z.infer<typeof TextToSpeechOutputSchema>;
 
 export async function textToSpeech(
-  input: TextToSpeechInput
-): Promise<TextToSpeechOutput> {
+  input: z.infer<typeof TextToSpeechInputSchema>
+): Promise<z.infer<typeof TextToSpeechOutputSchema>> {
   return textToSpeechFlow(input);
 }
 
@@ -38,7 +36,7 @@ const textToSpeechFlow = ai.defineFlow(
         responseModalities: ['AUDIO'],
         speechConfig: {
           voiceConfig: {
-            prebuiltVoiceConfig: {voiceName: 'Polaris'}, // Realistic female voice
+            prebuiltVoiceConfig: {voiceName: 'Umbriel'}, // Realistic female voice
           },
         },
       },
@@ -77,7 +75,7 @@ async function toWav(
 
     const bufs: Buffer[] = [];
     writer.on('error', reject);
-    writer.on('data', (d) => {
+    writer.on('data', d => {
       bufs.push(d);
     });
     writer.on('end', () => {
