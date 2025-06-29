@@ -14,12 +14,12 @@ import {googleAI} from '@genkit-ai/googleai';
 const TextToSpeechInputSchema = z.object({
   text: z.string().describe('The text to convert to speech.'),
 });
-export type TextToSpeechInput = z.infer<typeof TextToSpeechInputSchema>;
+type TextToSpeechInput = z.infer<typeof TextToSpeechInputSchema>;
 
 const TextToSpeechOutputSchema = z.object({
   media: z.string().describe('The base64 encoded audio data URI.'),
 });
-export type TextToSpeechOutput = z.infer<typeof TextToSpeechOutputSchema>;
+type TextToSpeechOutput = z.infer<typeof TextToSpeechOutputSchema>;
 
 export async function textToSpeech(
   input: TextToSpeechInput
@@ -40,7 +40,7 @@ const textToSpeechFlow = ai.defineFlow(
         responseModalities: ['AUDIO'],
         speechConfig: {
           voiceConfig: {
-            prebuiltVoiceConfig: {voiceName: 'Algenib'}, // Realistic female voice
+            prebuiltVoiceConfig: {voiceName: 'Polaris'}, // Realistic female voice
           },
         },
       },
