@@ -12,14 +12,16 @@ import {z} from 'zod';
 const TextToSpeechInputSchema = z.object({
   text: z.string().describe('The text to convert to speech.'),
 });
+type TextToSpeechInput = z.infer<typeof TextToSpeechInputSchema>;
 
 const TextToSpeechOutputSchema = z.object({
   media: z.string().describe('The base64 encoded audio data URI.'),
 });
+type TextToSpeechOutput = z.infer<typeof TextToSpeechOutputSchema>;
 
 export async function textToSpeech(
-  input: z.infer<typeof TextToSpeechInputSchema>
-): Promise<z.infer<typeof TextToSpeechOutputSchema>> {
+  input: TextToSpeechInput
+): Promise<TextToSpeechOutput> {
   return textToSpeechFlow(input);
 }
 
@@ -36,7 +38,7 @@ const textToSpeechFlow = ai.defineFlow(
         responseModalities: ['AUDIO'],
         speechConfig: {
           voiceConfig: {
-            prebuiltVoiceConfig: {voiceName: 'vindemiatrix'}, // Realistic female voice
+            prebuiltVoiceConfig: {voiceName: 'callirrhoe'},
           },
         },
       },
