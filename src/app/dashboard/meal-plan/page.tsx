@@ -5,7 +5,6 @@ import Image from 'next/image';
 import { BackgroundImage } from '@/components/background-image';
 import { Mic, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { textToSpeech } from '@/ai/flows/text-to-speech';
 import { cn } from '@/lib/utils';
 
 type ScannedFood = {
@@ -100,7 +99,7 @@ export default function MealPlanPage() {
 
       try {
         const response = await fetch(
-          `https://api.scaneats.app/api/food/references`,
+          `https://localhost:7066/api/food/references`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -113,14 +112,16 @@ export default function MealPlanPage() {
         }
 
         const data = await response.json();
-        const formattedData: ScannedFood[] = data.map((food: any) => ({
-          id: food.Id,
-          name: food.Name,
-          calories: food.Calories,
-          protein: food.Protein,
-          fat: food.Fat,
-          carbs: food.Carbs,
-        }));
+        const formattedData: ScannedFood[] = data.length > 0
+          ? [data[data.length - 1]].map((item: any) => ({
+              id: item.id,
+              name: 'Unknown Food', // Name is missing in the new response
+              calories: item.total, // Assuming 'total' represents calories
+              protein: item.protien, // Corrected spelling
+              fat: item.fat,
+              carbs: item.carbs,
+            }))
+          : [];
         setFoods(formattedData);
       } catch (error) {
         console.error(error);
@@ -181,7 +182,7 @@ export default function MealPlanPage() {
 
     try {
       const response = await fetch(
-        `https://api.scaneats.app/api/sally/meal-planner`,
+        `https://localhost:7066/api/sally/meal-planner`,
         {
           method: 'POST',
           headers: {
@@ -208,10 +209,19 @@ export default function MealPlanPage() {
       const data = await response.json();
       setSallyResponse(data.agentDialogue);
 
-      const audioResponse = await textToSpeech(data.agentDialogue);
-      if (audioResponse?.media) {
-        setAudioUrl(audioResponse.media);
-      }
+      // Text-to-speech using SpeechSynthesis API
+      const utterance = new SpeechSynthesisUtterance(data.agentDialogue);
+
+      // Get a list of available voices
+      const voices = window.speechSynthesis.getVoices();
+
+      // Find a female voice
+      let femaleVoice = voices.find(voice => voice.name.toLowerCase().includes('female'));
+
+      // If no female voice is found, use the first available voice
+      utterance.voice = femaleVoice || voices[0];
+
+      window.speechSynthesis.speak(utterance);
     } catch (error: any) {
       toast({
         variant: 'destructive',
@@ -312,8 +322,6 @@ export default function MealPlanPage() {
           </>
         )}
       </div>
-
-      {audioUrl && <audio ref={audioRef} src={audioUrl} hidden />}
     </>
   );
 }

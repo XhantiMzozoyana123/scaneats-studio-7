@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -28,7 +28,7 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      const response = await fetch(`https://api.scaneats.app/api/Auth/login`, {
+      const response = await fetch(`https://localhost:7066/api/Auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -64,6 +64,17 @@ export default function LoginPage() {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    const token = localStorage.getItem('authToken');
+
+    // Simulate token validation (replace with actual API call)
+    const isValidToken = token !== null;
+
+    if (isValidToken) {
+      router.push('/dashboard');
+    }
+  }, [router]);
 
   return (
     <div className="relative flex min-h-screen items-center justify-center p-4">
