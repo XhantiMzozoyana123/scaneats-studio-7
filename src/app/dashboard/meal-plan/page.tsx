@@ -6,6 +6,7 @@ import { BackgroundImage } from '@/components/background-image';
 import { Mic, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { textToSpeech } from '@/ai/flows/text-to-speech';
 
 type ScannedFood = {
   id: number;
@@ -209,27 +210,19 @@ export default function MealPlanPage() {
       const data = await response.json();
       setSallyResponse(data.agentDialogue);
       
-      // Call your backend for Text-to-Speech
+      // Call Genkit flow for Text-to-Speech
       try {
-        const ttsResponse = await fetch(`https://api.scaneats.app/api/sally/text-to-speech`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify({ text: data.agentDialogue }),
-        });
-
-        if (ttsResponse.ok) {
-            const audioData = await ttsResponse.json();
-            if (audioData.media) {
-                setAudioUrl(audioData.media);
-            }
-        } else {
-            console.error('Failed to generate audio from text.');
+        const audioData = await textToSpeech({ text: data.agentDialogue });
+        if (audioData.media) {
+          setAudioUrl(audioData.media);
         }
       } catch (ttsError) {
-          console.error('Error during TTS call:', ttsError);
+        console.error('Error during TTS call:', ttsError);
+        toast({
+          variant: 'destructive',
+          title: 'Audio Error',
+          description: 'Could not generate audio for the response.',
+        });
       }
 
     } catch (error: any) {
