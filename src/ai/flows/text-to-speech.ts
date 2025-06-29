@@ -22,6 +22,9 @@ type TextToSpeechOutput = z.infer<typeof TextToSpeechOutputSchema>;
 export async function textToSpeech(
   input: TextToSpeechInput
 ): Promise<TextToSpeechOutput> {
+  if (!input.text) {
+    throw new Error('Input text cannot be empty.');
+  }
   return textToSpeechFlow(input);
 }
 
@@ -38,14 +41,14 @@ const textToSpeechFlow = ai.defineFlow(
         responseModalities: ['AUDIO'],
         speechConfig: {
           voiceConfig: {
-            prebuiltVoiceConfig: {voiceName: 'callirrhoe'},
+            prebuiltVoiceConfig: {voiceName: 'vindemiatrix'},
           },
         },
       },
       prompt: text,
     });
 
-    if (!media) {
+    if (!media?.url) {
       throw new Error('No audio media returned from the TTS model.');
     }
 
