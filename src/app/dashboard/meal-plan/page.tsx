@@ -6,7 +6,6 @@ import { BackgroundImage } from '@/components/background-image';
 import { Mic, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { textToSpeech } from '@/ai/flows/text-to-speech';
 
 type ScannedFood = {
   id: number;
@@ -210,9 +209,27 @@ export default function MealPlanPage() {
       const data = await response.json();
       setSallyResponse(data.agentDialogue);
       
-      const audioResponse = await textToSpeech(data.agentDialogue);
-      if (audioResponse?.media) {
-        setAudioUrl(audioResponse.media);
+      // Call your backend for Text-to-Speech
+      try {
+        const ttsResponse = await fetch(`https://api.scaneats.app/api/sally/text-to-speech`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ text: data.agentDialogue }),
+        });
+
+        if (ttsResponse.ok) {
+            const audioData = await ttsResponse.json();
+            if (audioData.media) {
+                setAudioUrl(audioData.media);
+            }
+        } else {
+            console.error('Failed to generate audio from text.');
+        }
+      } catch (ttsError) {
+          console.error('Error during TTS call:', ttsError);
       }
 
     } catch (error: any) {
