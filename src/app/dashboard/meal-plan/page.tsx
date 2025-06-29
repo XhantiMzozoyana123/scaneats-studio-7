@@ -6,6 +6,7 @@ import { BackgroundImage } from '@/components/background-image';
 import { Mic, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { textToSpeech } from '@/ai/flows/text-to-speech';
 
 type ScannedFood = {
   id: number;
@@ -99,7 +100,7 @@ export default function MealPlanPage() {
 
       try {
         const response = await fetch(
-          `https://localhost:7066/api/food/references`,
+          `https://api.scaneats.app/api/food/references`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -182,7 +183,7 @@ export default function MealPlanPage() {
 
     try {
       const response = await fetch(
-        `https://localhost:7066/api/sally/meal-planner`,
+        `https://api.scaneats.app/api/sally/meal-planner`,
         {
           method: 'POST',
           headers: {
@@ -208,20 +209,12 @@ export default function MealPlanPage() {
 
       const data = await response.json();
       setSallyResponse(data.agentDialogue);
+      
+      const audioResponse = await textToSpeech(data.agentDialogue);
+      if (audioResponse?.media) {
+        setAudioUrl(audioResponse.media);
+      }
 
-      // Text-to-speech using SpeechSynthesis API
-      const utterance = new SpeechSynthesisUtterance(data.agentDialogue);
-
-      // Get a list of available voices
-      const voices = window.speechSynthesis.getVoices();
-
-      // Find a female voice
-      let femaleVoice = voices.find(voice => voice.name.toLowerCase().includes('female'));
-
-      // If no female voice is found, use the first available voice
-      utterance.voice = femaleVoice || voices[0];
-
-      window.speechSynthesis.speak(utterance);
     } catch (error: any) {
       toast({
         variant: 'destructive',
@@ -322,6 +315,7 @@ export default function MealPlanPage() {
           </>
         )}
       </div>
+      {audioUrl && <audio ref={audioRef} src={audioUrl} hidden />}
     </>
   );
 }
