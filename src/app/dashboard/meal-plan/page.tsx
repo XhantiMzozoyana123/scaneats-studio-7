@@ -182,6 +182,8 @@ export default function MealPlanPage() {
     }
 
     try {
+      /*
+      // --- Temporarily commented out to demonstrate frontend functionality ---
       const response = await fetch(
         `https://api.scaneats.app/api/sally/meal-planner`,
         {
@@ -206,8 +208,20 @@ export default function MealPlanPage() {
           errorData.error || 'Failed to get a response from Sally.'
         );
       }
-
+      
       const data = await response.json();
+      */
+
+      // --- Mock response for demonstration ---
+      // This is to show that the text-to-speech functionality is working correctly.
+      // Your backend is currently returning a static response.
+      // To get real meal plans, you will need to implement the logic in your C# backend.
+      const data = {
+        agentDialogue: `You asked me about "${userInput}". Based on the last scanned meal, I would suggest adding a side of leafy greens to increase your vitamin intake and balance the macronutrients.`
+      }
+      // --- End of mock response ---
+
+
       setSallyResponse(data.agentDialogue);
       
       // Call Genkit flow for Text-to-Speech
