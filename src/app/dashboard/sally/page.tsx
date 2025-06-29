@@ -124,18 +124,20 @@ export default function SallyPage() {
       setSallyResponse(data.agentDialogue);
 
       // Call Genkit flow for Text-to-Speech
-      try {
-        const audioData = await textToSpeech({ text: data.agentDialogue });
-        if (audioData.media) {
-          setAudioUrl(audioData.media);
+      if (data.agentDialogue) {
+        try {
+          const audioData = await textToSpeech({ text: data.agentDialogue });
+          if (audioData.media) {
+            setAudioUrl(audioData.media);
+          }
+        } catch (ttsError) {
+          console.error('Error during TTS call:', ttsError);
+          toast({
+            variant: 'destructive',
+            title: 'Audio Error',
+            description: 'Could not generate audio for the response.',
+          });
         }
-      } catch (ttsError) {
-        console.error('Error during TTS call:', ttsError);
-        toast({
-          variant: 'destructive',
-          title: 'Audio Error',
-          description: 'Could not generate audio for the response.',
-        });
       }
 
     } catch (error: any) {

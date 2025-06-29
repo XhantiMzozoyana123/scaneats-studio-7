@@ -212,18 +212,20 @@ export default function MealPlanPage() {
       setSallyResponse(data.agentDialogue);
       
       // Call Genkit flow for Text-to-Speech
-      try {
-        const { media } = await textToSpeech({ text: data.agentDialogue });
-        if (media) {
-          setAudioUrl(media);
+      if (data.agentDialogue) {
+        try {
+          const { media } = await textToSpeech({ text: data.agentDialogue });
+          if (media) {
+            setAudioUrl(media);
+          }
+        } catch (ttsError) {
+          console.error('Error during TTS call:', ttsError);
+          toast({
+            variant: 'destructive',
+            title: 'Audio Error',
+            description: 'Could not generate audio for the response.',
+          });
         }
-      } catch (ttsError) {
-        console.error('Error during TTS call:', ttsError);
-        toast({
-          variant: 'destructive',
-          title: 'Audio Error',
-          description: 'Could not generate audio for the response.',
-        });
       }
 
     } catch (error: any) {
