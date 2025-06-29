@@ -28,7 +28,7 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      const response = await fetch(`https://localhost:7066/api/Auth/login`, {
+      const response = await fetch(`https://api.scaneats.app/api/Auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -142,7 +142,7 @@ export default function LoginPage() {
 
         <p className="mt-8 text-center text-sm text-white/70">
           Don&apos;t have an account?{' '}
-          <Link href="/signup" className="font-semibold text-white hover:underline">
+          <Link href="/" className="font-semibold text-white hover:underline">
             Sign Up
           </Link>
         </p>
