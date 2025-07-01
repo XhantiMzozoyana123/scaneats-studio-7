@@ -224,7 +224,7 @@ export default function ProfilePage() {
 
   return (
     <div className="flex min-h-screen flex-col items-center bg-black pb-40 pt-5">
-      <div className="w-[90%] max-w-2xl rounded-lg bg-[#0e010f]/50 p-5">
+      <div className="w-[90%] max-w-[600px] rounded-lg bg-[rgba(14,1,15,0.32)] p-5">
         <div className="mb-8 flex justify-center">
             <Image
               src="/profile-goals-logo.png"

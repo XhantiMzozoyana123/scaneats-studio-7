@@ -32,7 +32,7 @@ export function BottomNav() {
             >
               <div
                 className={cn(
-                  'flex h-12 w-12 items-center justify-center rounded-full text-[#b0b0b0] transition-all group-hover:scale-105 group-hover:bg-primary group-hover:text-white group-hover:shadow-[0_0_10px_2px_hsl(var(--primary)/0.7),0_0_20px_5px_hsl(var(--primary)/0.4)] sm:h-14 sm:w-14',
+                  'flex h-[50px] w-[50px] items-center justify-center rounded-full text-[#b0b0b0] transition-all group-hover:scale-105 group-hover:bg-primary group-hover:text-white group-hover:shadow-[0_0_10px_2px_hsl(var(--primary)/0.7),0_0_20px_5px_hsl(var(--primary)/0.4)] sm:h-[60px] sm:w-[60px]',
                   isActive &&
                     'scale-105 bg-primary text-white shadow-[0_0_10px_2px_hsl(var(--primary)/0.7),0_0_20px_5px_hsl(var(--primary)/0.4)] sm:scale-110'
                 )}
