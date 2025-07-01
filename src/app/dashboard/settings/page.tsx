@@ -330,9 +330,14 @@ export default function SettingsPage() {
             <div className="space-y-4 rounded-lg bg-zinc-900 p-6">
               <h2 className="text-lg font-semibold text-white">Billing</h2>
                <SettingsItem
-                icon={CreditCard}
-                label="Manage Billing & Credits"
+                icon={Repeat}
+                label="Manage Subscription"
                 href="/pricing"
+              />
+               <SettingsItem
+                icon={Wallet}
+                label="Buy Credits"
+                href="/credits"
               />
             </div>
             

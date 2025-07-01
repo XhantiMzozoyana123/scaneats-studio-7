@@ -16,14 +16,6 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { cn } from '@/lib/utils';
-
-type CreditProduct = {
-  id: number;
-  credit: number;
-  price: number;
-  description: string;
-};
 
 const FeatureListItem = ({ children }: { children: React.ReactNode }) => (
     <li className="flex items-center text-sm text-gray-300">
@@ -37,95 +29,22 @@ const FeatureListItem = ({ children }: { children: React.ReactNode }) => (
 export default function PricingPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const [products, setProducts] = useState<CreditProduct[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isPurchasing, setIsPurchasing] = useState<number | null>(null);
   const [isSubscribing, setIsSubscribing] = useState(false);
 
   useEffect(() => {
-    const fetchInitialData = async () => {
-      setIsLoading(true);
+    const checkAuth = () => {
       const token = localStorage.getItem('authToken');
       if (!token) {
         toast({ variant: 'destructive', title: 'Authentication Error' });
         router.push('/login');
-        return;
-      }
-
-      try {
-        const productsResponse = await fetch(`https://api.scaneats.app/api/credit/shop`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-
-        if (!productsResponse.ok)
-          throw new Error('Failed to fetch credit shop.');
-        const productsData = await productsResponse.json();
-        setProducts(productsData);
-      } catch (error: any) {
-        toast({
-          variant: 'destructive',
-          title: 'Error',
-          description: error.message,
-        });
-      } finally {
+      } else {
         setIsLoading(false);
       }
     };
-
-    fetchInitialData();
+    checkAuth();
   }, [router, toast]);
 
-  const handlePurchase = async (product: CreditProduct) => {
-    setIsPurchasing(product.id);
-    const token = localStorage.getItem('authToken');
-    const email = localStorage.getItem('userEmail');
-
-    if (!token || !email) {
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'User information not found. Please log in again.',
-      });
-      setIsPurchasing(null);
-      return;
-    }
-
-    try {
-      const response = await fetch(
-        `https://api.scaneats.app/api/credit/purchase`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            email: email,
-            creditInformation: product,
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Purchase failed.');
-      }
-
-      const result = await response.json();
-      if (result.url) {
-        window.location.href = result.url;
-      } else {
-        throw new Error('Payment URL not received.');
-      }
-    } catch (error: any) {
-      toast({
-        variant: 'destructive',
-        title: 'Purchase Error',
-        description: error.message,
-      });
-      setIsPurchasing(null);
-    }
-  };
 
   const handleSubscribe = async () => {
     setIsSubscribing(true);
@@ -229,7 +148,7 @@ export default function PricingPage() {
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <button
-                  disabled={isSubscribing || isPurchasing !== null}
+                  disabled={isSubscribing}
                    className="cta-button mt-4 animate-breathe-glow-white"
                 >
                   {isSubscribing ? (
@@ -261,50 +180,6 @@ export default function PricingPage() {
           </div>
         )}
       </div>
-
-      {!isLoading && products.length > 0 && (
-         <div className="mt-16 w-full max-w-4xl text-center">
-             <h2 className="text-3xl font-medium text-white mb-8">Or, Top Up Credits</h2>
-             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                 {products.map((product) => (
-                    <div key={product.id} className="flex flex-col gap-4 rounded-2xl border border-white/15 bg-[#2d2d2d]/30 p-6 text-left shadow-xl backdrop-blur-[8px]">
-                        <div className="flex-grow">
-                            <div className="text-2xl font-semibold text-white">{product.credit} Credits</div>
-                            <p className="mt-1 text-sm text-gray-400">{product.description}</p>
-                        </div>
-                        <div>
-                             <div className="text-3xl font-bold text-white">${product.price.toFixed(2)}</div>
-                             <AlertDialog>
-                               <AlertDialogTrigger asChild>
-                                 <button
-                                     disabled={isPurchasing !== null || isSubscribing}
-                                     className="mt-4 w-full rounded-lg bg-white/10 py-2.5 px-4 text-sm font-semibold text-white transition-colors hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-50"
-                                  >
-                                      {isPurchasing === product.id ? <Loader2 className="mx-auto animate-spin" /> : 'Purchase'}
-                                  </button>
-                               </AlertDialogTrigger>
-                               <AlertDialogContent>
-                                   <AlertDialogHeader>
-                                       <AlertDialogTitle>Confirm Your Purchase</AlertDialogTitle>
-                                       <AlertDialogDescription>
-                                           You are about to make a one-time purchase of {product.credit} credits for ${product.price.toFixed(2)}.
-                                       </AlertDialogDescription>
-                                   </AlertDialogHeader>
-                                   <AlertDialogFooter>
-                                       <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                       <AlertDialogAction onClick={() => handlePurchase(product)} disabled={isPurchasing !== null}>
-                                           {isPurchasing === product.id && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                           Confirm & Pay
-                                       </AlertDialogAction>
-                                   </AlertDialogFooter>
-                               </AlertDialogContent>
-                           </AlertDialog>
-                        </div>
-                    </div>
-                 ))}
-             </div>
-         </div>
-      )}
     </div>
   );
 }
