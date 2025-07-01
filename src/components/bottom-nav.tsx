@@ -1,9 +1,8 @@
-
 'use client';
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, UtensilsCrossed, Mic, User } from 'lucide-react';
+import { Home, UtensilsCrossed, Mic, User, Settings } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navItems = [
@@ -11,6 +10,7 @@ const navItems = [
   { href: '/dashboard/meal-plan', icon: UtensilsCrossed, label: 'Meal Plan' },
   { href: '/dashboard/sally', icon: Mic, label: 'SallyPA' },
   { href: '/dashboard/profile', icon: User, label: 'Profile' },
+  { href: '/dashboard/settings', icon: Settings, label: 'Settings' },
 ];
 
 export function BottomNav() {
@@ -21,20 +21,20 @@ export function BottomNav() {
       <div className="mb-2 text-center text-xs text-[#999] sm:mb-2.5 sm:text-[0.85em]">
         Powered by ScanEats
       </div>
-      <div className="flex items-center justify-around rounded-[20px] bg-[#1a1023]/85 p-2 shadow-[0_0_12px_1px_rgba(127,0,255,0.65),0_0_25px_5px_rgba(127,0,255,0.35),0_2px_8px_rgba(0,0,0,0.3)] backdrop-blur-sm sm:rounded-[25px] sm:p-4">
+      <div className="flex items-center justify-around rounded-[25px] bg-[rgba(26,16,35,0.85)] p-2 shadow-[0_0_12px_1px_rgba(127,0,255,0.65),0_0_25px_5px_rgba(127,0,255,0.35),0_2px_8px_rgba(0,0,0,0.3)] backdrop-blur-sm sm:rounded-[25px] sm:p-4">
         {navItems.map((item) => {
           const isActive = pathname === item.href;
           return (
             <Link
               href={item.href}
               key={item.href}
-              className="group flex flex-1 flex-col items-center gap-0.5 text-gray-400 transition-colors sm:gap-1"
+              className="group flex flex-1 flex-col items-center gap-0.5 text-gray-400 no-underline transition-colors sm:gap-1"
             >
               <div
                 className={cn(
-                  'flex h-[50px] w-[50px] items-center justify-center rounded-full text-[#b0b0b0] transition-all group-hover:scale-105 group-hover:bg-primary group-hover:text-white group-hover:shadow-[0_0_10px_2px_hsl(var(--primary)/0.7),0_0_20px_5px_hsl(var(--primary)/0.4)] sm:h-[60px] sm:w-[60px]',
+                  'flex h-[50px] w-[50px] items-center justify-center rounded-full text-[#b0b0b0] transition-all group-hover:scale-105 group-hover:bg-[#7F00FF] group-hover:text-white group-hover:shadow-[0_0_10px_2px_rgba(127,0,255,0.7),0_0_20px_5px_rgba(127,0,255,0.4)] sm:h-[60px] sm:w-[60px]',
                   isActive &&
-                    'scale-105 bg-primary text-white shadow-[0_0_10px_2px_hsl(var(--primary)/0.7),0_0_20px_5px_hsl(var(--primary)/0.4)] sm:scale-110'
+                    'scale-110 bg-[#7F00FF] text-white shadow-[0_0_10px_2px_rgba(127,0,255,0.7),0_0_20px_5px_rgba(127,0,255,0.4)]'
                 )}
               >
                 <item.icon className="h-6 w-6 sm:h-7 sm:w-7" />
