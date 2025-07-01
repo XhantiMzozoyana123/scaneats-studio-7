@@ -16,6 +16,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import { cn } from '@/lib/utils';
 
 type CreditProduct = {
   id: number;
@@ -25,7 +26,7 @@ type CreditProduct = {
 };
 
 const FeatureListItem = ({ children }: { children: React.ReactNode }) => (
-  <li className="flex items-center text-sm text-gray-300">
+    <li className="flex items-center text-sm text-gray-300">
     <div className="mr-3 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-white/15 text-xs font-bold text-white">
       ✓
     </div>
@@ -141,7 +142,6 @@ export default function PricingPage() {
       return;
     }
     
-    // PLN_h212vaz6f2wp54w
     const subscriptionPlanCode = 'PLN_h212vaz6f2wp54w';
 
     try {
@@ -184,7 +184,7 @@ export default function PricingPage() {
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center overflow-y-auto bg-black p-5 text-gray-200">
-      <Link
+       <Link
         href="/dashboard/settings"
         className="absolute top-8 left-8 z-10 inline-block rounded-full border border-white/10 bg-zinc-800/60 py-2.5 px-4 text-sm font-medium text-white no-underline transition-colors hover:bg-zinc-700/80"
       >
@@ -216,11 +216,11 @@ export default function PricingPage() {
 
             <ul className="flex list-none flex-col gap-4 p-0">
               <FeatureListItem>
-                24/7 Personal Assistant:
-                <span className="ml-1.5 rounded-sm bg-white/70 px-1 py-0.5 font-semibold text-black">
-                  SALLY
-                </span>
-              </FeatureListItem>
+                 24/7 Personal Assistant:
+                 <span className="ml-1.5 rounded-sm bg-white/70 px-1 py-0.5 font-semibold text-black">
+                   SALLY
+                 </span>
+               </FeatureListItem>
               <FeatureListItem>50 Monthly Food Scanning Credits</FeatureListItem>
               <FeatureListItem>Detailed Nutritional Analytics</FeatureListItem>
               <FeatureListItem>Ad-Free Experience</FeatureListItem>
@@ -230,7 +230,7 @@ export default function PricingPage() {
               <AlertDialogTrigger asChild>
                 <button
                   disabled={isSubscribing || isPurchasing !== null}
-                  className="cta-button mt-4 block w-full animate-breathe-glow rounded-lg border-none bg-white py-3.5 px-5 text-center text-base font-semibold text-black no-underline transition-transform hover:scale-105 disabled:cursor-not-allowed disabled:opacity-70"
+                   className="cta-button mt-4 animate-breathe-glow-white"
                 >
                   {isSubscribing ? (
                     <Loader2 className="mx-auto animate-spin" />
