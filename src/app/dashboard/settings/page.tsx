@@ -353,7 +353,7 @@ export default function SettingsPage() {
         data-ai-hint="abstract purple"
         className="blur-sm"
       />
-      <main className="container z-10 mx-auto max-w-md px-4 py-6">
+      <main className="container z-10 mx-auto h-full max-w-md overflow-y-auto px-4 py-6 pb-28">
         <h1 className="mb-4 text-center font-headline text-3xl font-bold text-white">
           Settings
         </h1>
