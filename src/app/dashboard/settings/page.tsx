@@ -5,10 +5,10 @@ import {
   ChevronRight,
   LogOut,
   UserCircle,
-  CreditCard,
   Lock,
   Trash2,
   Loader2,
+  Wallet,
 } from 'lucide-react';
 import Link from 'next/link';
 import { BackgroundImage } from '@/components/background-image';
@@ -27,7 +27,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-  DialogClose
+  DialogClose,
 } from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
 import {
@@ -69,7 +69,9 @@ const SettingsItem = ({
     <div className="flex items-center px-4 py-3">
       <Icon className="mr-4 h-5 w-5 text-accent" />
       <div className="flex-1">
-        <span className={cn('font-medium text-white', labelClassName)}>{label}</span>
+        <span className={cn('font-medium text-white', labelClassName)}>
+          {label}
+        </span>
         {value && <p className="text-sm text-muted-foreground">{value}</p>}
       </div>
       {action}
@@ -83,7 +85,9 @@ const SettingsItem = ({
     <Wrapper
       {...(href ? { href } : {})}
       onClick={onClick}
-      className={`block transition-colors ${onClick || href ? 'hover:bg-white/5' : ''} ${onClick ? 'cursor-pointer' : ''}`}
+      className={`block transition-colors ${
+        onClick || href ? 'hover:bg-white/5' : ''
+      } ${onClick ? 'cursor-pointer' : ''}`}
     >
       {content}
     </Wrapper>
@@ -91,8 +95,6 @@ const SettingsItem = ({
 };
 
 export default function SettingsPage() {
-  const subscriptionActive = true;
-  const renewalDate = 'August 24, 2024';
   const router = useRouter();
   const { toast } = useToast();
   const [isDeleting, setIsDeleting] = useState(false);
@@ -102,17 +104,20 @@ export default function SettingsPage() {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [userName, setUserName] = useState('');
+  const [creditBalance, setCreditBalance] = useState<number | null>(null);
 
   useEffect(() => {
-    const fetchProfile = async () => {
+    const fetchProfileAndBalance = async () => {
       const token = localStorage.getItem('authToken');
-      if (!token) return;
+      if (!token) {
+        toast({ variant: 'destructive', title: 'Not Authenticated' });
+        router.push('/login');
+        return;
+      }
 
       try {
         const response = await fetch(`https://api.scaneats.app/api/profile`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { Authorization: `Bearer ${token}` },
         });
         if (response.ok) {
           const data = await response.json();
@@ -121,11 +126,29 @@ export default function SettingsPage() {
           }
         }
       } catch (error) {
-        console.error("Failed to fetch user's name for password change", error);
+        console.error("Failed to fetch user's name", error);
+      }
+
+      try {
+        const response = await fetch(
+          `https://api.scaneats.app/api/credit/balance`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+        if (response.ok) {
+          const data = await response.json();
+          setCreditBalance(data.credits);
+        } else {
+          setCreditBalance(0);
+        }
+      } catch (error) {
+        console.error('Failed to fetch credit balance', error);
+        setCreditBalance(0);
       }
     };
-    fetchProfile();
-  }, []);
+    fetchProfileAndBalance();
+  }, [router, toast]);
 
   const handleLogout = () => {
     localStorage.removeItem('authToken');
@@ -153,12 +176,15 @@ export default function SettingsPage() {
     }
 
     try {
-      const response = await fetch(`https://api.scaneats.app/api/Auth/delete`, {
-        method: 'DELETE',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await fetch(
+        `https://api.scaneats.app/api/Auth/delete`,
+        {
+          method: 'DELETE',
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
       if (response.ok) {
         toast({
@@ -167,7 +193,9 @@ export default function SettingsPage() {
         });
         handleLogout();
       } else {
-        const errorData = await response.json().catch(() => ({ error: 'Failed to delete account.' }));
+        const errorData = await response
+          .json()
+          .catch(() => ({ error: 'Failed to delete account.' }));
         throw new Error(errorData.error || 'Failed to delete account.');
       }
     } catch (error: any) {
@@ -215,47 +243,49 @@ export default function SettingsPage() {
       setIsChangingPassword(false);
       return;
     }
-    
+
     const payload = {
-        Id: userId,
-        UserName: userName,
-        NewEmail: email, // API requires this, sending current email
-        CurrentPassword: currentPassword,
-        NewPassword: newPassword,
+      Id: userId,
+      UserName: userName,
+      NewEmail: email,
+      CurrentPassword: currentPassword,
+      NewPassword: newPassword,
     };
 
     try {
-        const response = await fetch(`https://api.scaneats.app/api/Auth/update`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify(payload),
-        });
-
-        if (response.ok) {
-            toast({
-                title: 'Password Changed',
-                description: 'Your password has been updated successfully.',
-            });
-            setIsPasswordDialogOpen(false);
-            setCurrentPassword('');
-            setNewPassword('');
-            setConfirmPassword('');
-        } else {
-            const errorData = await response.json();
-            throw new Error(errorData.error || 'Failed to change password.');
+      const response = await fetch(
+        `https://api.scaneats.app/api/Auth/update`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(payload),
         }
+      );
 
-    } catch (error: any) {
+      if (response.ok) {
         toast({
-            variant: 'destructive',
-            title: 'Update Failed',
-            description: error.message,
+          title: 'Password Changed',
+          description: 'Your password has been updated successfully.',
         });
+        setIsPasswordDialogOpen(false);
+        setCurrentPassword('');
+        setNewPassword('');
+        setConfirmPassword('');
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to change password.');
+      }
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Update Failed',
+        description: error.message,
+      });
     } finally {
-        setIsChangingPassword(false);
+      setIsChangingPassword(false);
     }
   };
 
@@ -283,15 +313,20 @@ export default function SettingsPage() {
                 href="/dashboard/profile"
               />
               <Separator className="bg-white/10" />
-              <Dialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen}>
+              <Dialog
+                open={isPasswordDialogOpen}
+                onOpenChange={setIsPasswordDialogOpen}
+              >
                 <DialogTrigger asChild>
-                    <div className='cursor-pointer'>
-                        <SettingsItem
-                            icon={Lock}
-                            label="Change Password"
-                            action={<ChevronRight className="h-5 w-5 text-muted-foreground" />}
-                        />
-                    </div>
+                  <div className="cursor-pointer">
+                    <SettingsItem
+                      icon={Lock}
+                      label="Change Password"
+                      action={
+                        <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                      }
+                    />
+                  </div>
                 </DialogTrigger>
                 <DialogContent>
                   <DialogHeader>
@@ -300,26 +335,59 @@ export default function SettingsPage() {
                       Enter your current password and a new password below.
                     </DialogDescription>
                   </DialogHeader>
-                  <form onSubmit={handlePasswordChange} className="space-y-4 py-4">
+                  <form
+                    onSubmit={handlePasswordChange}
+                    className="space-y-4 py-4"
+                  >
                     <div className="space-y-2">
-                        <Label htmlFor="current-password">Current Password</Label>
-                        <Input id="current-password" type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} required />
+                      <Label htmlFor="current-password">
+                        Current Password
+                      </Label>
+                      <Input
+                        id="current-password"
+                        type="password"
+                        value={currentPassword}
+                        onChange={(e) => setCurrentPassword(e.target.value)}
+                        required
+                      />
                     </div>
                     <div className="space-y-2">
-                        <Label htmlFor="new-password">New Password</Label>
-                        <Input id="new-password" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required />
+                      <Label htmlFor="new-password">New Password</Label>
+                      <Input
+                        id="new-password"
+                        type="password"
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        required
+                      />
                     </div>
                     <div className="space-y-2">
-                        <Label htmlFor="confirm-password">Confirm New Password</Label>
-                        <Input id="confirm-password" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required />
+                      <Label htmlFor="confirm-password">
+                        Confirm New Password
+                      </Label>
+                      <Input
+                        id="confirm-password"
+                        type="password"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        required
+                      />
                     </div>
                   </form>
                   <DialogFooter>
                     <DialogClose asChild>
                       <Button variant="outline">Cancel</Button>
                     </DialogClose>
-                    <Button type="submit" onClick={handlePasswordChange} disabled={isChangingPassword}>
-                      {isChangingPassword ? <Loader2 className="animate-spin" /> : 'Save Changes'}
+                    <Button
+                      type="submit"
+                      onClick={handlePasswordChange}
+                      disabled={isChangingPassword}
+                    >
+                      {isChangingPassword ? (
+                        <Loader2 className="animate-spin" />
+                      ) : (
+                        'Save Changes'
+                      )}
                     </Button>
                   </DialogFooter>
                 </DialogContent>
@@ -329,21 +397,16 @@ export default function SettingsPage() {
 
           <Card className="border-primary/30 bg-black/70 backdrop-blur-md">
             <CardHeader className="p-4">
-              <CardTitle className="text-lg text-white">Subscription</CardTitle>
+              <CardTitle className="text-lg text-white">Credits</CardTitle>
             </CardHeader>
             <CardContent className="p-0">
               <SettingsItem
-                icon={CreditCard}
-                label={subscriptionActive ? 'Active' : 'Inactive'}
-                labelClassName={cn(
-                  subscriptionActive 
-                    ? "text-green-400 [text-shadow:0_0_8px_rgba(34,197,94,0.9)]"
-                    : "text-red-400 [text-shadow:0_0_8px_rgba(239,68,68,0.9)]"
-                )}
+                icon={Wallet}
+                label="Current Balance"
                 value={
-                  subscriptionActive
-                    ? `Renews on ${renewalDate}`
-                    : 'Upgrade to unlock all features'
+                  creditBalance !== null
+                    ? `${creditBalance} credits remaining`
+                    : 'Loading...'
                 }
               />
               <Separator className="bg-white/10" />
@@ -353,24 +416,9 @@ export default function SettingsPage() {
                   variant="outline"
                   className="w-full border-accent text-accent hover:bg-accent/10 hover:text-accent"
                 >
-                  <Link href="/pricing">
-                    {subscriptionActive ? 'Manage Subscription' : 'View Plans'}
-                  </Link>
+                  <Link href="/pricing">Buy More Credits</Link>
                 </Button>
               </div>
-              {subscriptionActive && (
-                <>
-                  <Separator className="bg-white/10" />
-                  <div className="px-3 pb-3">
-                    <Button
-                      variant="ghost"
-                      className="w-full justify-start p-2 text-sm text-muted-foreground hover:bg-destructive/20 hover:text-red-400"
-                    >
-                      Cancel Subscription
-                    </Button>
-                  </div>
-                </>
-              )}
             </CardContent>
           </Card>
 
@@ -396,7 +444,9 @@ export default function SettingsPage() {
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
-                  <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                  <AlertDialogTitle>
+                    Are you absolutely sure?
+                  </AlertDialogTitle>
                   <AlertDialogDescription>
                     This action cannot be undone. This will permanently delete
                     your account and remove your data from our servers.
@@ -409,7 +459,9 @@ export default function SettingsPage() {
                     onClick={handleDeleteAccount}
                     disabled={isDeleting}
                   >
-                    {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                    {isDeleting ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : null}
                     Delete My Account
                   </AlertDialogAction>
                 </AlertDialogFooter>
