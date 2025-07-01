@@ -9,6 +9,17 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2, ArrowLeft, Wallet, Check } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { BackgroundImage } from '@/components/background-image';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
 type CreditProduct = {
   id: number;
@@ -196,14 +207,32 @@ export default function PricingPage() {
                        </ul>
                     </div>
                     <div className="flex items-center">
-                      <Button 
-                        onClick={handleSubscribe} 
-                        disabled={isSubscribing}
-                        size="lg"
-                        className="w-full bg-primary py-6 text-lg font-bold shadow-[0_0_8px_2px_hsl(var(--primary)/0.6)] transition-shadow duration-300 hover:shadow-[0_0_12px_6px_hsl(var(--primary)/0.8)] md:w-auto"
-                      >
-                        {isSubscribing ? <Loader2 className="animate-spin" /> : 'Subscribe Now'}
-                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            size="lg"
+                            disabled={isSubscribing || isPurchasing !== null}
+                            className="w-full bg-primary py-6 text-lg font-bold shadow-[0_0_8px_2px_hsl(var(--primary)/0.6)] transition-shadow duration-300 hover:shadow-[0_0_12px_6px_hsl(var(--primary)/0.8)] md:w-auto"
+                          >
+                            Subscribe Now
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Confirm Your Subscription</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              You are about to subscribe to the Monthly Plan for $9.99/month. This includes 50 credits, delivered monthly.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={handleSubscribe} disabled={isSubscribing}>
+                              {isSubscribing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                              Confirm & Pay
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     </div>
                 </CardContent>
               </Card>
@@ -223,13 +252,31 @@ export default function PricingPage() {
                         </div>
                       </CardContent>
                       <CardFooter>
-                        <Button 
-                          onClick={() => handlePurchase(product)} 
-                          disabled={isPurchasing === product.id}
-                          className="w-full bg-primary py-3 text-lg font-bold shadow-[0_0_8px_2px_hsl(var(--primary)/0.6)] transition-shadow duration-300 hover:shadow-[0_0_12px_6px_hsl(var(--primary)/0.8)]"
-                        >
-                          {isPurchasing === product.id ? <Loader2 className="animate-spin" /> : 'Purchase'}
-                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              disabled={isPurchasing !== null || isSubscribing}
+                              className="w-full bg-primary py-3 text-lg font-bold shadow-[0_0_8px_2px_hsl(var(--primary)/0.6)] transition-shadow duration-300 hover:shadow-[0_0_12px_6px_hsl(var(--primary)/0.8)]"
+                            >
+                              Purchase
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Confirm Your Purchase</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                You are about to make a one-time purchase of {product.credit} credits for ${product.price.toFixed(2)}.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => handlePurchase(product)} disabled={isPurchasing === product.id}>
+                                {isPurchasing === product.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                                Confirm & Pay
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       </CardFooter>
                     </Card>
                   ))}
