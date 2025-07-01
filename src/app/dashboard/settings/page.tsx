@@ -9,6 +9,7 @@ import {
   Trash2,
   Loader2,
   Wallet,
+  Repeat,
 } from 'lucide-react';
 import Link from 'next/link';
 import { BackgroundImage } from '@/components/background-image';
@@ -105,9 +106,11 @@ export default function SettingsPage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [userName, setUserName] = useState('');
   const [creditBalance, setCreditBalance] = useState<number | null>(null);
+  const [subscriptionStatus, setSubscriptionStatus] = useState('loading'); // 'loading', 'active', 'inactive'
+  const [isCancelling, setIsCancelling] = useState(false);
 
   useEffect(() => {
-    const fetchProfileAndBalance = async () => {
+    const fetchUserData = async () => {
       const token = localStorage.getItem('authToken');
       if (!token) {
         toast({ variant: 'destructive', title: 'Not Authenticated' });
@@ -115,6 +118,7 @@ export default function SettingsPage() {
         return;
       }
 
+      // Fetch Profile
       try {
         const response = await fetch(`https://api.scaneats.app/api/profile`, {
           headers: { Authorization: `Bearer ${token}` },
@@ -129,6 +133,7 @@ export default function SettingsPage() {
         console.error("Failed to fetch user's name", error);
       }
 
+      // Fetch Credit Balance
       try {
         const response = await fetch(
           `https://api.scaneats.app/api/credit/balance`,
@@ -146,8 +151,26 @@ export default function SettingsPage() {
         console.error('Failed to fetch credit balance', error);
         setCreditBalance(0);
       }
+      
+      // Fetch Subscription Status
+      // NOTE: You will need to implement this endpoint on your backend.
+      // It should return a JSON object like { "isActive": true } or { "isActive": false }
+      try {
+        const subResponse = await fetch(`https://api.scaneats.app/api/subscription/status`, {
+             headers: { Authorization: `Bearer ${token}` },
+        });
+        if (subResponse.ok) {
+            const subData = await subResponse.json();
+            setSubscriptionStatus(subData.isActive ? 'active' : 'inactive');
+        } else {
+            setSubscriptionStatus('inactive');
+        }
+      } catch (error) {
+        console.error('Failed to fetch subscription status', error);
+        setSubscriptionStatus('inactive');
+      }
     };
-    fetchProfileAndBalance();
+    fetchUserData();
   }, [router, toast]);
 
   const handleLogout = () => {
@@ -289,6 +312,40 @@ export default function SettingsPage() {
     }
   };
 
+  const handleCancelSubscription = async () => {
+      setIsCancelling(true);
+      const token = localStorage.getItem('authToken');
+
+      if (!token) {
+          toast({ variant: 'destructive', title: 'Authentication Error', description: 'You must be logged in.' });
+          setIsCancelling(false);
+          return;
+      }
+
+      try {
+          const response = await fetch(`https://api.scaneats.app/api/subscription/cancel`, {
+              method: 'POST',
+              headers: { Authorization: `Bearer ${token}` },
+          });
+
+          if (response.ok) {
+              toast({
+                  title: 'Subscription Cancelled',
+                  description: 'Your subscription has been cancelled successfully.',
+              });
+              setSubscriptionStatus('inactive');
+          } else {
+              const errorData = await response.json().catch(() => ({ message: 'Failed to cancel subscription.' }));
+              throw new Error(errorData.message || 'Failed to cancel subscription.');
+          }
+      } catch (error: any) {
+          toast({ variant: 'destructive', title: 'Cancellation Failed', description: error.message });
+      } finally {
+          setIsCancelling(false);
+      }
+  };
+
+
   return (
     <>
       <BackgroundImage
@@ -395,6 +452,65 @@ export default function SettingsPage() {
             </CardContent>
           </Card>
 
+          <Card className="border-primary/30 bg-black/70 backdrop-blur-md">
+            <CardHeader className="p-4">
+              <CardTitle className="text-lg text-white">Subscription</CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              <SettingsItem
+                  icon={Repeat}
+                  label="Plan Status"
+                  value={
+                      subscriptionStatus === 'loading'
+                          ? 'Loading...'
+                          : subscriptionStatus === 'active'
+                          ? 'Active'
+                          : 'Inactive'
+                  }
+              />
+              <Separator className="bg-white/10" />
+              {subscriptionStatus === 'active' ? (
+                  <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                          <div className="cursor-pointer">
+                              <SettingsItem
+                                  icon={Trash2}
+                                  label="Cancel Subscription"
+                                  labelClassName="text-red-500 hover:text-red-400"
+                                  onClick={() => {}}
+                              />
+                          </div>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                          <AlertDialogHeader>
+                              <AlertDialogTitle>Cancel Subscription?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                  Are you sure? Your subscription benefits will be lost at the end of your current billing period. This action cannot be undone.
+                              </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                              <AlertDialogCancel>Keep Subscription</AlertDialogCancel>
+                              <AlertDialogAction
+                                  className={buttonVariants({ variant: 'destructive' })}
+                                  onClick={handleCancelSubscription}
+                                  disabled={isCancelling}
+                              >
+                                  {isCancelling ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                                  Confirm Cancellation
+                              </AlertDialogAction>
+                          </AlertDialogFooter>
+                      </AlertDialogContent>
+                  </AlertDialog>
+              ) : (
+                <div className="p-3">
+                  <Button asChild variant="outline" className="w-full border-accent text-accent hover:bg-accent/10 hover:text-accent">
+                      <Link href="/pricing">View Plans</Link>
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+          
           <Card className="border-primary/30 bg-black/70 backdrop-blur-md">
             <CardHeader className="p-4">
               <CardTitle className="text-lg text-white">Credits</CardTitle>
