@@ -16,7 +16,6 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { cn } from '@/lib/utils';
 
 type CreditProduct = {
   id: number;
@@ -25,44 +24,28 @@ type CreditProduct = {
   description: string;
 };
 
+const creditProducts: CreditProduct[] = [
+    { id: 1, credit: 50, price: 4.99, description: 'Perfect for getting started.' },
+    { id: 2, credit: 120, price: 9.99, description: 'Our most popular option.' },
+    { id: 3, credit: 250, price: 19.99, description: 'Great value for regular users.' },
+    { id: 4, credit: 550, price: 39.99, description: 'For the power user.' },
+    { id: 5, credit: 1000, price: 69.99, description: 'Best value, never run out.' },
+];
+
 export default function CreditsPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const [products, setProducts] = useState<CreditProduct[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [products, setProducts] = useState<CreditProduct[]>(creditProducts);
+  const [isLoading, setIsLoading] = useState(false); // No longer loading from API
   const [isPurchasing, setIsPurchasing] = useState<number | null>(null);
 
   useEffect(() => {
-    const fetchInitialData = async () => {
-      setIsLoading(true);
-      const token = localStorage.getItem('authToken');
-      if (!token) {
-        toast({ variant: 'destructive', title: 'Authentication Error' });
-        router.push('/login');
-        return;
-      }
-
-      try {
-        const productsResponse = await fetch(`https://api.scaneats.app/api/credit/shop`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-
-        if (!productsResponse.ok)
-          throw new Error('Failed to fetch credit shop.');
-        const productsData = await productsResponse.json();
-        setProducts(productsData);
-      } catch (error: any) {
-        toast({
-          variant: 'destructive',
-          title: 'Error',
-          description: error.message,
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchInitialData();
+    // Auth check remains important
+    const token = localStorage.getItem('authToken');
+    if (!token) {
+      toast({ variant: 'destructive', title: 'Authentication Error', description: "Please log in to purchase credits." });
+      router.push('/login');
+    }
   }, [router, toast]);
 
   const handlePurchase = async (product: CreditProduct) => {
