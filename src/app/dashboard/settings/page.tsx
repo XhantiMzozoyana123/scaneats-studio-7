@@ -17,7 +17,6 @@ import { Button, buttonVariants } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -40,48 +39,28 @@ import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
 
 const SettingsItem = ({
   icon: Icon,
   label,
   href,
   onClick,
-  value,
-  isDestructive,
 }: {
   icon: React.ElementType;
   label: string;
   href?: string;
   onClick?: () => void;
-  value?: string;
-  isDestructive?: boolean;
 }) => {
   const content = (
     <div
       onClick={onClick}
       className={`flex items-center p-4 transition-colors rounded-lg ${
-        href || onClick ? 'cursor-pointer hover:bg-white/5' : ''
+        href || onClick ? 'cursor-pointer hover:bg-zinc-800' : ''
       }`}
     >
-      <Icon
-        className={`mr-4 h-5 w-5 ${
-          isDestructive ? 'text-red-400' : 'text-gray-300'
-        }`}
-      />
-      <div className="flex-1">
-        <span
-          className={`font-medium ${
-            isDestructive ? 'text-red-400' : 'text-white'
-          }`}
-        >
-          {label}
-        </span>
-        {value && <p className="text-sm text-gray-400">{value}</p>}
-      </div>
-      {(href || onClick) && !value && (
-        <ChevronRight className="h-5 w-5 text-gray-500" />
-      )}
+      <Icon className="mr-4 h-5 w-5 text-gray-300" />
+      <span className="flex-1 font-medium text-white">{label}</span>
+      {(href || onClick) && <ChevronRight className="h-5 w-5 text-gray-500" />}
     </div>
   );
 
@@ -91,6 +70,24 @@ const SettingsItem = ({
 
   return content;
 };
+
+const DestructiveSettingsItem = ({
+  icon: Icon,
+  label,
+  onClick,
+}: {
+  icon: React.ElementType;
+  label: string;
+  onClick: () => void;
+}) => (
+  <div
+    onClick={onClick}
+    className="flex cursor-pointer items-center p-4 transition-colors rounded-lg hover:bg-red-900/50"
+  >
+    <Icon className="mr-4 h-5 w-5 text-red-400" />
+    <span className="flex-1 font-medium text-red-400">{label}</span>
+  </div>
+);
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -102,9 +99,6 @@ export default function SettingsPage() {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [userName, setUserName] = useState('');
-  const [creditBalance, setCreditBalance] = useState<number | null>(null);
-  const [subscriptionStatus, setSubscriptionStatus] = useState('loading'); // 'loading', 'active', 'inactive'
-  const [isCancelling, setIsCancelling] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -118,40 +112,23 @@ export default function SettingsPage() {
       }
 
       try {
-        const [profileRes, creditRes, subRes] = await Promise.all([
-          fetch(`https://api.scaneats.app/api/profile`, {
+        const profileRes = await fetch(
+          `https://api.scaneats.app/api/profile`,
+          {
             headers: { Authorization: `Bearer ${token}` },
-          }),
-          fetch(`https://api.scaneats.app/api/credit/balance`, {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
-          fetch(`https://api.scaneats.app/api/subscription/status`, {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
-        ]);
+          }
+        );
 
         if (profileRes.ok) {
           const data = await profileRes.json();
           if (data && data.length > 0) setUserName(data[0].name);
-        }
-        if (creditRes.ok) {
-          const data = await creditRes.json();
-          setCreditBalance(data.credits);
-        } else {
-          setCreditBalance(0);
-        }
-        if (subRes.ok) {
-          const data = await subRes.json();
-          setSubscriptionStatus(data.isActive ? 'active' : 'inactive');
-        } else {
-          setSubscriptionStatus('inactive');
         }
       } catch (error) {
         console.error('Failed to fetch user data', error);
         toast({
           variant: 'destructive',
           title: 'Error',
-          description: 'Could not load your settings.',
+          description: 'Could not load your profile information.',
         });
       } finally {
         setIsLoading(false);
@@ -220,7 +197,6 @@ export default function SettingsPage() {
       });
       return;
     }
-    // ... rest of the password change logic ...
     setIsChangingPassword(true);
 
     const token = localStorage.getItem('authToken');
@@ -282,76 +258,30 @@ export default function SettingsPage() {
     }
   };
 
-  const handleCancelSubscription = async () => {
-    setIsCancelling(true);
-    const token = localStorage.getItem('authToken');
-    if (!token) {
-      toast({
-        variant: 'destructive',
-        title: 'Authentication Error',
-        description: 'You must be logged in.',
-      });
-      setIsCancelling(false);
-      return;
-    }
-
-    try {
-      const response = await fetch(
-        `https://api.scaneats.app/api/subscription/cancel`,
-        {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-
-      if (response.ok) {
-        toast({
-          title: 'Subscription Cancelled',
-          description:
-            'Your subscription will be cancelled at the end of your billing period.',
-        });
-        setSubscriptionStatus('inactive');
-      } else {
-        throw new Error('Failed to cancel subscription.');
-      }
-    } catch (error: any) {
-      toast({
-        variant: 'destructive',
-        title: 'Cancellation Failed',
-        description: error.message,
-      });
-    } finally {
-      setIsCancelling(false);
-    }
-  };
-
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center overflow-y-auto bg-black p-5 text-gray-200">
-      <Link
-        href="/dashboard"
-        className="absolute top-8 left-8 z-10 inline-block rounded-full border border-white/10 bg-zinc-800/60 py-2.5 px-4 text-sm font-medium text-white no-underline transition-colors hover:bg-zinc-700/80"
-      >
-        <div className="flex items-center gap-2">
-          <ArrowLeft size={16} /> Back
+    <div className="flex min-h-screen flex-col bg-zinc-950 text-gray-200">
+       <header className="sticky top-0 z-10 w-full bg-zinc-900/50 p-4 shadow-md backdrop-blur-sm">
+        <div className="container mx-auto flex items-center justify-between">
+          <Link
+            href="/dashboard"
+            className={buttonVariants({ variant: 'ghost' })}
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back
+          </Link>
+          <h1 className="text-xl font-semibold">Settings</h1>
+          <div className="w-16" />
         </div>
-      </Link>
-
-      <h1 className="main-title relative z-[1] mb-[-25px] text-center font-medium text-white text-[clamp(2.5rem,8vw,5rem)]">
-        Settings
-      </h1>
-
-      <div className="pricing-card relative z-[2] w-full max-w-md gap-6 rounded-2xl border border-white/15 bg-[#2d2d2d]/45 p-8 text-left shadow-2xl backdrop-blur-[8px]">
+      </header>
+      <main className="w-full max-w-2xl flex-1 self-center p-6">
         {isLoading ? (
-          <div className="flex h-96 items-center justify-center">
+          <div className="flex h-full items-center justify-center">
             <Loader2 className="h-10 w-10 animate-spin text-white" />
           </div>
         ) : (
-          <>
-            {/* Account Section */}
-            <div>
-              <h2 className="mb-2 px-4 text-sm font-semibold text-gray-400">
-                ACCOUNT
-              </h2>
+          <div className="space-y-8">
+            <div className="space-y-4 rounded-lg bg-zinc-900 p-6">
+              <h2 className="text-lg font-semibold text-white">Account</h2>
               <SettingsItem
                 icon={UserCircle}
                 label="Profile & Personal Goals"
@@ -362,9 +292,9 @@ export default function SettingsPage() {
                 onOpenChange={setIsPasswordDialogOpen}
               >
                 <DialogTrigger asChild>
-                  <div className="w-full">
-                    <SettingsItem icon={Lock} label="Change Password" onClick={() => {}} />
-                  </div>
+                  <button className="w-full">
+                     <SettingsItem icon={Lock} label="Change Password" />
+                  </button>
                 </DialogTrigger>
                 <DialogContent>
                   <DialogHeader>
@@ -382,7 +312,7 @@ export default function SettingsPage() {
                       <Label htmlFor="new-password">New Password</Label>
                       <Input id="new-password" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required />
                     </div>
-                    <div className="space-y-2">
+                     <div className="space-y-2">
                       <Label htmlFor="confirm-password">Confirm New Password</Label>
                       <Input id="confirm-password" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required />
                     </div>
@@ -397,50 +327,23 @@ export default function SettingsPage() {
               </Dialog>
             </div>
 
-            <Separator className="bg-white/10" />
-
-            {/* Subscription & Credits Section */}
-            <div>
-              <h2 className="mb-2 px-4 text-sm font-semibold text-gray-400">
-                BILLING
-              </h2>
-              <SettingsItem
-                icon={Repeat}
-                label="Plan Status"
-                value={
-                  subscriptionStatus === 'loading'
-                    ? 'Loading...'
-                    : subscriptionStatus === 'active'
-                    ? 'Active'
-                    : 'Inactive'
-                }
-              />
-              <SettingsItem
-                icon={Wallet}
-                label="Credit Balance"
-                value={
-                  creditBalance !== null
-                    ? `${creditBalance} credits remaining`
-                    : 'Loading...'
-                }
-              />
+            <div className="space-y-4 rounded-lg bg-zinc-900 p-6">
+              <h2 className="text-lg font-semibold text-white">Billing</h2>
                <SettingsItem
                 icon={CreditCard}
-                label="Manage Billing"
+                label="Manage Billing & Credits"
                 href="/pricing"
               />
             </div>
-
-            <Separator className="bg-white/10" />
-
-            {/* Actions Section */}
-            <div>
-              <SettingsItem icon={LogOut} label="Log Out" onClick={handleLogout} />
-              <AlertDialog>
+            
+            <div className="space-y-4 rounded-lg bg-zinc-900 p-6">
+               <h2 className="text-lg font-semibold text-white">Actions</h2>
+                <SettingsItem icon={LogOut} label="Log Out" onClick={handleLogout} />
+                <AlertDialog>
                 <AlertDialogTrigger asChild>
-                  <div className="w-full">
-                    <SettingsItem icon={Trash2} label="Delete Account" onClick={() => {}} isDestructive />
-                  </div>
+                  <button className="w-full">
+                     <DestructiveSettingsItem icon={Trash2} label="Delete Account" onClick={() => {}} />
+                  </button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
                   <AlertDialogHeader>
@@ -458,9 +361,9 @@ export default function SettingsPage() {
                 </AlertDialogContent>
               </AlertDialog>
             </div>
-          </>
+          </div>
         )}
-      </div>
+      </main>
     </div>
   );
 }

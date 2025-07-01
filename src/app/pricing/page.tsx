@@ -3,9 +3,8 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, ArrowLeft, Wallet, Check } from 'lucide-react';
+import { Loader2, ArrowLeft } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -38,7 +37,6 @@ export default function PricingPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [products, setProducts] = useState<CreditProduct[]>([]);
-  const [balance, setBalance] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isPurchasing, setIsPurchasing] = useState<number | null>(null);
   const [isSubscribing, setIsSubscribing] = useState(false);
@@ -54,26 +52,14 @@ export default function PricingPage() {
       }
 
       try {
-        const [productsResponse, balanceResponse] = await Promise.all([
-          fetch(`https://api.scaneats.app/api/credit/shop`, {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
-          fetch(`https://api.scaneats.app/api/credit/balance`, {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
-        ]);
+        const productsResponse = await fetch(`https://api.scaneats.app/api/credit/shop`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
 
         if (!productsResponse.ok)
           throw new Error('Failed to fetch credit shop.');
         const productsData = await productsResponse.json();
         setProducts(productsData);
-
-        if (balanceResponse.ok) {
-          const balanceData = await balanceResponse.json();
-          setBalance(balanceData.credits);
-        } else {
-          setBalance(0);
-        }
       } catch (error: any) {
         toast({
           variant: 'destructive',
@@ -199,7 +185,7 @@ export default function PricingPage() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center overflow-y-auto bg-black p-5 text-gray-200">
       <Link
-        href="/dashboard"
+        href="/dashboard/settings"
         className="absolute top-8 left-8 z-10 inline-block rounded-full border border-white/10 bg-zinc-800/60 py-2.5 px-4 text-sm font-medium text-white no-underline transition-colors hover:bg-zinc-700/80"
       >
         <div className="flex items-center gap-2">
@@ -207,11 +193,11 @@ export default function PricingPage() {
         </div>
       </Link>
 
-      <h1 className="main-title relative z-[1] mb-[-25px] text-center font-medium text-white text-[clamp(3rem,10vw,6rem)]">
+      <h1 className="main-title relative z-[1]">
         ScanEats.App
       </h1>
 
-      <div className="relative z-[2] w-full max-w-sm rounded-2xl border border-white/15 bg-[#2d2d2d]/45 p-10 text-left shadow-2xl backdrop-blur-[8px]">
+      <div className="relative z-[2] mt-5 w-full max-w-sm rounded-2xl border border-white/15 bg-[#2d2d2d]/45 p-10 text-left shadow-2xl backdrop-blur-[8px]">
         {isLoading ? (
           <div className="flex h-96 items-center justify-center">
             <Loader2 className="h-10 w-10 animate-spin" />
@@ -244,7 +230,7 @@ export default function PricingPage() {
               <AlertDialogTrigger asChild>
                 <button
                   disabled={isSubscribing || isPurchasing !== null}
-                  className="cta-button mt-4 block w-full animate-breathe-glow-white rounded-lg border-none bg-white py-3.5 px-5 text-center text-base font-semibold text-black no-underline transition-transform hover:scale-105 disabled:cursor-not-allowed disabled:opacity-70"
+                  className="cta-button mt-4 block w-full animate-breathe-glow rounded-lg border-none bg-white py-3.5 px-5 text-center text-base font-semibold text-black no-underline transition-transform hover:scale-105 disabled:cursor-not-allowed disabled:opacity-70"
                 >
                   {isSubscribing ? (
                     <Loader2 className="mx-auto animate-spin" />
@@ -306,7 +292,7 @@ export default function PricingPage() {
                                    </AlertDialogHeader>
                                    <AlertDialogFooter>
                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                       <AlertDialogAction onClick={() => handlePurchase(product)} disabled={isPurchasing === product.id}>
+                                       <AlertDialogAction onClick={() => handlePurchase(product)} disabled={isPurchasing !== null}>
                                            {isPurchasing === product.id && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                            Confirm & Pay
                                        </AlertDialogAction>

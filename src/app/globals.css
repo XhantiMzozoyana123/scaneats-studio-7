@@ -104,6 +104,13 @@
     background-clip: text;
   }
   .main-title {
+    font-size: clamp(3rem, 10vw, 6rem);
+    font-weight: 500;
+    color: #ffffff;
+    text-align: center;
+    margin-bottom: -25px;
+    z-index: 1;
+    position: relative;
     text-shadow:
       0 0 4px #fff,
       0 0 10px #fff,
