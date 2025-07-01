@@ -99,6 +99,7 @@ export default function SettingsPage() {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [userName, setUserName] = useState('');
+  const [creditBalance, setCreditBalance] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -112,23 +113,38 @@ export default function SettingsPage() {
       }
 
       try {
-        const profileRes = await fetch(
-          `https://api.scaneats.app/api/profile`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
-
+        // Fetch profile and credits in parallel
+        const [profileRes, creditRes] = await Promise.all([
+            fetch(`https://api.scaneats.app/api/profile`, {
+                headers: { Authorization: `Bearer ${token}` },
+            }),
+            fetch(`https://api.scaneats.app/api/credit/balance`, {
+                headers: { Authorization: `Bearer ${token}` },
+            })
+        ]);
+        
         if (profileRes.ok) {
           const data = await profileRes.json();
           if (data && data.length > 0) setUserName(data[0].name);
+        }
+
+        if (creditRes.ok) {
+            const data = await creditRes.json();
+            setCreditBalance(data.credits);
+        } else {
+            console.error('Failed to fetch credit balance');
+            toast({
+                variant: 'destructive',
+                title: 'Error',
+                description: 'Could not load your credit balance.',
+            });
         }
       } catch (error) {
         console.error('Failed to fetch user data', error);
         toast({
           variant: 'destructive',
           title: 'Error',
-          description: 'Could not load your profile information.',
+          description: 'Could not load your user information.',
         });
       } finally {
         setIsLoading(false);
@@ -328,14 +344,21 @@ export default function SettingsPage() {
             </div>
 
             <div className="space-y-4 rounded-lg bg-zinc-900 p-6">
-              <h2 className="text-lg font-semibold text-white">Billing</h2>
+                <h2 className="text-lg font-semibold text-white">Billing</h2>
+                <div className="flex items-center p-4">
+                  <Wallet className="mr-4 h-5 w-5 text-gray-300" />
+                  <span className="flex-1 font-medium text-white">My Wallet</span>
+                  <span className="font-semibold text-white">
+                      {creditBalance !== null ? `${creditBalance} Credits` : <Loader2 className="h-4 w-4 animate-spin" />}
+                  </span>
+                </div>
                <SettingsItem
                 icon={Repeat}
                 label="Manage Subscription"
                 href="/pricing"
               />
                <SettingsItem
-                icon={Wallet}
+                icon={CreditCard}
                 label="Buy Credits"
                 href="/credits"
               />
