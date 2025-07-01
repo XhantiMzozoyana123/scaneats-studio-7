@@ -11,7 +11,6 @@ import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { BackgroundImage } from '@/components/background-image';
 import { Textarea } from '@/components/ui/textarea';
 import {
   Select,
@@ -163,8 +162,7 @@ export default function ProfilePage() {
       ? `https://api.scaneats.app/api/profile/${profile.id}`
       : `https://api.scaneats.app/api/profile`;
       
-    // Prepare data for the API, ensuring correct types
-    const profileData = {
+    const profileData: any = {
       name: profile.name,
       gender: profile.gender,
       weight: String(profile.weight || ''),
@@ -177,7 +175,6 @@ export default function ProfilePage() {
       profileData.id = profile.id;
     }
 
-    console.log('profileData', profileData);
     try {
         const response = await fetch(url, {
             method: method,
@@ -219,32 +216,27 @@ export default function ProfilePage() {
   
   if (isLoading) {
     return (
-      <div className="flex h-screen w-full items-center justify-center bg-background">
+      <div className="flex h-screen w-full items-center justify-center bg-black">
         <Loader2 className="h-16 w-16 animate-spin text-primary" />
       </div>
     );
   }
 
   return (
-    <>
-      <BackgroundImage
-        src="https://placehold.co/1200x800.png"
-        data-ai-hint="abstract purple"
-        className="blur-sm"
-      />
-      <main className="container z-10 mx-auto h-full max-w-md overflow-y-auto px-4 pb-28 pt-0">
-        <div className="rounded-b-2xl bg-black/70 px-4 pb-4 pt-4 backdrop-blur-md">
-          <div className="mb-4 flex justify-center">
+    <div className="flex min-h-screen flex-col items-center bg-black pb-40 pt-5">
+      <div className="w-[90%] max-w-2xl rounded-lg bg-[#0e010f]/50 p-5">
+        <div className="mb-8 flex justify-center">
             <Image
               src="/profile-goals-logo.png"
               alt="Profile & Personal Goals"
-              width={60}
-              height={60}
+              width={140}
+              height={140}
+              className="max-h-[140px] w-auto max-w-full"
             />
-          </div>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-1">
-              <Label htmlFor="name" className="font-semibold text-gray-300">
+        </div>
+        <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="form-group">
+              <Label htmlFor="name" className="mb-1.5 block font-bold transition-all hover:[text-shadow:0_0_10px_rgba(255,255,255,0.8)]">
                 Name
               </Label>
               <Input
@@ -252,16 +244,16 @@ export default function ProfilePage() {
                 value={profile.name}
                 onChange={handleInputChange}
                 placeholder="Your Name"
-                className="border-neutral-600 bg-black/50 text-white placeholder:text-gray-500"
+                className="w-full rounded-full border-2 border-[#555] bg-black px-4 py-3 text-base"
               />
             </div>
-
-            <div className="space-y-1">
-              <Label htmlFor="gender" className="font-semibold text-gray-300">
+            
+            <div className="form-group">
+              <Label htmlFor="gender" className="mb-1.5 block font-bold transition-all hover:[text-shadow:0_0_10px_rgba(255,255,255,0.8)]">
                 Gender
               </Label>
               <Select value={profile.gender} onValueChange={handleSelectChange}>
-                <SelectTrigger className="border-neutral-600 bg-black/50 text-white">
+                <SelectTrigger className="w-full rounded-full border-2 border-[#555] bg-black px-4 py-3 text-base">
                   <SelectValue placeholder="Select Gender" />
                 </SelectTrigger>
                 <SelectContent>
@@ -274,9 +266,9 @@ export default function ProfilePage() {
                 </SelectContent>
               </Select>
             </div>
-
-            <div className="space-y-1">
-              <Label htmlFor="weight" className="font-semibold text-gray-300">
+            
+            <div className="form-group">
+              <Label htmlFor="weight" className="mb-1.5 block font-bold transition-all hover:[text-shadow:0_0_10px_rgba(255,255,255,0.8)]">
                 Weight (kg)
               </Label>
               <Input
@@ -285,15 +277,12 @@ export default function ProfilePage() {
                 value={profile.weight}
                 onChange={handleInputChange}
                 placeholder="e.g., 70"
-                className="border-neutral-600 bg-black/50 text-white placeholder:text-gray-500"
+                className="w-full rounded-full border-2 border-[#555] bg-black px-4 py-3 text-base"
               />
             </div>
 
-            <div className="space-y-1">
-              <Label
-                htmlFor="birthDate"
-                className="font-semibold text-gray-300"
-              >
+            <div className="form-group">
+              <Label htmlFor="birthDate" className="mb-1.5 block font-bold transition-all hover:[text-shadow:0_0_10px_rgba(255,255,255,0.8)]">
                 Birth Date
               </Label>
               <Popover open={isDatePickerOpen} onOpenChange={setIsDatePickerOpen}>
@@ -301,8 +290,8 @@ export default function ProfilePage() {
                   <Button
                     variant={'outline'}
                     className={cn(
-                      'w-full justify-start text-left font-normal border-neutral-600 bg-black/50 text-white hover:bg-black/40 hover:text-white',
-                      !profile.birthDate && 'text-gray-500'
+                      'w-full justify-start rounded-full border-2 border-[#555] bg-black px-4 py-3 text-left text-base font-normal hover:bg-black/80',
+                      !profile.birthDate && 'text-gray-400'
                     )}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
@@ -330,8 +319,8 @@ export default function ProfilePage() {
               </Popover>
             </div>
 
-            <div className="space-y-1">
-              <Label htmlFor="goals" className="font-semibold text-gray-300">
+            <div className="form-group">
+              <Label htmlFor="goals" className="mb-1.5 block font-bold transition-all hover:[text-shadow:0_0_10px_rgba(255,255,255,0.8)]">
                 Body Goal
               </Label>
               <Textarea
@@ -339,7 +328,7 @@ export default function ProfilePage() {
                 value={profile.goals}
                 onChange={handleInputChange}
                 placeholder="e.g., Lose 5kg, build muscle, improve cardiovascular health..."
-                className="min-h-[100px] border-neutral-600 bg-black/50 text-white placeholder:text-gray-500"
+                className="min-h-[100px] w-full rounded-3xl border-2 border-[#555] bg-black px-4 py-3 text-base"
               />
             </div>
 
@@ -348,14 +337,16 @@ export default function ProfilePage() {
                 type="submit"
                 size="lg"
                 disabled={isSaving || isLoading}
-                className="w-full rounded-md bg-primary py-3 text-lg font-bold shadow-[0_0_8px_2px_hsl(var(--primary)/0.6)] transition-shadow duration-300 hover:shadow-[0_0_12px_6px_hsl(var(--primary)/0.8)] disabled:opacity-50"
+                className="w-full rounded-lg bg-[#7F00FF] py-3 text-lg font-bold text-white transition-all hover:bg-[#9300FF] hover:shadow-[0_0_12px_6px_rgba(127,0,255,0.8)] disabled:opacity-50"
+                style={{
+                  boxShadow: '0 0 8px 2px rgba(127, 0, 255, 0.6)'
+                }}
               >
                 {isSaving ? <Loader2 className="animate-spin" /> : 'Save Profile'}
               </Button>
             </div>
-          </form>
-        </div>
-      </main>
-    </>
+        </form>
+      </div>
+    </div>
   );
 }
