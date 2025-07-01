@@ -103,4 +103,10 @@
     -webkit-background-clip: text;
     background-clip: text;
   }
+  .main-title {
+    text-shadow:
+      0 0 4px #fff,
+      0 0 10px #fff,
+      0 0 18px #fff;
+  }
 }

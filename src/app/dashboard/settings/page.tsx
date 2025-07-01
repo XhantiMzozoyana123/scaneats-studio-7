@@ -1,8 +1,6 @@
-
 'use client';
 
 import {
-  ChevronRight,
   LogOut,
   UserCircle,
   Lock,
@@ -10,16 +8,12 @@ import {
   Loader2,
   Wallet,
   Repeat,
+  ArrowLeft,
+  ChevronRight,
+  CreditCard,
 } from 'lucide-react';
 import Link from 'next/link';
-import { BackgroundImage } from '@/components/background-image';
 import { Button, buttonVariants } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
 import {
   Dialog,
   DialogContent,
@@ -30,7 +24,6 @@ import {
   DialogTrigger,
   DialogClose,
 } from '@/components/ui/dialog';
-import { Separator } from '@/components/ui/separator';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -42,57 +35,61 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { cn } from '@/lib/utils';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Separator } from '@/components/ui/separator';
 
 const SettingsItem = ({
   icon: Icon,
   label,
   href,
-  action,
-  value,
   onClick,
-  labelClassName,
+  value,
+  isDestructive,
 }: {
   icon: React.ElementType;
   label: string;
   href?: string;
-  action?: React.ReactNode;
-  value?: string;
   onClick?: () => void;
-  labelClassName?: string;
+  value?: string;
+  isDestructive?: boolean;
 }) => {
   const content = (
-    <div className="flex items-center px-4 py-3">
-      <Icon className="mr-4 h-5 w-5 text-accent" />
+    <div
+      onClick={onClick}
+      className={`flex items-center p-4 transition-colors rounded-lg ${
+        href || onClick ? 'cursor-pointer hover:bg-white/5' : ''
+      }`}
+    >
+      <Icon
+        className={`mr-4 h-5 w-5 ${
+          isDestructive ? 'text-red-400' : 'text-gray-300'
+        }`}
+      />
       <div className="flex-1">
-        <span className={cn('font-medium text-white', labelClassName)}>
+        <span
+          className={`font-medium ${
+            isDestructive ? 'text-red-400' : 'text-white'
+          }`}
+        >
           {label}
         </span>
-        {value && <p className="text-sm text-muted-foreground">{value}</p>}
+        {value && <p className="text-sm text-gray-400">{value}</p>}
       </div>
-      {action}
-      {href && !action && <ChevronRight className="h-5 w-5 text-muted-foreground" />}
+      {(href || onClick) && !value && (
+        <ChevronRight className="h-5 w-5 text-gray-500" />
+      )}
     </div>
   );
 
-  const Wrapper = href ? Link : 'div';
+  if (href) {
+    return <Link href={href}>{content}</Link>;
+  }
 
-  return (
-    <Wrapper
-      {...(href ? { href } : {})}
-      onClick={onClick}
-      className={`block transition-colors ${
-        onClick || href ? 'hover:bg-white/5' : ''
-      } ${onClick ? 'cursor-pointer' : ''}`}
-    >
-      {content}
-    </Wrapper>
-  );
+  return content;
 };
 
 export default function SettingsPage() {
@@ -108,9 +105,11 @@ export default function SettingsPage() {
   const [creditBalance, setCreditBalance] = useState<number | null>(null);
   const [subscriptionStatus, setSubscriptionStatus] = useState('loading'); // 'loading', 'active', 'inactive'
   const [isCancelling, setIsCancelling] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchUserData = async () => {
+      setIsLoading(true);
       const token = localStorage.getItem('authToken');
       if (!token) {
         toast({ variant: 'destructive', title: 'Not Authenticated' });
@@ -118,56 +117,44 @@ export default function SettingsPage() {
         return;
       }
 
-      // Fetch Profile
       try {
-        const response = await fetch(`https://api.scaneats.app/api/profile`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (response.ok) {
-          const data = await response.json();
-          if (data && data.length > 0) {
-            setUserName(data[0].name);
-          }
-        }
-      } catch (error) {
-        console.error("Failed to fetch user's name", error);
-      }
-
-      // Fetch Credit Balance
-      try {
-        const response = await fetch(
-          `https://api.scaneats.app/api/credit/balance`,
-          {
+        const [profileRes, creditRes, subRes] = await Promise.all([
+          fetch(`https://api.scaneats.app/api/profile`, {
             headers: { Authorization: `Bearer ${token}` },
-          }
-        );
-        if (response.ok) {
-          const data = await response.json();
+          }),
+          fetch(`https://api.scaneats.app/api/credit/balance`, {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+          fetch(`https://api.scaneats.app/api/subscription/status`, {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+        ]);
+
+        if (profileRes.ok) {
+          const data = await profileRes.json();
+          if (data && data.length > 0) setUserName(data[0].name);
+        }
+        if (creditRes.ok) {
+          const data = await creditRes.json();
           setCreditBalance(data.credits);
         } else {
           setCreditBalance(0);
         }
-      } catch (error) {
-        console.error('Failed to fetch credit balance', error);
-        setCreditBalance(0);
-      }
-      
-      // Fetch Subscription Status
-      // NOTE: You will need to implement this endpoint on your backend.
-      // It should return a JSON object like { "isActive": true } or { "isActive": false }
-      try {
-        const subResponse = await fetch(`https://api.scaneats.app/api/subscription/status`, {
-             headers: { Authorization: `Bearer ${token}` },
-        });
-        if (subResponse.ok) {
-            const subData = await subResponse.json();
-            setSubscriptionStatus(subData.isActive ? 'active' : 'inactive');
+        if (subRes.ok) {
+          const data = await subRes.json();
+          setSubscriptionStatus(data.isActive ? 'active' : 'inactive');
         } else {
-            setSubscriptionStatus('inactive');
+          setSubscriptionStatus('inactive');
         }
       } catch (error) {
-        console.error('Failed to fetch subscription status', error);
-        setSubscriptionStatus('inactive');
+        console.error('Failed to fetch user data', error);
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: 'Could not load your settings.',
+        });
+      } finally {
+        setIsLoading(false);
       }
     };
     fetchUserData();
@@ -199,15 +186,10 @@ export default function SettingsPage() {
     }
 
     try {
-      const response = await fetch(
-        `https://api.scaneats.app/api/Auth/delete`,
-        {
-          method: 'DELETE',
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const response = await fetch(`https://api.scaneats.app/api/Auth/delete`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
       if (response.ok) {
         toast({
@@ -216,10 +198,7 @@ export default function SettingsPage() {
         });
         handleLogout();
       } else {
-        const errorData = await response
-          .json()
-          .catch(() => ({ error: 'Failed to delete account.' }));
-        throw new Error(errorData.error || 'Failed to delete account.');
+        throw new Error('Failed to delete account.');
       }
     } catch (error: any) {
       toast({
@@ -238,19 +217,10 @@ export default function SettingsPage() {
       toast({
         variant: 'destructive',
         title: 'Passwords do not match',
-        description: 'Please ensure your new passwords match.',
       });
       return;
     }
-    if (!currentPassword || !newPassword) {
-      toast({
-        variant: 'destructive',
-        title: 'Fields required',
-        description: 'Please fill out all password fields.',
-      });
-      return;
-    }
-
+    // ... rest of the password change logic ...
     setIsChangingPassword(true);
 
     const token = localStorage.getItem('authToken');
@@ -313,279 +283,184 @@ export default function SettingsPage() {
   };
 
   const handleCancelSubscription = async () => {
-      setIsCancelling(true);
-      const token = localStorage.getItem('authToken');
+    setIsCancelling(true);
+    const token = localStorage.getItem('authToken');
+    if (!token) {
+      toast({
+        variant: 'destructive',
+        title: 'Authentication Error',
+        description: 'You must be logged in.',
+      });
+      setIsCancelling(false);
+      return;
+    }
 
-      if (!token) {
-          toast({ variant: 'destructive', title: 'Authentication Error', description: 'You must be logged in.' });
-          setIsCancelling(false);
-          return;
+    try {
+      const response = await fetch(
+        `https://api.scaneats.app/api/subscription/cancel`,
+        {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
+      if (response.ok) {
+        toast({
+          title: 'Subscription Cancelled',
+          description:
+            'Your subscription will be cancelled at the end of your billing period.',
+        });
+        setSubscriptionStatus('inactive');
+      } else {
+        throw new Error('Failed to cancel subscription.');
       }
-
-      try {
-          const response = await fetch(`https://api.scaneats.app/api/subscription/cancel`, {
-              method: 'POST',
-              headers: { Authorization: `Bearer ${token}` },
-          });
-
-          if (response.ok) {
-              toast({
-                  title: 'Subscription Cancelled',
-                  description: 'Your subscription has been cancelled successfully.',
-              });
-              setSubscriptionStatus('inactive');
-          } else {
-              const errorData = await response.json().catch(() => ({ message: 'Failed to cancel subscription.' }));
-              throw new Error(errorData.message || 'Failed to cancel subscription.');
-          }
-      } catch (error: any) {
-          toast({ variant: 'destructive', title: 'Cancellation Failed', description: error.message });
-      } finally {
-          setIsCancelling(false);
-      }
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Cancellation Failed',
+        description: error.message,
+      });
+    } finally {
+      setIsCancelling(false);
+    }
   };
 
-
   return (
-    <>
-      <BackgroundImage
-        src="https://placehold.co/1200x800.png"
-        data-ai-hint="abstract purple"
-        className="blur-sm"
-      />
-      <main className="container z-10 mx-auto h-full max-w-md overflow-y-auto px-4 py-6 pb-28">
-        <h1 className="mb-4 text-center font-headline text-3xl font-bold text-white">
-          Settings
-        </h1>
+    <div className="flex min-h-screen flex-col items-center justify-center overflow-y-auto bg-black p-5 text-gray-200">
+      <Link
+        href="/dashboard"
+        className="absolute top-8 left-8 z-10 inline-block rounded-full border border-white/10 bg-zinc-800/60 py-2.5 px-4 text-sm font-medium text-white no-underline transition-colors hover:bg-zinc-700/80"
+      >
+        <div className="flex items-center gap-2">
+          <ArrowLeft size={16} /> Back
+        </div>
+      </Link>
 
-        <div className="space-y-4">
-          <Card className="border-primary/30 bg-black/70 backdrop-blur-md">
-            <CardHeader className="p-4">
-              <CardTitle className="text-lg text-white">Account</CardTitle>
-            </CardHeader>
-            <CardContent className="p-0">
+      <h1 className="main-title relative z-[1] mb-[-25px] text-center font-medium text-white text-[clamp(2.5rem,8vw,5rem)]">
+        Settings
+      </h1>
+
+      <div className="pricing-card relative z-[2] w-full max-w-md gap-6 rounded-2xl border border-white/15 bg-[#2d2d2d]/45 p-8 text-left shadow-2xl backdrop-blur-[8px]">
+        {isLoading ? (
+          <div className="flex h-96 items-center justify-center">
+            <Loader2 className="h-10 w-10 animate-spin text-white" />
+          </div>
+        ) : (
+          <>
+            {/* Account Section */}
+            <div>
+              <h2 className="mb-2 px-4 text-sm font-semibold text-gray-400">
+                ACCOUNT
+              </h2>
               <SettingsItem
                 icon={UserCircle}
                 label="Profile & Personal Goals"
                 href="/dashboard/profile"
               />
-              <Separator className="bg-white/10" />
               <Dialog
                 open={isPasswordDialogOpen}
                 onOpenChange={setIsPasswordDialogOpen}
               >
                 <DialogTrigger asChild>
-                  <div className="cursor-pointer">
-                    <SettingsItem
-                      icon={Lock}
-                      label="Change Password"
-                      action={
-                        <ChevronRight className="h-5 w-5 text-muted-foreground" />
-                      }
-                    />
+                  <div className="w-full">
+                    <SettingsItem icon={Lock} label="Change Password" onClick={() => {}} />
                   </div>
                 </DialogTrigger>
                 <DialogContent>
                   <DialogHeader>
                     <DialogTitle>Change Password</DialogTitle>
-                    <DialogDescription>
-                      Enter your current password and a new password below.
-                    </DialogDescription>
                   </DialogHeader>
                   <form
                     onSubmit={handlePasswordChange}
                     className="space-y-4 py-4"
                   >
                     <div className="space-y-2">
-                      <Label htmlFor="current-password">
-                        Current Password
-                      </Label>
-                      <Input
-                        id="current-password"
-                        type="password"
-                        value={currentPassword}
-                        onChange={(e) => setCurrentPassword(e.target.value)}
-                        required
-                      />
+                      <Label htmlFor="current-password">Current Password</Label>
+                      <Input id="current-password" type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} required />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="new-password">New Password</Label>
-                      <Input
-                        id="new-password"
-                        type="password"
-                        value={newPassword}
-                        onChange={(e) => setNewPassword(e.target.value)}
-                        required
-                      />
+                      <Input id="new-password" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="confirm-password">
-                        Confirm New Password
-                      </Label>
-                      <Input
-                        id="confirm-password"
-                        type="password"
-                        value={confirmPassword}
-                        onChange={(e) => setConfirmPassword(e.target.value)}
-                        required
-                      />
+                      <Label htmlFor="confirm-password">Confirm New Password</Label>
+                      <Input id="confirm-password" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required />
                     </div>
                   </form>
                   <DialogFooter>
-                    <DialogClose asChild>
-                      <Button variant="outline">Cancel</Button>
-                    </DialogClose>
-                    <Button
-                      type="submit"
-                      onClick={handlePasswordChange}
-                      disabled={isChangingPassword}
-                    >
-                      {isChangingPassword ? (
-                        <Loader2 className="animate-spin" />
-                      ) : (
-                        'Save Changes'
-                      )}
+                    <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
+                    <Button onClick={handlePasswordChange} disabled={isChangingPassword}>
+                      {isChangingPassword ? <Loader2 className="animate-spin" /> : 'Save Changes'}
                     </Button>
                   </DialogFooter>
                 </DialogContent>
               </Dialog>
-            </CardContent>
-          </Card>
+            </div>
 
-          <Card className="border-primary/30 bg-black/70 backdrop-blur-md">
-            <CardHeader className="p-4">
-              <CardTitle className="text-lg text-white">Subscription</CardTitle>
-            </CardHeader>
-            <CardContent className="p-0">
+            <Separator className="bg-white/10" />
+
+            {/* Subscription & Credits Section */}
+            <div>
+              <h2 className="mb-2 px-4 text-sm font-semibold text-gray-400">
+                BILLING
+              </h2>
               <SettingsItem
-                  icon={Repeat}
-                  label="Plan Status"
-                  value={
-                      subscriptionStatus === 'loading'
-                          ? 'Loading...'
-                          : subscriptionStatus === 'active'
-                          ? 'Active'
-                          : 'Inactive'
-                  }
+                icon={Repeat}
+                label="Plan Status"
+                value={
+                  subscriptionStatus === 'loading'
+                    ? 'Loading...'
+                    : subscriptionStatus === 'active'
+                    ? 'Active'
+                    : 'Inactive'
+                }
               />
-              <Separator className="bg-white/10" />
-              {subscriptionStatus === 'active' ? (
-                  <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                          <div className="cursor-pointer">
-                              <SettingsItem
-                                  icon={Trash2}
-                                  label="Cancel Subscription"
-                                  labelClassName="text-red-500 hover:text-red-400"
-                                  onClick={() => {}}
-                              />
-                          </div>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                          <AlertDialogHeader>
-                              <AlertDialogTitle>Cancel Subscription?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                  Are you sure? Your subscription benefits will be lost at the end of your current billing period. This action cannot be undone.
-                              </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                              <AlertDialogCancel>Keep Subscription</AlertDialogCancel>
-                              <AlertDialogAction
-                                  className={buttonVariants({ variant: 'destructive' })}
-                                  onClick={handleCancelSubscription}
-                                  disabled={isCancelling}
-                              >
-                                  {isCancelling ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                                  Confirm Cancellation
-                              </AlertDialogAction>
-                          </AlertDialogFooter>
-                      </AlertDialogContent>
-                  </AlertDialog>
-              ) : (
-                <div className="p-3">
-                  <Button asChild variant="outline" className="w-full border-accent text-accent hover:bg-accent/10 hover:text-accent">
-                      <Link href="/pricing">View Plans</Link>
-                  </Button>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-          
-          <Card className="border-primary/30 bg-black/70 backdrop-blur-md">
-            <CardHeader className="p-4">
-              <CardTitle className="text-lg text-white">Credits</CardTitle>
-            </CardHeader>
-            <CardContent className="p-0">
               <SettingsItem
                 icon={Wallet}
-                label="Current Balance"
+                label="Credit Balance"
                 value={
                   creditBalance !== null
                     ? `${creditBalance} credits remaining`
                     : 'Loading...'
                 }
               />
-              <Separator className="bg-white/10" />
-              <div className="p-3">
-                <Button
-                  asChild
-                  variant="outline"
-                  className="w-full border-accent text-accent hover:bg-accent/10 hover:text-accent"
-                >
-                  <Link href="/pricing">Buy More Credits</Link>
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+               <SettingsItem
+                icon={CreditCard}
+                label="Manage Billing"
+                href="/pricing"
+              />
+            </div>
 
-          <div className="flex flex-col gap-3 pt-4">
-            <Button
-              variant="secondary"
-              className="w-full bg-stone-700/80 py-2.5 text-base text-white hover:bg-stone-600/90"
-              onClick={handleLogout}
-            >
-              <LogOut className="mr-2 h-5 w-5" />
-              Log Out
-            </Button>
+            <Separator className="bg-white/10" />
 
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button
-                  variant="destructive"
-                  className="w-full border border-red-500/50 bg-transparent py-2.5 text-red-500 hover:bg-red-900/50 hover:text-red-400"
-                >
-                  <Trash2 className="mr-2 h-5 w-5" />
-                  Delete Account
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>
-                    Are you absolutely sure?
-                  </AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This action cannot be undone. This will permanently delete
-                    your account and remove your data from our servers.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction
-                    className={buttonVariants({ variant: 'destructive' })}
-                    onClick={handleDeleteAccount}
-                    disabled={isDeleting}
-                  >
-                    {isDeleting ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : null}
-                    Delete My Account
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          </div>
-        </div>
-      </main>
-    </>
+            {/* Actions Section */}
+            <div>
+              <SettingsItem icon={LogOut} label="Log Out" onClick={handleLogout} />
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <div className="w-full">
+                    <SettingsItem icon={Trash2} label="Delete Account" onClick={() => {}} isDestructive />
+                  </div>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This action cannot be undone. This will permanently delete your account and remove your data from our servers.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction className={buttonVariants({ variant: 'destructive' })} onClick={handleDeleteAccount} disabled={isDeleting}>
+                      {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Delete My Account
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
   );
 }

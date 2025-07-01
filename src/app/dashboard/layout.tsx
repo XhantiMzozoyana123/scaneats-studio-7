@@ -25,7 +25,7 @@ export default function DashboardLayout({
   }, [router, pathname]);
 
   const showBottomNav =
-    pathname !== '/dashboard/sally';
+    pathname !== '/dashboard/sally' && pathname !== '/dashboard/settings';
 
   // While verifying, show a loading spinner to prevent flashing of protected content
   if (isVerifying) {
