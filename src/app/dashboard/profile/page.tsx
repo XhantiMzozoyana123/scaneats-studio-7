@@ -26,6 +26,7 @@ import {
 } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
+import { Skeleton } from '@/components/ui/skeleton';
 
 type Profile = {
   id: number | null;
@@ -216,8 +217,37 @@ export default function ProfilePage() {
   
   if (isLoading) {
     return (
-      <div className="flex h-screen w-full items-center justify-center bg-black">
-        <Loader2 className="h-16 w-16 animate-spin text-primary" />
+      <div className="flex min-h-screen flex-col items-center bg-black pb-40 pt-5">
+        <div className="w-[90%] max-w-[600px] rounded-lg bg-[rgba(14,1,15,0.32)] p-5">
+          <div className="mb-8 flex justify-center">
+            <Skeleton className="h-[140px] w-[140px] rounded-full" />
+          </div>
+          <div className="space-y-6">
+            <div className="space-y-2">
+              <Skeleton className="h-5 w-16" />
+              <Skeleton className="h-12 w-full rounded-full" />
+            </div>
+            <div className="space-y-2">
+              <Skeleton className="h-5 w-16" />
+              <Skeleton className="h-12 w-full rounded-full" />
+            </div>
+            <div className="space-y-2">
+              <Skeleton className="h-5 w-20" />
+              <Skeleton className="h-12 w-full rounded-full" />
+            </div>
+            <div className="space-y-2">
+              <Skeleton className="h-5 w-24" />
+              <Skeleton className="h-12 w-full rounded-full" />
+            </div>
+            <div className="space-y-2">
+              <Skeleton className="h-5 w-24" />
+              <Skeleton className="h-24 w-full rounded-3xl" />
+            </div>
+            <div className="pt-4">
+              <Skeleton className="h-12 w-full rounded-lg" />
+            </div>
+          </div>
+        </div>
       </div>
     );
   }

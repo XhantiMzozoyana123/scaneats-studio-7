@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -39,6 +40,7 @@ import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const SettingsItem = ({
   icon: Icon,
@@ -274,6 +276,40 @@ export default function SettingsPage() {
     }
   };
 
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen flex-col bg-zinc-950 text-gray-200">
+        <header className="sticky top-0 z-10 w-full bg-zinc-900/50 p-4 shadow-md backdrop-blur-sm">
+          <div className="container mx-auto flex items-center justify-between">
+            <Skeleton className="h-10 w-24 rounded-md" />
+            <Skeleton className="h-7 w-32 rounded-md" />
+            <div className="w-16" />
+          </div>
+        </header>
+        <main className="w-full max-w-2xl flex-1 self-center p-6">
+          <div className="space-y-8">
+            <div className="space-y-4 rounded-lg bg-zinc-900 p-6">
+              <Skeleton className="h-7 w-32 rounded-md" />
+              <Skeleton className="h-14 w-full rounded-lg" />
+              <Skeleton className="h-14 w-full rounded-lg" />
+            </div>
+            <div className="space-y-4 rounded-lg bg-zinc-900 p-6">
+              <Skeleton className="h-7 w-24 rounded-md" />
+              <Skeleton className="h-14 w-full rounded-lg" />
+              <Skeleton className="h-14 w-full rounded-lg" />
+              <Skeleton className="h-14 w-full rounded-lg" />
+            </div>
+            <div className="space-y-4 rounded-lg bg-zinc-900 p-6">
+              <Skeleton className="h-7 w-24 rounded-md" />
+              <Skeleton className="h-14 w-full rounded-lg" />
+              <Skeleton className="h-14 w-full rounded-lg" />
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="flex min-h-screen flex-col bg-zinc-950 text-gray-200">
        <header className="sticky top-0 z-10 w-full bg-zinc-900/50 p-4 shadow-md backdrop-blur-sm">
@@ -290,107 +326,101 @@ export default function SettingsPage() {
         </div>
       </header>
       <main className="w-full max-w-2xl flex-1 self-center p-6">
-        {isLoading ? (
-          <div className="flex h-full items-center justify-center">
-            <Loader2 className="h-10 w-10 animate-spin text-white" />
+        <div className="space-y-8">
+          <div className="space-y-4 rounded-lg bg-zinc-900 p-6">
+            <h2 className="text-lg font-semibold text-white">Account</h2>
+            <SettingsItem
+              icon={UserCircle}
+              label="Profile & Personal Goals"
+              href="/dashboard/profile"
+            />
+            <Dialog
+              open={isPasswordDialogOpen}
+              onOpenChange={setIsPasswordDialogOpen}
+            >
+              <DialogTrigger asChild>
+                <button className="w-full">
+                   <SettingsItem icon={Lock} label="Change Password" />
+                </button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Change Password</DialogTitle>
+                </DialogHeader>
+                <form
+                  onSubmit={handlePasswordChange}
+                  className="space-y-4 py-4"
+                >
+                  <div className="space-y-2">
+                    <Label htmlFor="current-password">Current Password</Label>
+                    <Input id="current-password" type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} required />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="new-password">New Password</Label>
+                    <Input id="new-password" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required />
+                  </div>
+                   <div className="space-y-2">
+                    <Label htmlFor="confirm-password">Confirm New Password</Label>
+                    <Input id="confirm-password" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required />
+                  </div>
+                </form>
+                <DialogFooter>
+                  <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
+                  <Button onClick={handlePasswordChange} disabled={isChangingPassword}>
+                    {isChangingPassword ? <Loader2 className="animate-spin" /> : 'Save Changes'}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </div>
-        ) : (
-          <div className="space-y-8">
-            <div className="space-y-4 rounded-lg bg-zinc-900 p-6">
-              <h2 className="text-lg font-semibold text-white">Account</h2>
-              <SettingsItem
-                icon={UserCircle}
-                label="Profile & Personal Goals"
-                href="/dashboard/profile"
-              />
-              <Dialog
-                open={isPasswordDialogOpen}
-                onOpenChange={setIsPasswordDialogOpen}
-              >
-                <DialogTrigger asChild>
-                  <button className="w-full">
-                     <SettingsItem icon={Lock} label="Change Password" />
-                  </button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Change Password</DialogTitle>
-                  </DialogHeader>
-                  <form
-                    onSubmit={handlePasswordChange}
-                    className="space-y-4 py-4"
-                  >
-                    <div className="space-y-2">
-                      <Label htmlFor="current-password">Current Password</Label>
-                      <Input id="current-password" type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} required />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="new-password">New Password</Label>
-                      <Input id="new-password" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required />
-                    </div>
-                     <div className="space-y-2">
-                      <Label htmlFor="confirm-password">Confirm New Password</Label>
-                      <Input id="confirm-password" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required />
-                    </div>
-                  </form>
-                  <DialogFooter>
-                    <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
-                    <Button onClick={handlePasswordChange} disabled={isChangingPassword}>
-                      {isChangingPassword ? <Loader2 className="animate-spin" /> : 'Save Changes'}
-                    </Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
-            </div>
 
-            <div className="space-y-4 rounded-lg bg-zinc-900 p-6">
-                <h2 className="text-lg font-semibold text-white">Billing</h2>
-                <div className="flex items-center p-4">
-                  <Wallet className="mr-4 h-5 w-5 text-gray-300" />
-                  <span className="flex-1 font-medium text-white">My Wallet</span>
-                  <span className="font-semibold text-white">
-                      {creditBalance !== null ? `${creditBalance} Credits` : <Loader2 className="h-4 w-4 animate-spin" />}
-                  </span>
-                </div>
-               <SettingsItem
-                icon={Repeat}
-                label="Manage Subscription"
-                href="/pricing"
-              />
-               <SettingsItem
-                icon={CreditCard}
-                label="Buy Credits"
-                href="/credits"
-              />
-            </div>
-            
-            <div className="space-y-4 rounded-lg bg-zinc-900 p-6">
-               <h2 className="text-lg font-semibold text-white">Actions</h2>
-                <SettingsItem icon={LogOut} label="Log Out" onClick={handleLogout} />
-                <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <button className="w-full">
-                     <DestructiveSettingsItem icon={Trash2} label="Delete Account" onClick={() => {}} />
-                  </button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      This action cannot be undone. This will permanently delete your account and remove your data from our servers.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction className={buttonVariants({ variant: 'destructive' })} onClick={handleDeleteAccount} disabled={isDeleting}>
-                      {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Delete My Account
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            </div>
+          <div className="space-y-4 rounded-lg bg-zinc-900 p-6">
+              <h2 className="text-lg font-semibold text-white">Billing</h2>
+              <div className="flex items-center p-4">
+                <Wallet className="mr-4 h-5 w-5 text-gray-300" />
+                <span className="flex-1 font-medium text-white">My Wallet</span>
+                <span className="font-semibold text-white">
+                    {creditBalance !== null ? `${creditBalance} Credits` : <Loader2 className="h-4 w-4 animate-spin" />}
+                </span>
+              </div>
+             <SettingsItem
+              icon={Repeat}
+              label="Manage Subscription"
+              href="/pricing"
+            />
+             <SettingsItem
+              icon={CreditCard}
+              label="Buy Credits"
+              href="/credits"
+            />
           </div>
-        )}
+          
+          <div className="space-y-4 rounded-lg bg-zinc-900 p-6">
+             <h2 className="text-lg font-semibold text-white">Actions</h2>
+              <SettingsItem icon={LogOut} label="Log Out" onClick={handleLogout} />
+              <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <button className="w-full">
+                   <DestructiveSettingsItem icon={Trash2} label="Delete Account" onClick={() => {}} />
+                </button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This action cannot be undone. This will permanently delete your account and remove your data from our servers.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction className={buttonVariants({ variant: 'destructive' })} onClick={handleDeleteAccount} disabled={isDeleting}>
+                    {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Delete My Account
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
+        </div>
       </main>
     </div>
   );
