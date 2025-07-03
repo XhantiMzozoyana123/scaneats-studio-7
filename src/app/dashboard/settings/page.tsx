@@ -115,10 +115,10 @@ export default function SettingsPage() {
       try {
         // Fetch profile and credits in parallel
         const [profileRes, creditRes] = await Promise.all([
-            fetch(`https://localhost:7066/api/profile`, {
+            fetch(`https://api.scaneats.app/api/profile`, {
                 headers: { Authorization: `Bearer ${token}` },
             }),
-            fetch(`https://localhost:7066/api/credit/balance`, {
+            fetch(`https://api.scaneats.app/api/credit/balance`, {
                 headers: { Authorization: `Bearer ${token}` },
             })
         ]);
@@ -179,7 +179,7 @@ export default function SettingsPage() {
     }
 
     try {
-      const response = await fetch(`https://localhost:7066/api/Auth/delete`, {
+      const response = await fetch(`https://api.scaneats.app/api/Auth/delete`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -239,7 +239,7 @@ export default function SettingsPage() {
 
     try {
       const response = await fetch(
-        `https://localhost:7066/api/Auth/update`,
+        `https://api.scaneats.app/api/Auth/update`,
         {
           method: 'POST',
           headers: {

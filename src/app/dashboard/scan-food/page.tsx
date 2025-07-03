@@ -118,7 +118,7 @@ export default function ScanFoodPage() {
 
     try {
       localStorage.removeItem('scannedFood');
-      const response = await fetch(`https://localhost:7066/api/scan`, {
+      const response = await fetch(`https://api.scaneats.app/api/scan`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
