@@ -35,22 +35,29 @@ const textToSpeechFlow = ai.defineFlow(
     outputSchema: TextToSpeechOutputSchema,
   },
   async ({text}) => {
-    const {media} = await ai.generate({
-      model: googleAI.model('gemini-2.5-flash-preview-tts'),
-      config: {
-        responseModalities: ['AUDIO'],
+   try {
+     const {media} = await ai.generate({
+       model: googleAI.model('gemini-2.5-flash-preview-tts'),
+       config: {
+         responseModalities: ['AUDIO'],
         speechConfig: {
           voiceConfig: {
             prebuiltVoiceConfig: {voiceName: 'Kore'},
           },
         },
       },
-      prompt: text,
-    });
+       prompt: text,
+     });
+ 
+     if (!media?.url) {
+       console.error('TTS media object:', media);
+       throw new Error('No audio media returned from the TTS model.');
+     }
+   } catch (error: any) {
+     console.error('Error during ai.generate call:', error);
+     throw new Error(`Text-to-speech generation failed: ${error.message}`);
+   }
 
-    if (!media?.url) {
-      throw new Error('No audio media returned from the TTS model.');
-    }
 
     const audioBuffer = Buffer.from(
       media.url.substring(media.url.indexOf(',') + 1),

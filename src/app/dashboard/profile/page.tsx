@@ -69,7 +69,7 @@ export default function ProfilePage() {
       }
 
       try {
-        const response = await fetch(`https://api.scaneats.app/api/profile`, {
+        const response = await fetch(`https://localhost:7066/api/profile`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },

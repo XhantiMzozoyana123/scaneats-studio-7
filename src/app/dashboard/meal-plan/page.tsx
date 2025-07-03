@@ -11,7 +11,7 @@ import { textToSpeech } from '@/ai/flows/text-to-speech';
 
 type ScannedFood = {
   id: number;
-  name: string;
+  name?: string;
   calories: number;
   protein: number;
   fat: number;
@@ -66,7 +66,7 @@ export default function MealPlanPage() {
         toast({
           variant: 'destructive',
           title: 'Speech Error',
-          description: `Could not recognize speech: ${event.error}`,
+          description: `Could not recognize speech: ${event.error}. Please check your microphone and try again.`,
         });
         setIsRecording(false);
       };
@@ -85,69 +85,41 @@ export default function MealPlanPage() {
 
   // --- Data Fetching ---
   useEffect(() => {
-    const fetchFoodReferences = async () => {
-      setIsLoading(true);
-      const token = localStorage.getItem('authToken');
-
-      if (!token) {
-        toast({
-          variant: 'destructive',
-          title: 'Authentication Error',
-          description: 'You must be logged in to view your meal plan.',
-        });
-        setIsLoading(false);
-        return;
-      }
-
+    setIsLoading(true);
+    const storedFood = localStorage.getItem('scannedFood');
+    if (storedFood) {
       try {
-        const response = await fetch(
-          `https://api.scaneats.app/api/food/references`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+        const parsedFood = JSON.parse(storedFood);
+            console.log('Stored food data:', parsedFood);
 
-        if (!response.ok) {
-          throw new Error('Failed to fetch meal plan.');
-        }
-
-        const data = await response.json();
-        const formattedData: ScannedFood[] = data.length > 0
-          ? [data[data.length - 1]].map((item: any) => ({
-              id: item.id,
-              name: 'Unknown Food', // Name is missing in the new response
-              calories: item.total, // Assuming 'total' represents calories
-              protein: item.protien, // Corrected spelling
-              fat: item.fat,
-              carbs: item.carbs,
-            }))
-          : [];
-        setFoods(formattedData);
+        const formattedData: ScannedFood = {
+          id: parsedFood.id,
+          name: parsedFood.name || 'Unknown Food',
+          calories: parsedFood.total || parsedFood.Logging?.total || 0, // Assuming 'total' represents calories
+          protein: parsedFood.protien || parsedFood.Logging?.protien || 0, // Corrected spelling
+          fat: parsedFood.fat || parsedFood.Logging?.fat || 0,
+          carbs: parsedFood.carbs || parsedFood.Logging?.carbs || 0,
+        };
+        setFoods([formattedData]);
       } catch (error) {
-        console.error(error);
+        console.error('Error parsing stored food data:', error);
         toast({
           variant: 'destructive',
           title: 'Error',
-          description:
-            'Could not fetch your meal plan. Please try again later.',
+          description: 'Could not load stored meal plan data.',
         });
-      } finally {
-        setIsLoading(false);
       }
-    };
-
-    fetchFoodReferences();
+    }
+    setIsLoading(false);
   }, [toast]);
 
   const totals = useMemo(() => {
     return foods.reduce(
       (acc, food) => {
-        acc.calories += food.calories || 0;
-        acc.protein += food.protein || 0;
-        acc.fat += food.fat || 0;
-        acc.carbs += food.carbs || 0;
+        acc.calories += food?.calories || 0;
+        acc.protein += food?.protein || 0;
+        acc.fat += food?.fat || 0;
+        acc.carbs += food?.carbs || 0;
         return acc;
       },
       { calories: 0, protein: 0, fat: 0, carbs: 0 }
@@ -184,7 +156,7 @@ export default function MealPlanPage() {
 
     try {
       const response = await fetch(
-        `https://api.scaneats.app/api/sally/meal-planner`,
+        `https://localhost:7066/api/sally/meal-planner`,
         {
           method: 'POST',
           headers: {
@@ -220,10 +192,11 @@ export default function MealPlanPage() {
           }
         } catch (ttsError) {
           console.error('Error during TTS call:', ttsError);
+          console.log('TTS Input Text:', data.agentDialogue);
           toast({
             variant: 'destructive',
             title: 'Audio Error',
-            description: 'Could not generate audio for the response.',
+            description: 'Could not generate audio for the response. The text-to-speech service may be unavailable.',
           });
         }
       }
@@ -267,41 +240,49 @@ export default function MealPlanPage() {
           </div>
         ) : (
           <>
-            <div className="mb-6 flex shrink-0 flex-col items-center">
-              <div className="text-5xl font-bold text-white drop-shadow-[0_0_10px_hsl(var(--primary))]">
-                {totals.calories.toFixed(0)}
-              </div>
-              <div className="mt-2 rounded-full bg-card/50 px-4 py-1.5 text-sm tracking-wide text-muted-foreground">
-                Total Calories
-              </div>
-            </div>
+            {foods.length > 0 ? (
+              <>
+                <div className="mb-6 flex shrink-0 flex-col items-center">
+                  <div className="text-5xl font-bold text-white drop-shadow-[0_0_10px_hsl(var(--primary))]">
+                    {totals.calories.toFixed(0)}
+                  </div>
+                  <div className="mt-2 rounded-full bg-card/50 px-4 py-1.5 text-sm tracking-wide text-muted-foreground">
+                    Total Calories
+                  </div>
+                </div>
 
-            <div className="mb-6 grid w-full max-w-xl shrink-0 grid-cols-3 gap-4">
-              <div className="flex flex-col items-center justify-center rounded-xl border border-primary/30 bg-primary/20 p-4 text-center text-white shadow-lg shadow-primary/20 transition-transform hover:-translate-y-1">
-                <div className="mb-1 text-lg font-normal text-accent">
-                  Protein
+                <div className="mb-6 grid w-full max-w-xl shrink-0 grid-cols-3 gap-4">
+                  <div className="flex flex-col items-center justify-center rounded-xl border border-primary/30 bg-primary/20 p-4 text-center text-white shadow-lg shadow-primary/20 transition-transform hover:-translate-y-1">
+                    <div className="mb-1 text-lg font-normal text-accent">
+                      Protein
+                    </div>
+                    <div className="text-2xl font-semibold">
+                      {totals.protein.toFixed(0)}g
+                    </div>
+                  </div>
+                  <div className="flex flex-col items-center justify-center rounded-xl border border-primary/30 bg-primary/20 p-4 text-center text-white shadow-lg shadow-primary/20 transition-transform hover:-translate-y-1">
+                    <div className="mb-1 text-lg font-normal text-accent">
+                      Fat
+                    </div>
+                    <div className="text-2xl font-semibold">
+                      {totals.fat.toFixed(0)}g
+                    </div>
+                  </div>
+                  <div className="flex flex-col items-center justify-center rounded-xl border border-primary/30 bg-primary/20 p-4 text-center text-white shadow-lg shadow-primary/20 transition-transform hover:-translate-y-1">
+                    <div className="mb-1 text-lg font-normal text-accent">
+                      Carbs
+                    </div>
+                    <div className="text-2xl font-semibold">
+                      {totals.carbs.toFixed(0)}g
+                    </div>
+                  </div>
                 </div>
-                <div className="text-2xl font-semibold">
-                  {totals.protein.toFixed(0)}g
-                </div>
+              </>
+            ) : (
+              <div className="flex flex-1 flex-col items-center justify-center">
+                <p className="text-white">No food scanned yet.</p>
               </div>
-              <div className="flex flex-col items-center justify-center rounded-xl border border-primary/30 bg-primary/20 p-4 text-center text-white shadow-lg shadow-primary/20 transition-transform hover:-translate-y-1">
-                <div className="mb-1 text-lg font-normal text-accent">
-                  Fat
-                </div>
-                <div className="text-2xl font-semibold">
-                  {totals.fat.toFixed(0)}g
-                </div>
-              </div>
-              <div className="flex flex-col items-center justify-center rounded-xl border border-primary/30 bg-primary/20 p-4 text-center text-white shadow-lg shadow-primary/20 transition-transform hover:-translate-y-1">
-                <div className="mb-1 text-lg font-normal text-accent">
-                  Carbs
-                </div>
-                <div className="text-2xl font-semibold">
-                  {totals.carbs.toFixed(0)}g
-                </div>
-              </div>
-            </div>
+            )}
 
             <button
               onClick={handleMicClick}

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -11,6 +12,7 @@ import { cn } from '@/lib/utils';
 
 export default function ScanFoodPage() {
   const { toast } = useToast();
+  const router = useRouter();
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -115,7 +117,8 @@ export default function ScanFoodPage() {
     };
 
     try {
-      const response = await fetch(`https://api.scaneats.app/api/scan`, {
+      localStorage.removeItem('scannedFood');
+      const response = await fetch(`https://localhost:7066/api/scan`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -129,6 +132,14 @@ export default function ScanFoodPage() {
           title: 'Success!',
           description: 'Your scan was submitted successfully.',
         });
+
+        // Parse the response body as JSON
+        const responseData = await response.json();
+
+        // Store the JSON data in local storage
+        localStorage.setItem('scannedFood', JSON.stringify(responseData));
+        router.push('/dashboard/meal-plan');
+
         handleRetake(); // Go back to camera view after successful scan
       } else if (response.status === 429) {
           toast({

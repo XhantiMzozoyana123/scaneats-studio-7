@@ -24,7 +24,7 @@ export default function HomePage() {
     setIsLoading(true);
 
     try {
-      const response = await fetch(`https://api.scaneats.app/api/Auth/register`, {
+      const response = await fetch(`https://localhost:7066/api/Auth/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
