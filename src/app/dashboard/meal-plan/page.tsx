@@ -156,7 +156,7 @@ export default function MealPlanPage() {
 
     try {
       const response = await fetch(
-        `https://api.scaneats.app/api/sally/meal-planner`,
+        `https://9rpouzd4qw.loclx.io/api/sally/meal-planner`,
         {
           method: 'POST',
           headers: {

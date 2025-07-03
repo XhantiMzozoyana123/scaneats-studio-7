@@ -28,7 +28,7 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      const response = await fetch(`https://api.scaneats.app/api/Auth/login`, {
+      const response = await fetch(`https://9rpouzd4qw.loclx.io/api/Auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
