@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -74,7 +75,7 @@ export default function PricingPage() {
           },
           body: JSON.stringify({
             email: email,
-            plan: subscriptionPlanCode,
+            planCode: subscriptionPlanCode,
           }),
         }
       );

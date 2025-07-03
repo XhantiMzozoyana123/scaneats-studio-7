@@ -156,7 +156,7 @@ export default function MealPlanPage() {
 
     try {
       const response = await fetch(
-        `https://9rpouzd4qw.loclx.io/api/sally/meal-planner`,
+        `https://frk4xkdikv.loclx.io/api/sally/meal-planner`,
         {
           method: 'POST',
           headers: {
