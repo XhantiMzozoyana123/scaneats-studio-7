@@ -52,8 +52,8 @@ function SubscriptionSuccessContent() {
           const verificationData = await response.json();
           if (verificationData && verificationData.status === 'success') {
             // If the backend sends a new token with updated claims, store it.
-            if (verificationData.token) {
-              localStorage.setItem('authToken', verificationData.token);
+            if (verificationData.accessToken) {
+              localStorage.setItem('authToken', verificationData.accessToken);
             }
             
             setStatus('success');

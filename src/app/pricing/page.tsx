@@ -61,8 +61,6 @@ export default function PricingPage() {
       setIsSubscribing(false);
       return;
     }
-    
-    const subscriptionPlanCode = 'PLN_h212vaz6f2wp54w';
 
     try {
       const response = await fetch(
@@ -75,7 +73,6 @@ export default function PricingPage() {
           },
           body: JSON.stringify({
             email: email,
-            planCode: subscriptionPlanCode,
           }),
         }
       );
