@@ -540,7 +540,7 @@ const SallyView = () => {
 
     try {
       const response = await fetch(
-        `https://api.scaneats.app/api/sally/body-assessment`,
+        `https://gjy9aw4wpj.loclx.io/api/sally/body-assessment`,
         {
           method: 'POST',
           headers: {
@@ -718,8 +718,8 @@ const ProfileView = () => {
 
     const method = profile.id ? 'PUT' : 'POST';
     const url = profile.id
-      ? `https://api.scaneats.app/api/profile/${profile.id}`
-      : `https://api.scaneats.app/api/profile`;
+      ? `https://gjy9aw4wpj.loclx.io/api/profile/${profile.id}`
+      : `https://gjy9aw4wpj.loclx.io/api/profile`;
       
     const profileData: any = {
       ...profile,
@@ -1024,7 +1024,7 @@ const SettingsView = () => {
     }
 
     try {
-      const response = await fetch(`https://api.scaneats.app/api/Auth/delete`, {
+      const response = await fetch(`https://gjy9aw4wpj.loclx.io/api/Auth/delete`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -1084,7 +1084,7 @@ const SettingsView = () => {
 
     try {
       const response = await fetch(
-        `https://api.scaneats.app/api/Auth/update`,
+        `https://gjy9aw4wpj.loclx.io/api/Auth/update`,
         {
           method: 'POST',
           headers: {
@@ -1314,7 +1314,7 @@ export default function DashboardPage() {
            }
 
            try {
-             const response = await fetch(`https://api.scaneats.app/api/Auth/delete`, {
+             const response = await fetch(`https://gjy9aw4wpj.loclx.io/api/Auth/delete`, {
                method: 'DELETE',
                headers: { Authorization: `Bearer ${token}` },
              });
@@ -1374,7 +1374,7 @@ export default function DashboardPage() {
 
            try {
              const response = await fetch(
-               `https://api.scaneats.app/api/Auth/update`,
+               `https://gjy9aw4wpj.loclx.io/api/Auth/update`,
                {
                  method: 'POST',
                  headers: {

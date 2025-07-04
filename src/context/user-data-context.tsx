@@ -58,10 +58,10 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
     setIsLoading(true);
     try {
       const [profileRes, creditRes] = await Promise.all([
-        fetch(`https://api.scaneats.app/api/profile`, {
+        fetch(`https://gjy9aw4wpj.loclx.io/api/profile`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
-        fetch(`https://api.scaneats.app/api/credit/balance`, {
+        fetch(`https://gjy9aw4wpj.loclx.io/api/credit/balance`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
       ]);

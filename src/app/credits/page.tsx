@@ -65,7 +65,7 @@ export default function CreditsPage() {
 
     try {
       const response = await fetch(
-        `https://api.scaneats.app/api/credit/purchase`,
+        `https://gjy9aw4wpj.loclx.io/api/credit/purchase`,
         {
           method: 'POST',
           headers: {
