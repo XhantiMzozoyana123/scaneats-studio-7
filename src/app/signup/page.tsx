@@ -43,14 +43,26 @@ export default function SignUpPage() {
         });
         router.push('/');
       } else {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Registration failed');
+        let errorMessage = 'An unknown error occurred during registration.';
+        if (response.status >= 500) {
+          errorMessage = 'Our servers are currently unavailable. Please try again later.';
+        } else {
+            try {
+                const errorData = await response.json();
+                if (errorData.error) {
+                    errorMessage = errorData.error;
+                }
+            } catch {
+                // Keep the generic message
+            }
+        }
+        throw new Error(errorMessage);
       }
     } catch (error: any) {
       toast({
         variant: 'destructive',
         title: 'Registration Failed',
-        description: error.message || 'An unexpected error occurred.',
+        description: error.message,
       });
     } finally {
       setIsLoading(false);

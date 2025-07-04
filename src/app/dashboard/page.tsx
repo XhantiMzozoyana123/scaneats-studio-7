@@ -316,35 +316,45 @@ const MealPlanView = () => {
         }
       );
 
-      if (response.status === 429) {
-        throw new Error('Daily request limit reached.');
-      }
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(
-          errorData.error || 'Failed to get a response from Sally.'
-        );
-      }
-      
-      const data = await response.json();
-      setSallyResponse(data.agentDialogue);
-      
-      if (data.agentDialogue) {
-        try {
-          const { media } = await textToSpeech({ text: data.agentDialogue });
-          if (media) {
-            setAudioUrl(media);
+      if (response.ok) {
+        const data = await response.json();
+        setSallyResponse(data.agentDialogue);
+        
+        if (data.agentDialogue) {
+          try {
+            const { media } = await textToSpeech({ text: data.agentDialogue });
+            if (media) {
+              setAudioUrl(media);
+            }
+          } catch (ttsError) {
+            console.error('Error during TTS call:', ttsError);
+            toast({
+              variant: 'destructive',
+              title: 'Audio Error',
+              description: 'Could not generate audio for the response. The text-to-speech service may be unavailable.',
+            });
           }
-        } catch (ttsError) {
-          console.error('Error during TTS call:', ttsError);
-          toast({
-            variant: 'destructive',
-            title: 'Audio Error',
-            description: 'Could not generate audio for the response. The text-to-speech service may be unavailable.',
-          });
         }
+      } else {
+          let errorMessage = 'Failed to get a response from Sally.';
+          if (response.status === 401) {
+              errorMessage = 'Your session has expired. Please log in again.';
+          } else if (response.status === 429) {
+              errorMessage = 'You have reached your daily request limit.';
+          } else if (response.status >= 500) {
+              errorMessage = 'Our servers are currently unavailable. Please try again later.';
+          } else {
+              try {
+                  const errorData = await response.json();
+                  if (errorData.error) {
+                      errorMessage = errorData.error;
+                  }
+              } catch {
+                  // Keep generic message
+              }
+          }
+          throw new Error(errorMessage);
       }
-
     } catch (error: any) {
       toast({
         variant: 'destructive',
@@ -553,37 +563,46 @@ const SallyView = () => {
           }),
         }
       );
+      
+      if (response.ok) {
+        const data = await response.json();
+        setSallyResponse(data.agentDialogue);
 
-      if (response.status === 429) {
-        throw new Error('Daily request limit reached.');
-      }
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(
-          errorData.error || 'Failed to get a response from Sally.'
-        );
-      }
-
-      const data = await response.json();
-      setSallyResponse(data.agentDialogue);
-
-      if (data.agentDialogue) {
-        try {
-          const audioData = await textToSpeech({ text: data.agentDialogue });
-          if (audioData.media) {
-            setAudioUrl(audioData.media);
+        if (data.agentDialogue) {
+          try {
+            const audioData = await textToSpeech({ text: data.agentDialogue });
+            if (audioData.media) {
+              setAudioUrl(audioData.media);
+            }
+          } catch (ttsError) {
+            console.error('Error during TTS call:', ttsError);
+            toast({
+              variant: 'destructive',
+              title: 'Audio Error',
+              description: 'Could not generate audio for the response.',
+            });
           }
-        } catch (ttsError) {
-          console.error('Error during TTS call:', ttsError);
-          toast({
-            variant: 'destructive',
-            title: 'Audio Error',
-            description: 'Could not generate audio for the response.',
-          });
         }
+      } else {
+          let errorMessage = 'Failed to get a response from Sally.';
+          if (response.status === 401) {
+              errorMessage = 'Your session has expired. Please log in again.';
+          } else if (response.status === 429) {
+              errorMessage = 'You have reached your daily request limit.';
+          } else if (response.status >= 500) {
+              errorMessage = 'Our servers are currently unavailable. Please try again later.';
+          } else {
+              try {
+                  const errorData = await response.json();
+                  if (errorData.error) {
+                      errorMessage = errorData.error;
+                  }
+              } catch {
+                  // Keep generic message
+              }
+          }
+          throw new Error(errorMessage);
       }
-
     } catch (error: any) {
       toast({
         variant: 'destructive',
@@ -755,15 +774,28 @@ const ProfileView = () => {
               birthDate: newProfile.birthDate ? new Date(newProfile.birthDate) : null,
             });
         } else {
-            const errorData = await response.json().catch(() => ({ error: 'An unknown error occurred.'}));
-            throw new Error(errorData.error || 'Failed to save profile.');
+            let errorMessage = 'Failed to save profile.';
+            if (response.status === 401) {
+                errorMessage = 'Your session has expired. Please log in again.';
+            } else if (response.status >= 500) {
+                errorMessage = 'Our servers are experiencing issues. Please try again later.';
+            } else {
+                try {
+                    const errorData = await response.json();
+                    if (errorData.error) {
+                        errorMessage = errorData.error;
+                    }
+                } catch {
+                    // Keep generic message
+                }
+            }
+            throw new Error(errorMessage);
         }
-
     } catch (error: any) {
         toast({
             variant: 'destructive',
             title: 'Save Failed',
-            description: error.message || 'An unexpected error occurred.',
+            description: error.message,
         });
     } finally {
         setIsSaving(false);
@@ -1036,7 +1068,13 @@ const SettingsView = ({ onNavigateToProfile }: { onNavigateToProfile: () => void
         });
         handleLogout();
       } else {
-        throw new Error('Failed to delete account.');
+        let errorMessage = 'Failed to delete account.';
+         if (response.status === 401) {
+            errorMessage = 'Your session has expired. Please log in again.';
+        } else if (response.status >= 500) {
+            errorMessage = 'Our servers are experiencing issues. Please try again later.';
+        }
+        throw new Error(errorMessage);
       }
     } catch (error: any) {
       toast({
@@ -1105,8 +1143,24 @@ const SettingsView = ({ onNavigateToProfile }: { onNavigateToProfile: () => void
         setNewPassword('');
         setConfirmPassword('');
       } else {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to change password.');
+        let errorMessage = 'Failed to change password.';
+        if (response.status === 401) {
+            errorMessage = 'Your session has expired. Please log in again.';
+        } else if (response.status === 400) {
+            errorMessage = 'The current password you entered is incorrect.';
+        } else if (response.status >= 500) {
+            errorMessage = 'Our servers are experiencing issues. Please try again later.';
+        } else {
+            try {
+                const errorData = await response.json();
+                if (errorData.error) {
+                    errorMessage = errorData.error;
+                }
+            } catch {
+                // Keep generic message
+            }
+        }
+        throw new Error(errorMessage);
       }
     } catch (error: any) {
       toast({

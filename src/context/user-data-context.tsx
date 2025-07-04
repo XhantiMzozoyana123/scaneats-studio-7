@@ -50,7 +50,6 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
   const fetchProfile = useCallback(async () => {
     const token = localStorage.getItem('authToken');
     if (!token) {
-      // Let the main dashboard layout handle redirect.
       setIsLoading(false);
       return;
     }
@@ -66,24 +65,24 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
         }),
       ]);
 
-      if (profileRes.ok) {
-        const data = await profileRes.json();
-        if (data && data.length > 0) {
-          const userProfile = data[0];
-          setProfile({
-            ...userProfile,
-            birthDate: userProfile.birthDate
-              ? new Date(userProfile.birthDate)
-              : null,
-          });
-        } else {
-          setProfile(initialProfileState);
+      if (!profileRes.ok) {
+        if (profileRes.status === 401) {
+            throw new Error("Your session has expired. Please log in again.");
         }
+        throw new Error("Could not load your profile information.");
+      }
+      
+      const data = await profileRes.json();
+      if (data && data.length > 0) {
+        const userProfile = data[0];
+        setProfile({
+          ...userProfile,
+          birthDate: userProfile.birthDate
+            ? new Date(userProfile.birthDate)
+            : null,
+        });
       } else {
         setProfile(initialProfileState);
-        console.error('Failed to fetch profile.');
-        // Don't toast here on initial load, it can be annoying.
-        // The page itself can guide the user.
       }
 
       if (creditRes.ok) {
@@ -92,13 +91,13 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
       } else {
         console.error('Failed to fetch credit balance');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to fetch user data', error);
       setProfile(initialProfileState);
       toast({
         variant: 'destructive',
-        title: 'Network Error',
-        description: 'Could not load your user information.',
+        title: 'Could Not Load Data',
+        description: error.message || 'There was a problem connecting to the server.',
       });
     } finally {
       setIsLoading(false);

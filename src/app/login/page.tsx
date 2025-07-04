@@ -51,14 +51,28 @@ export default function LoginPage() {
         });
         router.push('/dashboard');
       } else {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Login failed.');
+        let errorMessage = 'An unknown error occurred during login.';
+        if (response.status === 401) {
+          errorMessage = 'Incorrect email or password. Please try again.';
+        } else if (response.status >= 500) {
+          errorMessage = 'Our servers are currently unavailable. Please try again later.';
+        } else {
+            try {
+                const errorData = await response.json();
+                if (errorData.error) {
+                    errorMessage = errorData.error;
+                }
+            } catch {
+                // Keep the generic message
+            }
+        }
+        throw new Error(errorMessage);
       }
     } catch (error: any) {
       toast({
         variant: 'destructive',
         title: 'Login Failed',
-        description: error.message || 'An unexpected error occurred.',
+        description: error.message,
       });
     } finally {
       setIsLoading(false);
@@ -67,8 +81,6 @@ export default function LoginPage() {
 
   useEffect(() => {
     const token = localStorage.getItem('authToken');
-
-    // Simulate token validation (replace with actual API call)
     const isValidToken = token !== null;
 
     if (isValidToken) {

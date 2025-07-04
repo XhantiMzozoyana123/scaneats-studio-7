@@ -133,31 +133,36 @@ export default function ScanFoodPage() {
           description: 'Your scan was submitted successfully.',
         });
 
-        // Parse the response body as JSON
         const responseData = await response.json();
-
-        // Store the JSON data in local storage
         localStorage.setItem('scannedFood', JSON.stringify(responseData));
         router.push('/dashboard/meal-plan');
-
-        handleRetake(); // Go back to camera view after successful scan
-      } else if (response.status === 429) {
-          toast({
-              variant: 'destructive',
-              title: 'Limit Reached',
-              description: 'You have reached your daily scan limit.'
-          });
-      }
-      else {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'The scan failed. Please try again.');
+        handleRetake();
+      } else {
+        let errorMessage = 'The scan failed. Please try again.';
+        if (response.status === 401) {
+            errorMessage = 'Your session has expired. Please log in again.';
+        } else if (response.status === 429) {
+            errorMessage = 'You have reached your daily scan limit.';
+        } else if (response.status >= 500) {
+            errorMessage = 'Our servers are experiencing issues. Please try again later.';
+        } else {
+            try {
+                const errorData = await response.json();
+                if (errorData.error) {
+                    errorMessage = errorData.error;
+                }
+            } catch {
+                // Keep generic message
+            }
+        }
+        throw new Error(errorMessage);
       }
 
     } catch (error: any) {
       toast({
         variant: 'destructive',
         title: 'Scan Failed',
-        description: error.message || 'An unexpected error occurred.',
+        description: error.message,
       });
     } finally {
       setIsSending(false);

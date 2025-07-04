@@ -80,16 +80,30 @@ export default function PricingPage() {
         }
       );
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Subscription failed.');
-      }
-
-      const result = await response.json();
-      if (result.data.authorization_url) {
-        window.location.href = result.data.authorization_url;
+      if (response.ok) {
+        const result = await response.json();
+        if (result.data.authorization_url) {
+          window.location.href = result.data.authorization_url;
+        } else {
+          throw new Error('Payment URL not received.');
+        }
       } else {
-        throw new Error('Payment URL not received.');
+        let errorMessage = 'An unknown error occurred.';
+        if (response.status === 401) {
+            errorMessage = 'Your session has expired. Please log in again.';
+        } else if (response.status >= 500) {
+            errorMessage = 'Our servers are experiencing issues. Please try again later.';
+        } else {
+            try {
+                const errorData = await response.json();
+                if (errorData.message) {
+                    errorMessage = errorData.message;
+                }
+            } catch {
+                // Keep generic message
+            }
+        }
+        throw new Error(errorMessage);
       }
     } catch (error: any) {
       toast({

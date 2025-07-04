@@ -79,16 +79,30 @@ export default function CreditsPage() {
         }
       );
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Purchase failed.');
-      }
-
-      const result = await response.json();
-      if (result.url) {
-        window.location.href = result.url;
+      if (response.ok) {
+        const result = await response.json();
+        if (result.url) {
+          window.location.href = result.url;
+        } else {
+          throw new Error('Payment URL not received.');
+        }
       } else {
-        throw new Error('Payment URL not received.');
+          let errorMessage = 'An unknown error occurred.';
+          if (response.status === 401) {
+              errorMessage = 'Your session has expired. Please log in again.';
+          } else if (response.status >= 500) {
+              errorMessage = 'Our servers are experiencing issues. Please try again later.';
+          } else {
+              try {
+                  const errorData = await response.json();
+                  if (errorData.error) {
+                      errorMessage = errorData.error;
+                  }
+              } catch {
+                  // Keep generic message
+              }
+          }
+          throw new Error(errorMessage);
       }
     } catch (error: any) {
       toast({
@@ -96,7 +110,8 @@ export default function CreditsPage() {
         title: 'Purchase Error',
         description: error.message,
       });
-      setIsPurchasing(null);
+    } finally {
+        setIsPurchasing(null);
     }
   };
 
