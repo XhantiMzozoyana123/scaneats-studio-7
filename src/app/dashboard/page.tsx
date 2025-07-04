@@ -986,7 +986,7 @@ const DestructiveSettingsItem = ({
   </div>
 );
 
-const SettingsView = () => {
+const SettingsView = ({ onNavigateToProfile }: { onNavigateToProfile: () => void; }) => {
   const router = useRouter();
   const { toast } = useToast();
   const { profile, creditBalance, isLoading } = useUserData();
@@ -1157,7 +1157,7 @@ const SettingsView = () => {
         <div className="space-y-8">
             <div className="space-y-4 rounded-lg bg-zinc-900 p-6">
             <h2 className="text-lg font-semibold text-white">Account</h2>
-             <SettingsItem icon={UserCircle} label="Profile & Personal Goals" />
+             <SettingsItem icon={UserCircle} label="Profile & Personal Goals" onClick={onNavigateToProfile} />
             <Dialog
               open={isPasswordDialogOpen}
               onOpenChange={setIsPasswordDialogOpen}
@@ -1254,18 +1254,10 @@ export default function DashboardPage() {
   type View = 'home' | 'meal-plan' | 'sally' | 'profile' | 'settings';
   const [activeView, setActiveView] = useState<View>('home');
 
-  // Because the Settings page uses `Link` for navigation to external pages
-  // like /pricing and /credits, we need to handle that. A simple way
-  // is to switch the view if we detect a click that is supposed to navigate.
-  // The `useRouter` is available in the SettingsView for the logout function.
   const handleNavigate = (view: View) => {
      setActiveView(view);
   };
   
-  // The 'Profile & Personal Goals' button in settings should switch the view
-  const SettingsViewWithNav = () => <SettingsView onNavigateToProfile={() => setActiveView('profile')} />;
-
-
   const renderView = () => {
     switch (activeView) {
       case 'home':
@@ -1277,267 +1269,7 @@ export default function DashboardPage() {
       case 'profile':
         return <ProfileView />;
       case 'settings':
-         const router = useRouter();
-         const { toast } = useToast();
-         const { profile, creditBalance, isLoading } = useUserData();
-
-         const [isDeleting, setIsDeleting] = useState(false);
-         const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
-         const [isChangingPassword, setIsChangingPassword] = useState(false);
-         const [currentPassword, setCurrentPassword] = useState('');
-         const [newPassword, setNewPassword] = useState('');
-         const [confirmPassword, setConfirmPassword] = useState('');
-
-         const handleLogout = () => {
-           localStorage.removeItem('authToken');
-           localStorage.removeItem('userId');
-           localStorage.removeItem('userEmail');
-           toast({
-             title: 'Logged Out',
-             description: 'You have been successfully logged out.',
-           });
-           router.push('/login');
-         };
-
-         const handleDeleteAccount = async () => {
-           setIsDeleting(true);
-           const token = localStorage.getItem('authToken');
-
-           if (!token) {
-             toast({
-               variant: 'destructive',
-               title: 'Authentication Error',
-               description: 'You are not logged in.',
-             });
-             setIsDeleting(false);
-             return;
-           }
-
-           try {
-             const response = await fetch(`https://gjy9aw4wpj.loclx.io/api/Auth/delete`, {
-               method: 'DELETE',
-               headers: { Authorization: `Bearer ${token}` },
-             });
-
-             if (response.ok) {
-               toast({
-                 title: 'Account Deleted',
-                 description: 'Your account has been permanently deleted.',
-               });
-               handleLogout();
-             } else {
-               throw new Error('Failed to delete account.');
-             }
-           } catch (error: any) {
-             toast({
-               variant: 'destructive',
-               title: 'Deletion Failed',
-               description: error.message,
-             });
-           } finally {
-             setIsDeleting(false);
-           }
-         };
-
-         const handlePasswordChange = async (e: React.FormEvent) => {
-           e.preventDefault();
-           if (newPassword !== confirmPassword) {
-             toast({
-               variant: 'destructive',
-               title: 'Passwords do not match',
-             });
-             return;
-           }
-           setIsChangingPassword(true);
-
-           const token = localStorage.getItem('authToken');
-           const userId = localStorage.getItem('userId');
-           const email = localStorage.getItem('userEmail');
-
-           if (!token || !userId || !email || !profile?.name) {
-             toast({
-               variant: 'destructive',
-               title: 'Authentication Error',
-               description: 'Could not verify user information. Please log in again.',
-             });
-             setIsChangingPassword(false);
-             return;
-           }
-
-           const payload = {
-             Id: userId,
-             UserName: profile.name,
-             NewEmail: email,
-             CurrentPassword: currentPassword,
-             NewPassword: newPassword,
-           };
-
-           try {
-             const response = await fetch(
-               `https://gjy9aw4wpj.loclx.io/api/Auth/update`,
-               {
-                 method: 'POST',
-                 headers: {
-                   'Content-Type': 'application/json',
-                   Authorization: `Bearer ${token}`,
-                 },
-                 body: JSON.stringify(payload),
-               }
-             );
-
-             if (response.ok) {
-               toast({
-                 title: 'Password Changed',
-                 description: 'Your password has been updated successfully.',
-               });
-               setIsPasswordDialogOpen(false);
-               setCurrentPassword('');
-               setNewPassword('');
-               setConfirmPassword('');
-             } else {
-               const errorData = await response.json();
-               throw new Error(errorData.error || 'Failed to change password.');
-             }
-           } catch (error: any) {
-             toast({
-               variant: 'destructive',
-               title: 'Update Failed',
-               description: error.message,
-             });
-           } finally {
-             setIsChangingPassword(false);
-           }
-         };
-
-         if (isLoading) {
-           return (
-             <div className="flex min-h-screen flex-col bg-zinc-950 text-gray-200">
-               <main className="w-full max-w-2xl flex-1 self-center p-6">
-                 <div className="space-y-8">
-                   <div className="space-y-4 rounded-lg bg-zinc-900 p-6">
-                     <Skeleton className="h-7 w-32 rounded-md" />
-                     <Skeleton className="h-14 w-full rounded-lg" />
-                     <Skeleton className="h-14 w-full rounded-lg" />
-                   </div>
-                   <div className="space-y-4 rounded-lg bg-zinc-900 p-6">
-                     <Skeleton className="h-7 w-24 rounded-md" />
-                     <Skeleton className="h-14 w-full rounded-lg" />
-                     <Skeleton className="h-14 w-full rounded-lg" />
-                     <Skeleton className="h-14 w-full rounded-lg" />
-                   </div>
-                   <div className="space-y-4 rounded-lg bg-zinc-900 p-6">
-                     <Skeleton className="h-7 w-24 rounded-md" />
-                     <Skeleton className="h-14 w-full rounded-lg" />
-                     <Skeleton className="h-14 w-full rounded-lg" />
-                   </div>
-                 </div>
-               </main>
-             </div>
-           );
-         }
-
-         return (
-           <div className="flex min-h-screen flex-col bg-zinc-950 text-gray-200">
-              <header className="sticky top-0 z-10 w-full bg-zinc-900/50 p-4 shadow-md backdrop-blur-sm">
-               <div className="container mx-auto flex items-center justify-center">
-                 <h1 className="text-xl font-semibold">Settings</h1>
-               </div>
-             </header>
-             <main className="w-full max-w-2xl flex-1 self-center p-6 overflow-y-auto pb-28">
-               <div className="space-y-8">
-                 <div className="space-y-4 rounded-lg bg-zinc-900 p-6">
-                   <h2 className="text-lg font-semibold text-white">Account</h2>
-                   <SettingsItem icon={UserCircle} label="Profile & Personal Goals" onClick={() => setActiveView('profile')} />
-                   <Dialog
-                     open={isPasswordDialogOpen}
-                     onOpenChange={setIsPasswordDialogOpen}
-                   >
-                     <DialogTrigger asChild>
-                       <button className="w-full">
-                          <SettingsItem icon={Lock} label="Change Password" />
-                       </button>
-                     </DialogTrigger>
-                     <DialogContent>
-                       <DialogHeader>
-                         <DialogTitle>Change Password</DialogTitle>
-                       </DialogHeader>
-                       <form
-                         onSubmit={handlePasswordChange}
-                         className="space-y-4 py-4"
-                       >
-                         <div className="space-y-2">
-                           <Label htmlFor="current-password">Current Password</Label>
-                           <Input id="current-password" type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} required />
-                         </div>
-                         <div className="space-y-2">
-                           <Label htmlFor="new-password">New Password</Label>
-                           <Input id="new-password" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required />
-                         </div>
-                          <div className="space-y-2">
-                           <Label htmlFor="confirm-password">Confirm New Password</Label>
-                           <Input id="confirm-password" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required />
-                         </div>
-                       </form>
-                       <DialogFooter>
-                         <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
-                         <Button onClick={handlePasswordChange} disabled={isChangingPassword}>
-                           {isChangingPassword ? <Loader2 className="animate-spin" /> : 'Save Changes'}
-                         </Button>
-                       </DialogFooter>
-                     </DialogContent>
-                   </Dialog>
-                 </div>
-
-                 <div className="space-y-4 rounded-lg bg-zinc-900 p-6">
-                     <h2 className="text-lg font-semibold text-white">Billing</h2>
-                     <div className="flex items-center p-4">
-                       <Wallet className="mr-4 h-5 w-5 text-gray-300" />
-                       <span className="flex-1 font-medium text-white">My Wallet</span>
-                       <span className="font-semibold text-white">
-                           {creditBalance !== null ? `${creditBalance} Credits` : <Loader2 className="h-4 w-4 animate-spin" />}
-                       </span>
-                     </div>
-                    <SettingsItem
-                     icon={Repeat}
-                     label="Manage Subscription"
-                     href="/pricing"
-                   />
-                    <SettingsItem
-                     icon={CreditCard}
-                     label="Buy Credits"
-                     href="/credits"
-                   />
-                 </div>
-                 
-                 <div className="space-y-4 rounded-lg bg-zinc-900 p-6">
-                    <h2 className="text-lg font-semibold text-white">Actions</h2>
-                     <SettingsItem icon={LogOut} label="Log Out" onClick={handleLogout} />
-                     <AlertDialog>
-                     <AlertDialogTrigger asChild>
-                       <button className="w-full">
-                          <DestructiveSettingsItem icon={Trash2} label="Delete Account" onClick={() => {}} />
-                       </button>
-                     </AlertDialogTrigger>
-                     <AlertDialogContent>
-                       <AlertDialogHeader>
-                         <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                         <AlertDialogDescription>
-                           This action cannot be undone. This will permanently delete your account and remove your data from our servers.
-                         </AlertDialogDescription>
-                       </AlertDialogHeader>
-                       <AlertDialogFooter>
-                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                         <AlertDialogAction className={buttonVariants({ variant: 'destructive' })} onClick={handleDeleteAccount} disabled={isDeleting}>
-                           {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Delete My Account
-                         </AlertDialogAction>
-                       </AlertDialogFooter>
-                     </AlertDialogContent>
-                   </AlertDialog>
-                 </div>
-               </div>
-             </main>
-           </div>
-         );
+         return <SettingsView onNavigateToProfile={() => setActiveView('profile')} />;
       default:
         return <HomeView />;
     }
