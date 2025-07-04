@@ -4,6 +4,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { BottomNav } from '@/components/bottom-nav';
+import { UserDataProvider } from '@/context/user-data-context';
 
 export default function DashboardLayout({
   children,
@@ -37,9 +38,11 @@ export default function DashboardLayout({
   }
 
   return (
-    <div className="relative h-screen overflow-hidden">
-      {children}
-      {showBottomNav && <BottomNav />}
-    </div>
+    <UserDataProvider>
+      <div className="relative h-screen overflow-hidden">
+        {children}
+        {showBottomNav && <BottomNav />}
+      </div>
+    </UserDataProvider>
   );
 }

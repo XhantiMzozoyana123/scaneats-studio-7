@@ -1,12 +1,11 @@
-
 'use client';
 
 import Image from 'next/image';
 import { useState, type ChangeEvent, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
 import { Calendar as CalendarIcon, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useUserData } from '@/context/user-data-context';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -28,103 +27,39 @@ import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 
-type Profile = {
-  id: number | null;
-  name: string;
-  gender: string;
-  weight: number | string;
-  goals: string;
-  birthDate: Date | null;
-};
-
-// Initial empty state for the profile
-const initialProfileState: Profile = {
-  id: null,
-  name: '',
-  gender: 'Prefer not to say',
-  weight: '',
-  goals: '',
-  birthDate: null,
-};
-
 export default function ProfilePage() {
   const { toast } = useToast();
-  const [profile, setProfile] = useState<Profile>(initialProfileState);
+  const { profile, setProfile, isLoading } = useUserData();
+
   const [isSaving, setIsSaving] = useState(false);
-  const [isLoading, setIsLoading] = useState(true); // For initial fetch
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
-
-  useEffect(() => {
-    const fetchProfile = async () => {
-      setIsLoading(true);
-      const token = localStorage.getItem('authToken');
-
-      if (!token) {
-        toast({
-          variant: 'destructive',
-          title: 'Authentication Error',
-          description: 'You must be logged in to view your profile.',
-        });
-        setIsLoading(false);
-        return;
-      }
-
-      try {
-        const response = await fetch(`https://api.scaneats.app/api/profile`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error('Failed to fetch profile.');
-        }
-
-        const data = await response.json();
-        // The API returns a list of profiles, we'll use the first one.
-        if (data && data.length > 0) {
-          const userProfile = data[0];
-          setProfile({
-            ...userProfile,
-            birthDate: userProfile.birthDate ? new Date(userProfile.birthDate) : null,
-          });
-        }
-      } catch (error) {
-        console.error(error);
-        toast({
-          variant: 'destructive',
-          title: 'Error',
-          description: 'Could not fetch your profile. You can create one by saving this form.',
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchProfile();
-  }, [toast]);
-
 
   const handleInputChange = (
     e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { id, value } = e.target;
-    setProfile((prev) => ({ ...prev, [id]: value }));
+    if (profile) {
+      setProfile({ ...profile, [id]: value });
+    }
   };
 
   const handleSelectChange = (value: string) => {
-    setProfile((prev) => ({ ...prev, gender: value }));
+    if (profile) {
+      setProfile({ ...profile, gender: value });
+    }
   };
 
   const handleDateChange = (date: Date | undefined) => {
-    if (date) {
-      setProfile((prev) => ({ ...prev, birthDate: date }));
+    if (date && profile) {
+      setProfile({ ...profile, birthDate: date });
     }
     setIsDatePickerOpen(false);
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+
+    if (!profile) return;
 
     if (!profile.birthDate) {
       toast({
@@ -164,16 +99,16 @@ export default function ProfilePage() {
       : `https://api.scaneats.app/api/profile`;
       
     const profileData: any = {
-      name: profile.name,
-      gender: profile.gender,
+      ...profile,
       weight: String(profile.weight || ''),
-      goals: profile.goals,
       birthDate: profile.birthDate ? profile.birthDate.toISOString() : null,
       age: calculateAge(profile.birthDate),
     };
 
     if (profile.id) {
       profileData.id = profile.id;
+    } else {
+      delete profileData.id;
     }
 
     try {
@@ -191,14 +126,11 @@ export default function ProfilePage() {
               title: 'Success',
               description: 'Your profile has been saved successfully.',
             });
-
-            if(method === 'POST') {
-              const newProfile = await response.json();
-              setProfile({
-                ...newProfile,
-                birthDate: newProfile.birthDate ? new Date(newProfile.birthDate) : null,
-              });
-            }
+            const newProfile = await response.json();
+            setProfile({
+              ...newProfile,
+              birthDate: newProfile.birthDate ? new Date(newProfile.birthDate) : null,
+            });
         } else {
             const errorData = await response.json().catch(() => ({ error: 'An unknown error occurred.'}));
             throw new Error(errorData.error || 'Failed to save profile.');
@@ -215,7 +147,7 @@ export default function ProfilePage() {
     }
   };
   
-  if (isLoading) {
+  if (isLoading || !profile) {
     return (
       <div className="flex min-h-screen flex-col items-center bg-black pb-40 pt-5">
         <div className="w-[90%] max-w-[600px] rounded-lg bg-[rgba(14,1,15,0.32)] p-5">

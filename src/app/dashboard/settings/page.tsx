@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -41,6 +40,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useUserData } from '@/context/user-data-context';
 
 const SettingsItem = ({
   icon: Icon,
@@ -94,66 +94,14 @@ const DestructiveSettingsItem = ({
 export default function SettingsPage() {
   const router = useRouter();
   const { toast } = useToast();
+  const { profile, creditBalance, isLoading } = useUserData();
+
   const [isDeleting, setIsDeleting] = useState(false);
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [userName, setUserName] = useState('');
-  const [creditBalance, setCreditBalance] = useState<number | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchUserData = async () => {
-      setIsLoading(true);
-      const token = localStorage.getItem('authToken');
-      if (!token) {
-        toast({ variant: 'destructive', title: 'Not Authenticated' });
-        router.push('/login');
-        return;
-      }
-
-      try {
-        // Fetch profile and credits in parallel
-        const [profileRes, creditRes] = await Promise.all([
-            fetch(`https://api.scaneats.app/api/profile`, {
-                headers: { Authorization: `Bearer ${token}` },
-            }),
-            fetch(`https://api.scaneats.app/api/credit/balance`, {
-                headers: { Authorization: `Bearer ${token}` },
-            })
-        ]);
-        
-        if (profileRes.ok) {
-          const data = await profileRes.json();
-          if (data && data.length > 0) setUserName(data[0].name);
-        }
-
-        if (creditRes.ok) {
-            const data = await creditRes.json();
-            setCreditBalance(data.credits);
-        } else {
-            console.error('Failed to fetch credit balance');
-            toast({
-                variant: 'destructive',
-                title: 'Error',
-                description: 'Could not load your credit balance.',
-            });
-        }
-      } catch (error) {
-        console.error('Failed to fetch user data', error);
-        toast({
-          variant: 'destructive',
-          title: 'Error',
-          description: 'Could not load your user information.',
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchUserData();
-  }, [router, toast]);
 
   const handleLogout = () => {
     localStorage.removeItem('authToken');
@@ -221,7 +169,7 @@ export default function SettingsPage() {
     const userId = localStorage.getItem('userId');
     const email = localStorage.getItem('userEmail');
 
-    if (!token || !userId || !email || !userName) {
+    if (!token || !userId || !email || !profile?.name) {
       toast({
         variant: 'destructive',
         title: 'Authentication Error',
@@ -233,7 +181,7 @@ export default function SettingsPage() {
 
     const payload = {
       Id: userId,
-      UserName: userName,
+      UserName: profile.name,
       NewEmail: email,
       CurrentPassword: currentPassword,
       NewPassword: newPassword,
