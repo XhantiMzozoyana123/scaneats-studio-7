@@ -1,21 +1,24 @@
 'use client';
 
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
 import { Home, UtensilsCrossed, Mic, User, Settings } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navItems = [
-  { href: '/dashboard', icon: Home, label: 'Home' },
-  { href: '/dashboard/meal-plan', icon: UtensilsCrossed, label: 'Meal Plan' },
-  { href: '/dashboard/sally', icon: Mic, label: 'SallyPA' },
-  { href: '/dashboard/profile', icon: User, label: 'Profile' },
-  { href: '/dashboard/settings', icon: Settings, label: 'Settings' },
+  { view: 'home', icon: Home, label: 'Home' },
+  { view: 'meal-plan', icon: UtensilsCrossed, label: 'Meal Plan' },
+  { view: 'sally', icon: Mic, label: 'SallyPA' },
+  { view: 'profile', icon: User, label: 'Profile' },
+  { view: 'settings', icon: Settings, label: 'Settings' },
 ];
 
-export function BottomNav() {
-  const pathname = usePathname();
+type View = 'home' | 'meal-plan' | 'sally' | 'profile' | 'settings';
 
+interface BottomNavProps {
+  activeView: View;
+  onNavigate: (view: View) => void;
+}
+
+export function BottomNav({ activeView, onNavigate }: BottomNavProps) {
   return (
     <div className="fixed bottom-5 left-1/2 z-50 w-[90%] max-w-md -translate-x-1/2 sm:bottom-7">
       <div className="mb-2 text-center text-xs text-[#999] sm:mb-2.5 sm:text-[0.85em]">
@@ -23,12 +26,12 @@ export function BottomNav() {
       </div>
       <div className="flex items-center justify-around rounded-[25px] bg-[rgba(26,16,35,0.85)] p-2 shadow-[0_0_12px_1px_rgba(127,0,255,0.65),0_0_25px_5px_rgba(127,0,255,0.35),0_2px_8px_rgba(0,0,0,0.3)] backdrop-blur-sm sm:rounded-[25px] sm:p-4">
         {navItems.map((item) => {
-          const isActive = pathname === item.href;
+          const isActive = activeView === item.view;
           return (
-            <Link
-              href={item.href}
-              key={item.href}
-              className="group flex flex-1 flex-col items-center gap-0.5 text-gray-400 no-underline transition-colors sm:gap-1"
+            <button
+              onClick={() => onNavigate(item.view as View)}
+              key={item.view}
+              className="group flex flex-1 flex-col items-center gap-0.5 text-gray-400 no-underline transition-colors sm:gap-1 bg-transparent border-none cursor-pointer"
             >
               <div
                 className={cn(
@@ -42,7 +45,7 @@ export function BottomNav() {
               <span className={cn('text-[0.9em] font-normal text-[#a0a0a0] transition-colors group-hover:text-white sm:text-base', isActive && 'text-white')}>
                 {item.label}
               </span>
-            </Link>
+            </button>
           );
         })}
       </div>

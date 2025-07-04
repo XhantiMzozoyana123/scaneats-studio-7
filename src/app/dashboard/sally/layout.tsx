@@ -1,7 +1,9 @@
+// This layout is no longer used directly.
+// The content has been moved into a component on the main dashboard page.
 export default function SallyLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  return <div className="relative h-screen overflow-hidden">{children}</div>;
+  return <>{children}</>;
 }

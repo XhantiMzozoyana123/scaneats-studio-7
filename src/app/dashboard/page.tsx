@@ -1,20 +1,93 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import Link from 'next/link';
-import { Button } from '@/components/ui/button';
+import { useState, useEffect, useMemo, useRef, useCallback, type ChangeEvent } from 'react';
+import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { cn } from '@/lib/utils';
+import Link from 'next/link';
+import { format } from 'date-fns';
 
-export default function DashboardPage() {
-  const [background, setBackground] = useState({
+import { Button, buttonVariants } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogClose,
+} from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Skeleton } from '@/components/ui/skeleton';
+
+import {
+  Home,
+  UtensilsCrossed,
+  Mic,
+  User as UserIcon,
+  Settings,
+  Loader2,
+  Camera,
+  RefreshCw,
+  Send,
+  AlertTriangle,
+  X,
+  LogOut,
+  UserCircle,
+  Lock,
+  Trash2,
+  Wallet,
+  Repeat,
+  ArrowLeft,
+  ChevronRight,
+  CreditCard,
+  Calendar as CalendarIcon,
+} from 'lucide-react';
+
+import { useToast } from '@/hooks/use-toast';
+import { useUserData } from '@/context/user-data-context';
+import { cn } from '@/lib/utils';
+import { BottomNav } from '@/components/bottom-nav';
+import { BackgroundImage } from '@/components/background-image';
+import { textToSpeech } from '@/ai/flows/text-to-speech';
+
+
+// --- Views (previously separate pages) ---
+
+const HomeView = () => {
+    const [background, setBackground] = useState({
     src: 'https://placehold.co/1920x1080.png',
     hint: 'food abstract day',
   });
 
   useEffect(() => {
     const currentHour = new Date().getHours();
-    // Night time: 7 PM (19) to 7:59 AM (8)
     if (currentHour >= 19 || currentHour < 8) {
       setBackground({
         src: 'https://placehold.co/1920x1080.png',
@@ -81,5 +154,1399 @@ export default function DashboardPage() {
         </Button>
       </main>
     </>
+  );
+};
+
+
+type ScannedFood = {
+  id: number;
+  name?: string;
+  calories: number;
+  protein: number;
+  fat: number;
+  carbs: number;
+};
+
+declare global {
+  interface Window {
+    SpeechRecognition: any;
+    webkitSpeechRecognition: any;
+  }
+}
+
+const MealPlanView = () => {
+  const [foods, setFoods] = useState<ScannedFood[] | null>(null);
+  const { toast } = useToast();
+  const [sallyResponse, setSallyResponse] = useState<string>(
+    "Ask me about this meal and I'll tell you everything."
+  );
+  const [isRecording, setIsRecording] = useState(false);
+  const [isSallyLoading, setIsSallyLoading] = useState(false);
+  const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const recognitionRef = useRef<any>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
+
+  useEffect(() => {
+    if (audioUrl && audioRef.current) {
+      audioRef.current.play().catch((e) => console.error('Audio play failed', e));
+    }
+  }, [audioUrl]);
+
+  useEffect(() => {
+    const SpeechRecognition =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      recognitionRef.current = new SpeechRecognition();
+      recognitionRef.current.continuous = false;
+      recognitionRef.current.lang = 'en-US';
+      recognitionRef.current.interimResults = false;
+
+      recognitionRef.current.onresult = (event: any) => {
+        const transcript = event.results[0][0].transcript;
+        handleApiCall(transcript);
+      };
+
+      recognitionRef.current.onerror = (event: any) => {
+        console.error('Speech recognition error', event.error);
+        toast({
+          variant: 'destructive',
+          title: 'Speech Error',
+          description: `Could not recognize speech: ${event.error}. Please check your microphone and try again.`,
+        });
+        setIsRecording(false);
+      };
+
+      recognitionRef.current.onend = () => {
+        setIsRecording(false);
+      };
+    } else {
+      toast({
+        variant: 'destructive',
+        title: 'Not Supported',
+        description: 'Speech recognition is not supported in this browser.',
+      });
+    }
+  }, [toast]);
+
+  useEffect(() => {
+    const storedFood = localStorage.getItem('scannedFood');
+    if (storedFood) {
+      try {
+        const parsedFood = JSON.parse(storedFood);
+        const formattedData: ScannedFood = {
+          id: parsedFood.id,
+          name: parsedFood.name || 'Unknown Food',
+          calories: parsedFood.total || parsedFood.Logging?.total || 0,
+          protein: parsedFood.protien || parsedFood.Logging?.protien || 0,
+          fat: parsedFood.fat || parsedFood.Logging?.fat || 0,
+          carbs: parsedFood.carbs || parsedFood.Logging?.carbs || 0,
+        };
+        setFoods([formattedData]);
+      } catch (error) {
+        console.error('Error parsing stored food data:', error);
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: 'Could not load stored meal plan data.',
+        });
+        setFoods([]);
+      }
+    } else {
+        setFoods([]);
+    }
+  }, [toast]);
+
+  const totals = useMemo(() => {
+    if (!foods) {
+        return { calories: 0, protein: 0, fat: 0, carbs: 0 };
+    }
+    return foods.reduce(
+      (acc, food) => {
+        acc.calories += food?.calories || 0;
+        acc.protein += food?.protein || 0;
+        acc.fat += food?.fat || 0;
+        acc.carbs += food?.carbs || 0;
+        return acc;
+      },
+      { calories: 0, protein: 0, fat: 0, carbs: 0 }
+    );
+  }, [foods]);
+
+  const handleMicClick = () => {
+    if (isRecording) {
+      recognitionRef.current?.stop();
+    } else {
+      setAudioUrl(null);
+      setIsRecording(true);
+      setSallyResponse('Listening...');
+      recognitionRef.current?.start();
+    }
+  };
+
+  const handleApiCall = async (userInput: string) => {
+    if (!userInput.trim()) return;
+
+    setIsSallyLoading(true);
+    setSallyResponse(`Thinking about: "${userInput}"`);
+
+    const token = localStorage.getItem('authToken');
+    if (!token) {
+      toast({
+        variant: 'destructive',
+        title: 'Authentication Error',
+        description: 'You must be logged in.',
+      });
+      setIsSallyLoading(false);
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `https://gjy9aw4wpj.loclx.io/api/sally/meal-planner`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            agentName: 'Sally',
+            clientDialogue: userInput,
+          }),
+        }
+      );
+
+      if (response.status === 429) {
+        throw new Error('Daily request limit reached.');
+      }
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(
+          errorData.error || 'Failed to get a response from Sally.'
+        );
+      }
+      
+      const data = await response.json();
+      setSallyResponse(data.agentDialogue);
+      
+      if (data.agentDialogue) {
+        try {
+          const { media } = await textToSpeech({ text: data.agentDialogue });
+          if (media) {
+            setAudioUrl(media);
+          }
+        } catch (ttsError) {
+          console.error('Error during TTS call:', ttsError);
+          toast({
+            variant: 'destructive',
+            title: 'Audio Error',
+            description: 'Could not generate audio for the response. The text-to-speech service may be unavailable.',
+          });
+        }
+      }
+
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: error.message,
+      });
+      setSallyResponse('Sorry, I had trouble with that. Please try again.');
+    } finally {
+      setIsSallyLoading(false);
+    }
+  };
+
+  return (
+    <>
+      <BackgroundImage
+        src="https://placehold.co/1920x1080.png"
+        data-ai-hint="food pattern"
+        className="blur-sm"
+      />
+      <div className="flex h-full w-full flex-col items-center overflow-y-auto bg-black/60 p-5 pb-28 backdrop-blur-sm">
+        <header className="mb-5 flex w-full max-w-2xl shrink-0 items-center justify-start px-4">
+          <div className="h-[75px] w-[150px] shrink-0 text-left">
+            <Image
+              src="/scaneats-logo.png"
+              alt="ScanEats Logo"
+              width={150}
+              height={75}
+              className="block h-full w-full object-contain"
+            />
+          </div>
+        </header>
+
+        {foods === null ? (
+          <div className="flex flex-1 flex-col items-center justify-center">
+            <Loader2 className="h-16 w-16 animate-spin text-white" />
+            <p className="mt-4 text-white">Loading your meal plan...</p>
+          </div>
+        ) : (
+          <>
+            {foods.length > 0 ? (
+              <>
+                <div className="mb-6 flex shrink-0 flex-col items-center">
+                  <div className="text-5xl font-bold text-white drop-shadow-[0_0_10px_hsl(var(--primary))]">
+                    {totals.calories.toFixed(0)}
+                  </div>
+                  <div className="mt-2 rounded-full bg-card/50 px-4 py-1.5 text-sm tracking-wide text-muted-foreground">
+                    Total Calories
+                  </div>
+                </div>
+
+                <div className="mb-6 grid w-full max-w-xl shrink-0 grid-cols-3 gap-4">
+                  <div className="flex flex-col items-center justify-center rounded-xl border border-primary/30 bg-primary/20 p-4 text-center text-white shadow-lg shadow-primary/20 transition-transform hover:-translate-y-1">
+                    <div className="mb-1 text-lg font-normal text-accent">
+                      Protein
+                    </div>
+                    <div className="text-2xl font-semibold">
+                      {totals.protein.toFixed(0)}g
+                    </div>
+                  </div>
+                  <div className="flex flex-col items-center justify-center rounded-xl border border-primary/30 bg-primary/20 p-4 text-center text-white shadow-lg shadow-primary/20 transition-transform hover:-translate-y-1">
+                    <div className="mb-1 text-lg font-normal text-accent">
+                      Fat
+                    </div>
+                    <div className="text-2xl font-semibold">
+                      {totals.fat.toFixed(0)}g
+                    </div>
+                  </div>
+                  <div className="flex flex-col items-center justify-center rounded-xl border border-primary/30 bg-primary/20 p-4 text-center text-white shadow-lg shadow-primary/20 transition-transform hover:-translate-y-1">
+                    <div className="mb-1 text-lg font-normal text-accent">
+                      Carbs
+                    </div>
+                    <div className="text-2xl font-semibold">
+                      {totals.carbs.toFixed(0)}g
+                    </div>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="flex flex-1 flex-col items-center justify-center">
+                <p className="text-white">No food scanned yet. Scan an item to get started!</p>
+              </div>
+            )}
+
+            <button
+              onClick={handleMicClick}
+              disabled={isSallyLoading || isRecording}
+              className={cn(
+                'my-10 flex h-[120px] w-[120px] shrink-0 cursor-pointer flex-col items-center justify-center rounded-full bg-primary text-white shadow-[0_0_15px_5px_hsl(var(--primary)/0.4)] transition-all hover:scale-105',
+                isRecording
+                  ? 'animate-pulse bg-red-600'
+                  : 'animate-breathe-glow'
+              )}
+            >
+              <Mic
+                className="h-16 w-16"
+              />
+            </button>
+
+            <div className="max-w-md p-3 text-center text-lg font-normal text-muted-foreground">
+              {isSallyLoading ? (
+                <Loader2 className="mx-auto h-6 w-6 animate-spin" />
+              ) : (
+                sallyResponse
+              )}
+            </div>
+          </>
+        )}
+      </div>
+      {audioUrl && <audio ref={audioRef} src={audioUrl} hidden />}
+    </>
+  );
+};
+
+
+const SallyView = () => {
+  const [sallyResponse, setSallyResponse] = useState<string>(
+    "I'm your personal assistant, ask me anything about your body."
+  );
+  const [isRecording, setIsRecording] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const recognitionRef = useRef<any>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    if (audioUrl && audioRef.current) {
+      audioRef.current.play().catch((e) => console.error('Audio play failed', e));
+    }
+  }, [audioUrl]);
+
+  useEffect(() => {
+    const SpeechRecognition =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      recognitionRef.current = new SpeechRecognition();
+      recognitionRef.current.continuous = false;
+      recognitionRef.current.lang = 'en-US';
+      recognitionRef.current.interimResults = false;
+
+      recognitionRef.current.onresult = (event: any) => {
+        const transcript = event.results[0][0].transcript;
+        handleApiCall(transcript);
+      };
+
+      recognitionRef.current.onerror = (event: any) => {
+        console.error('Speech recognition error', event.error);
+        toast({
+          variant: 'destructive',
+          title: 'Speech Error',
+          description: `Could not recognize speech: ${event.error}`,
+        });
+        setIsRecording(false);
+      };
+
+      recognitionRef.current.onend = () => {
+        setIsRecording(false);
+      };
+    } else {
+      toast({
+        variant: 'destructive',
+        title: 'Not Supported',
+        description: 'Speech recognition is not supported in this browser.',
+      });
+    }
+  }, [toast]);
+
+  const handleMicClick = () => {
+    if (isRecording || isLoading) {
+      recognitionRef.current?.stop();
+    } else {
+      setAudioUrl(null);
+      setIsRecording(true);
+      recognitionRef.current?.start();
+    }
+  };
+
+  const handleApiCall = async (userInput: string) => {
+    if (!userInput.trim()) return;
+
+    setIsLoading(true);
+
+    const token = localStorage.getItem('authToken');
+    if (!token) {
+      toast({
+        variant: 'destructive',
+        title: 'Authentication Error',
+        description: 'You must be logged in.',
+      });
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `https://api.scaneats.app/api/sally/body-assessment`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            agentName: 'Sally',
+            clientDialogue: userInput,
+          }),
+        }
+      );
+
+      if (response.status === 429) {
+        throw new Error('Daily request limit reached.');
+      }
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(
+          errorData.error || 'Failed to get a response from Sally.'
+        );
+      }
+
+      const data = await response.json();
+      setSallyResponse(data.agentDialogue);
+
+      if (data.agentDialogue) {
+        try {
+          const audioData = await textToSpeech({ text: data.agentDialogue });
+          if (audioData.media) {
+            setAudioUrl(audioData.media);
+          }
+        } catch (ttsError) {
+          console.error('Error during TTS call:', ttsError);
+          toast({
+            variant: 'destructive',
+            title: 'Audio Error',
+            description: 'Could not generate audio for the response.',
+          });
+        }
+      }
+
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: error.message,
+      });
+      setSallyResponse('Sorry, I had trouble with that. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="flex min-h-screen w-full items-center justify-center overflow-hidden bg-gradient-to-br from-purple-50 via-indigo-100 to-blue-50">
+      <div className="flex w-[320px] flex-col items-center gap-6 rounded-3xl border border-white/40 bg-white/70 p-6 shadow-[0_20px_55px_8px_rgba(110,100,150,0.45)] backdrop-blur-2xl backdrop-saturate-150">
+        <div className="relative flex h-[130px] w-[130px] items-center justify-center">
+          <div
+            className="absolute top-1/2 left-1/2 h-[160%] w-[160%] -translate-x-1/2 -translate-y-1/2 animate-breathe-glow-sally rounded-full"
+            style={{
+              background:
+                'radial-gradient(circle at center, rgba(255, 235, 255, 0.7) 10%, rgba(200, 190, 255, 0.8) 40%, rgba(170, 220, 255, 1.0) 65%, rgba(200, 240, 255, 1.0) 72%, rgba(135, 206, 250, 0) 80%)',
+            }}
+          />
+
+          {isRecording && (
+            <div className="pointer-events-none absolute top-1/2 left-1/2 h-[90px] w-[90px] -translate-x-1/2 -translate-y-1/2">
+              <div className="absolute top-0 left-0 h-full w-full animate-siri-wave-1 rounded-full border-2 border-white/60"></div>
+              <div className="absolute top-0 left-0 h-full w-full animate-siri-wave-2 rounded-full border-2 border-white/60"></div>
+              <div className="absolute top-0 left-0 h-full w-full animate-siri-wave-3 rounded-full border-2 border-white/60"></div>
+              <div className="absolute top-0 left-0 h-full w-full animate-siri-wave-4 rounded-full border-2 border-white/60"></div>
+            </div>
+          )}
+
+          <button
+            onClick={handleMicClick}
+            disabled={isLoading}
+            className={cn(
+              'relative z-10 flex h-20 w-20 items-center justify-center rounded-full bg-[#4629B0] shadow-[inset_0_2px_4px_0_rgba(255,255,255,0.4),0_0_15px_5px_rgba(255,255,255,0.8),0_0_30px_15px_rgba(255,255,255,0.5),0_0_50px_25px_rgba(220,230,255,0.3)] transition-all active:scale-95 active:bg-[#3c239a] active:shadow-[inset_0_2px_4px_0_rgba(255,255,255,0.3),0_0_10px_3px_rgba(255,255,255,0.7),0_0_20px_10px_rgba(255,255,255,0.4),0_0_40px_20px_rgba(220,230,255,0.2)]',
+              isLoading && 'cursor-not-allowed'
+            )}
+            aria-label="Activate Voice AI"
+          >
+            {isLoading ? (
+              <Loader2 className="h-10 w-10 animate-spin text-white" />
+            ) : (
+              <Mic
+                className="h-10 w-10 text-white"
+                style={{
+                  textShadow:
+                    '0 1px 2px rgba(0,0,0,0.2), 0 0 5px rgba(255,255,255,0.8), 0 0 10px rgba(180,140,255,0.7)',
+                }}
+              />
+            )}
+          </button>
+        </div>
+
+        <div className="w-full rounded-2xl border border-white/40 bg-white/80 p-3 text-center shadow-[inset_0_1px_2px_rgba(255,255,255,0.6),0_10px_30px_3px_rgba(100,90,140,0.45)] backdrop-blur-sm backdrop-saturate-150">
+          <p className="text-[13px] leading-tight text-black">
+            <strong>Sally</strong>
+            <span className="text-gray-600"> - {sallyResponse}</span>
+          </p>
+        </div>
+      </div>
+
+      {audioUrl && <audio ref={audioRef} src={audioUrl} hidden />}
+    </div>
+  );
+};
+
+
+const ProfileView = () => {
+  const { toast } = useToast();
+  const { profile, setProfile, isLoading } = useUserData();
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
+
+  const handleInputChange = (
+    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    const { id, value } = e.target;
+    if (profile) {
+      setProfile({ ...profile, [id]: value });
+    }
+  };
+
+  const handleSelectChange = (value: string) => {
+    if (profile) {
+      setProfile({ ...profile, gender: value });
+    }
+  };
+
+  const handleDateChange = (date: Date | undefined) => {
+    if (date && profile) {
+      setProfile({ ...profile, birthDate: date });
+    }
+    setIsDatePickerOpen(false);
+  };
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!profile) return;
+    if (!profile.birthDate) {
+      toast({
+        variant: 'destructive',
+        title: 'Validation Error',
+        description: 'Please select your birth date before saving.',
+      });
+      return;
+    }
+
+    setIsSaving(true);
+    const token = localStorage.getItem('authToken');
+    if (!token) {
+        toast({
+            variant: 'destructive',
+            title: 'Authentication Error',
+            description: 'You must be logged in to save your profile.',
+        });
+        setIsSaving(false);
+        return;
+    }
+
+    const calculateAge = (birthDate: Date): number => {
+      const today = new Date();
+      let age = today.getFullYear() - birthDate.getFullYear();
+      const m = today.getMonth() - birthDate.getMonth();
+      if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+      }
+      return age;
+    };
+
+    const method = profile.id ? 'PUT' : 'POST';
+    const url = profile.id
+      ? `https://api.scaneats.app/api/profile/${profile.id}`
+      : `https://api.scaneats.app/api/profile`;
+      
+    const profileData: any = {
+      ...profile,
+      weight: String(profile.weight || ''),
+      birthDate: profile.birthDate ? profile.birthDate.toISOString() : null,
+      age: calculateAge(profile.birthDate),
+    };
+
+    if (profile.id) {
+      profileData.id = profile.id;
+    } else {
+      delete profileData.id;
+    }
+
+    try {
+        const response = await fetch(url, {
+            method: method,
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify(profileData),
+        });
+
+        if (response.ok) {
+            toast({
+              title: 'Success',
+              description: 'Your profile has been saved successfully.',
+            });
+            const newProfile = await response.json();
+            setProfile({
+              ...newProfile,
+              birthDate: newProfile.birthDate ? new Date(newProfile.birthDate) : null,
+            });
+        } else {
+            const errorData = await response.json().catch(() => ({ error: 'An unknown error occurred.'}));
+            throw new Error(errorData.error || 'Failed to save profile.');
+        }
+
+    } catch (error: any) {
+        toast({
+            variant: 'destructive',
+            title: 'Save Failed',
+            description: error.message || 'An unexpected error occurred.',
+        });
+    } finally {
+        setIsSaving(false);
+    }
+  };
+  
+  if (isLoading || !profile) {
+    return (
+      <div className="flex min-h-screen flex-col items-center bg-black pb-40 pt-5">
+        <div className="w-[90%] max-w-[600px] rounded-lg bg-[rgba(14,1,15,0.32)] p-5">
+          <div className="mb-8 flex justify-center">
+            <Skeleton className="h-[140px] w-[140px] rounded-full" />
+          </div>
+          <div className="space-y-6">
+            <div className="space-y-2">
+              <Skeleton className="h-5 w-16" />
+              <Skeleton className="h-12 w-full rounded-full" />
+            </div>
+            <div className="space-y-2">
+              <Skeleton className="h-5 w-16" />
+              <Skeleton className="h-12 w-full rounded-full" />
+            </div>
+            <div className="space-y-2">
+              <Skeleton className="h-5 w-20" />
+              <Skeleton className="h-12 w-full rounded-full" />
+            </div>
+            <div className="space-y-2">
+              <Skeleton className="h-5 w-24" />
+              <Skeleton className="h-12 w-full rounded-full" />
+            </div>
+            <div className="space-y-2">
+              <Skeleton className="h-5 w-24" />
+              <Skeleton className="h-24 w-full rounded-3xl" />
+            </div>
+            <div className="pt-4">
+              <Skeleton className="h-12 w-full rounded-lg" />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex min-h-screen flex-col items-center bg-black pb-40 pt-5">
+      <div className="w-[90%] max-w-[600px] rounded-lg bg-[rgba(14,1,15,0.32)] p-5">
+        <div className="mb-8 flex justify-center">
+            <Image
+              src="/profile-goals-logo.png"
+              alt="Profile & Personal Goals"
+              width={140}
+              height={140}
+              className="max-h-[140px] w-auto max-w-full"
+            />
+        </div>
+        <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="form-group">
+              <Label htmlFor="name" className="mb-1.5 block font-bold transition-all hover:[text-shadow:0_0_10px_rgba(255,255,255,0.8)]">
+                Name
+              </Label>
+              <Input
+                id="name"
+                value={profile.name}
+                onChange={handleInputChange}
+                placeholder="Your Name"
+                className="w-full rounded-full border-2 border-[#555] bg-black px-4 py-3 text-base"
+              />
+            </div>
+            
+            <div className="form-group">
+              <Label htmlFor="gender" className="mb-1.5 block font-bold transition-all hover:[text-shadow:0_0_10px_rgba(255,255,255,0.8)]">
+                Gender
+              </Label>
+              <Select value={profile.gender} onValueChange={handleSelectChange}>
+                <SelectTrigger className="w-full rounded-full border-2 border-[#555] bg-black px-4 py-3 text-base">
+                  <SelectValue placeholder="Select Gender" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Male">Male</SelectItem>
+                  <SelectItem value="Female">Female</SelectItem>
+                  <SelectItem value="Other">Other</SelectItem>
+                  <SelectItem value="Prefer not to say">
+                    Prefer not to say
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="form-group">
+              <Label htmlFor="weight" className="mb-1.5 block font-bold transition-all hover:[text-shadow:0_0_10px_rgba(255,255,255,0.8)]">
+                Weight (kg)
+              </Label>
+              <Input
+                id="weight"
+                type="number"
+                value={profile.weight}
+                onChange={handleInputChange}
+                placeholder="e.g., 70"
+                className="w-full rounded-full border-2 border-[#555] bg-black px-4 py-3 text-base"
+              />
+            </div>
+
+            <div className="form-group">
+              <Label htmlFor="birthDate" className="mb-1.5 block font-bold transition-all hover:[text-shadow:0_0_10px_rgba(255,255,255,0.8)]">
+                Birth Date
+              </Label>
+              <Popover open={isDatePickerOpen} onOpenChange={setIsDatePickerOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant={'outline'}
+                    className={cn(
+                      'w-full justify-start rounded-full border-2 border-[#555] bg-black px-4 py-3 text-left text-base font-normal hover:bg-black/80',
+                      !profile.birthDate && 'text-gray-400'
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {profile.birthDate ? (
+                      format(profile.birthDate, 'PPP')
+                    ) : (
+                      <span>Pick a date</span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                   <Calendar
+                    mode="single"
+                    selected={profile.birthDate ?? undefined}
+                    onSelect={handleDateChange}
+                    disabled={(date) =>
+                      date > new Date() || date < new Date('1900-01-01')
+                    }
+                    initialFocus
+                    captionLayout="dropdown-buttons"
+                    fromYear={1900}
+                    toYear={new Date().getFullYear()}
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            <div className="form-group">
+              <Label htmlFor="goals" className="mb-1.5 block font-bold transition-all hover:[text-shadow:0_0_10px_rgba(255,255,255,0.8)]">
+                Body Goal
+              </Label>
+              <Textarea
+                id="goals"
+                value={profile.goals}
+                onChange={handleInputChange}
+                placeholder="e.g., Lose 5kg, build muscle, improve cardiovascular health..."
+                className="min-h-[100px] w-full rounded-3xl border-2 border-[#555] bg-black px-4 py-3 text-base"
+              />
+            </div>
+
+            <div className="pt-4">
+              <Button
+                type="submit"
+                size="lg"
+                disabled={isSaving || isLoading}
+                className="w-full rounded-lg bg-[#7F00FF] py-3 text-lg font-bold text-white transition-all hover:bg-[#9300FF] hover:shadow-[0_0_12px_6px_rgba(127,0,255,0.8)] disabled:opacity-50"
+                style={{
+                  boxShadow: '0 0 8px 2px rgba(127, 0, 255, 0.6)'
+                }}
+              >
+                {isSaving ? <Loader2 className="animate-spin" /> : 'Save Profile'}
+              </Button>
+            </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+
+const SettingsItem = ({
+  icon: Icon,
+  label,
+  href,
+  onClick,
+}: {
+  icon: React.ElementType;
+  label: string;
+  href?: string;
+  onClick?: () => void;
+}) => {
+  const content = (
+    <div
+      onClick={onClick}
+      className={`flex items-center p-4 transition-colors rounded-lg ${
+        href || onClick ? 'cursor-pointer hover:bg-zinc-800' : ''
+      }`}
+    >
+      <Icon className="mr-4 h-5 w-5 text-gray-300" />
+      <span className="flex-1 font-medium text-white">{label}</span>
+      {(href || onClick) && <ChevronRight className="h-5 w-5 text-gray-500" />}
+    </div>
+  );
+
+  if (href) {
+    return <Link href={href}>{content}</Link>;
+  }
+
+  return content;
+};
+
+const DestructiveSettingsItem = ({
+  icon: Icon,
+  label,
+  onClick,
+}: {
+  icon: React.ElementType;
+  label: string;
+  onClick: () => void;
+}) => (
+  <div
+    onClick={onClick}
+    className="flex cursor-pointer items-center p-4 transition-colors rounded-lg hover:bg-red-900/50"
+  >
+    <Icon className="mr-4 h-5 w-5 text-red-400" />
+    <span className="flex-1 font-medium text-red-400">{label}</span>
+  </div>
+);
+
+const SettingsView = () => {
+  const router = useRouter();
+  const { toast } = useToast();
+  const { profile, creditBalance, isLoading } = useUserData();
+
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+
+  const handleLogout = () => {
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('userId');
+    localStorage.removeItem('userEmail');
+    toast({
+      title: 'Logged Out',
+      description: 'You have been successfully logged out.',
+    });
+    router.push('/login');
+  };
+
+  const handleDeleteAccount = async () => {
+    setIsDeleting(true);
+    const token = localStorage.getItem('authToken');
+
+    if (!token) {
+      toast({
+        variant: 'destructive',
+        title: 'Authentication Error',
+        description: 'You are not logged in.',
+      });
+      setIsDeleting(false);
+      return;
+    }
+
+    try {
+      const response = await fetch(`https://api.scaneats.app/api/Auth/delete`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (response.ok) {
+        toast({
+          title: 'Account Deleted',
+          description: 'Your account has been permanently deleted.',
+        });
+        handleLogout();
+      } else {
+        throw new Error('Failed to delete account.');
+      }
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Deletion Failed',
+        description: error.message,
+      });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handlePasswordChange = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newPassword !== confirmPassword) {
+      toast({
+        variant: 'destructive',
+        title: 'Passwords do not match',
+      });
+      return;
+    }
+    setIsChangingPassword(true);
+
+    const token = localStorage.getItem('authToken');
+    const userId = localStorage.getItem('userId');
+    const email = localStorage.getItem('userEmail');
+
+    if (!token || !userId || !email || !profile?.name) {
+      toast({
+        variant: 'destructive',
+        title: 'Authentication Error',
+        description: 'Could not verify user information. Please log in again.',
+      });
+      setIsChangingPassword(false);
+      return;
+    }
+
+    const payload = {
+      Id: userId,
+      UserName: profile.name,
+      NewEmail: email,
+      CurrentPassword: currentPassword,
+      NewPassword: newPassword,
+    };
+
+    try {
+      const response = await fetch(
+        `https://api.scaneats.app/api/Auth/update`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(payload),
+        }
+      );
+
+      if (response.ok) {
+        toast({
+          title: 'Password Changed',
+          description: 'Your password has been updated successfully.',
+        });
+        setIsPasswordDialogOpen(false);
+        setCurrentPassword('');
+        setNewPassword('');
+        setConfirmPassword('');
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to change password.');
+      }
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Update Failed',
+        description: error.message,
+      });
+    } finally {
+      setIsChangingPassword(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen flex-col bg-zinc-950 text-gray-200">
+        <main className="w-full max-w-2xl flex-1 self-center p-6">
+          <div className="space-y-8">
+            <div className="space-y-4 rounded-lg bg-zinc-900 p-6">
+              <Skeleton className="h-7 w-32 rounded-md" />
+              <Skeleton className="h-14 w-full rounded-lg" />
+              <Skeleton className="h-14 w-full rounded-lg" />
+            </div>
+            <div className="space-y-4 rounded-lg bg-zinc-900 p-6">
+              <Skeleton className="h-7 w-24 rounded-md" />
+              <Skeleton className="h-14 w-full rounded-lg" />
+              <Skeleton className="h-14 w-full rounded-lg" />
+              <Skeleton className="h-14 w-full rounded-lg" />
+            </div>
+            <div className="space-y-4 rounded-lg bg-zinc-900 p-6">
+              <Skeleton className="h-7 w-24 rounded-md" />
+              <Skeleton className="h-14 w-full rounded-lg" />
+              <Skeleton className="h-14 w-full rounded-lg" />
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex min-h-screen flex-col bg-zinc-950 text-gray-200">
+       <header className="sticky top-0 z-10 w-full bg-zinc-900/50 p-4 shadow-md backdrop-blur-sm">
+        <div className="container mx-auto flex items-center justify-center">
+          <h1 className="text-xl font-semibold">Settings</h1>
+        </div>
+      </header>
+      <main className="w-full max-w-2xl flex-1 self-center p-6 overflow-y-auto pb-28">
+        <div className="space-y-8">
+            <div className="space-y-4 rounded-lg bg-zinc-900 p-6">
+            <h2 className="text-lg font-semibold text-white">Account</h2>
+             <SettingsItem icon={UserCircle} label="Profile & Personal Goals" />
+            <Dialog
+              open={isPasswordDialogOpen}
+              onOpenChange={setIsPasswordDialogOpen}
+            >
+              <DialogTrigger asChild>
+                <button className="w-full">
+                   <SettingsItem icon={Lock} label="Change Password" />
+                </button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Change Password</DialogTitle>
+                </DialogHeader>
+                <form
+                  onSubmit={handlePasswordChange}
+                  className="space-y-4 py-4"
+                >
+                  <div className="space-y-2">
+                    <Label htmlFor="current-password">Current Password</Label>
+                    <Input id="current-password" type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} required />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="new-password">New Password</Label>
+                    <Input id="new-password" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required />
+                  </div>
+                   <div className="space-y-2">
+                    <Label htmlFor="confirm-password">Confirm New Password</Label>
+                    <Input id="confirm-password" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required />
+                  </div>
+                </form>
+                <DialogFooter>
+                  <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
+                  <Button onClick={handlePasswordChange} disabled={isChangingPassword}>
+                    {isChangingPassword ? <Loader2 className="animate-spin" /> : 'Save Changes'}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
+
+          <div className="space-y-4 rounded-lg bg-zinc-900 p-6">
+              <h2 className="text-lg font-semibold text-white">Billing</h2>
+              <div className="flex items-center p-4">
+                <Wallet className="mr-4 h-5 w-5 text-gray-300" />
+                <span className="flex-1 font-medium text-white">My Wallet</span>
+                <span className="font-semibold text-white">
+                    {creditBalance !== null ? `${creditBalance} Credits` : <Loader2 className="h-4 w-4 animate-spin" />}
+                </span>
+              </div>
+             <SettingsItem
+              icon={Repeat}
+              label="Manage Subscription"
+              href="/pricing"
+            />
+             <SettingsItem
+              icon={CreditCard}
+              label="Buy Credits"
+              href="/credits"
+            />
+          </div>
+          
+          <div className="space-y-4 rounded-lg bg-zinc-900 p-6">
+             <h2 className="text-lg font-semibold text-white">Actions</h2>
+              <SettingsItem icon={LogOut} label="Log Out" onClick={handleLogout} />
+              <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <button className="w-full">
+                   <DestructiveSettingsItem icon={Trash2} label="Delete Account" onClick={() => {}} />
+                </button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This action cannot be undone. This will permanently delete your account and remove your data from our servers.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction className={buttonVariants({ variant: 'destructive' })} onClick={handleDeleteAccount} disabled={isDeleting}>
+                    {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Delete My Account
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+};
+
+export default function DashboardPage() {
+  type View = 'home' | 'meal-plan' | 'sally' | 'profile' | 'settings';
+  const [activeView, setActiveView] = useState<View>('home');
+
+  // Because the Settings page uses `Link` for navigation to external pages
+  // like /pricing and /credits, we need to handle that. A simple way
+  // is to switch the view if we detect a click that is supposed to navigate.
+  // The `useRouter` is available in the SettingsView for the logout function.
+  const handleNavigate = (view: View) => {
+     setActiveView(view);
+  };
+  
+  // The 'Profile & Personal Goals' button in settings should switch the view
+  const SettingsViewWithNav = () => <SettingsView onNavigateToProfile={() => setActiveView('profile')} />;
+
+
+  const renderView = () => {
+    switch (activeView) {
+      case 'home':
+        return <HomeView />;
+      case 'meal-plan':
+        return <MealPlanView />;
+      case 'sally':
+        return <SallyView />;
+      case 'profile':
+        return <ProfileView />;
+      case 'settings':
+         const router = useRouter();
+         const { toast } = useToast();
+         const { profile, creditBalance, isLoading } = useUserData();
+
+         const [isDeleting, setIsDeleting] = useState(false);
+         const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
+         const [isChangingPassword, setIsChangingPassword] = useState(false);
+         const [currentPassword, setCurrentPassword] = useState('');
+         const [newPassword, setNewPassword] = useState('');
+         const [confirmPassword, setConfirmPassword] = useState('');
+
+         const handleLogout = () => {
+           localStorage.removeItem('authToken');
+           localStorage.removeItem('userId');
+           localStorage.removeItem('userEmail');
+           toast({
+             title: 'Logged Out',
+             description: 'You have been successfully logged out.',
+           });
+           router.push('/login');
+         };
+
+         const handleDeleteAccount = async () => {
+           setIsDeleting(true);
+           const token = localStorage.getItem('authToken');
+
+           if (!token) {
+             toast({
+               variant: 'destructive',
+               title: 'Authentication Error',
+               description: 'You are not logged in.',
+             });
+             setIsDeleting(false);
+             return;
+           }
+
+           try {
+             const response = await fetch(`https://api.scaneats.app/api/Auth/delete`, {
+               method: 'DELETE',
+               headers: { Authorization: `Bearer ${token}` },
+             });
+
+             if (response.ok) {
+               toast({
+                 title: 'Account Deleted',
+                 description: 'Your account has been permanently deleted.',
+               });
+               handleLogout();
+             } else {
+               throw new Error('Failed to delete account.');
+             }
+           } catch (error: any) {
+             toast({
+               variant: 'destructive',
+               title: 'Deletion Failed',
+               description: error.message,
+             });
+           } finally {
+             setIsDeleting(false);
+           }
+         };
+
+         const handlePasswordChange = async (e: React.FormEvent) => {
+           e.preventDefault();
+           if (newPassword !== confirmPassword) {
+             toast({
+               variant: 'destructive',
+               title: 'Passwords do not match',
+             });
+             return;
+           }
+           setIsChangingPassword(true);
+
+           const token = localStorage.getItem('authToken');
+           const userId = localStorage.getItem('userId');
+           const email = localStorage.getItem('userEmail');
+
+           if (!token || !userId || !email || !profile?.name) {
+             toast({
+               variant: 'destructive',
+               title: 'Authentication Error',
+               description: 'Could not verify user information. Please log in again.',
+             });
+             setIsChangingPassword(false);
+             return;
+           }
+
+           const payload = {
+             Id: userId,
+             UserName: profile.name,
+             NewEmail: email,
+             CurrentPassword: currentPassword,
+             NewPassword: newPassword,
+           };
+
+           try {
+             const response = await fetch(
+               `https://api.scaneats.app/api/Auth/update`,
+               {
+                 method: 'POST',
+                 headers: {
+                   'Content-Type': 'application/json',
+                   Authorization: `Bearer ${token}`,
+                 },
+                 body: JSON.stringify(payload),
+               }
+             );
+
+             if (response.ok) {
+               toast({
+                 title: 'Password Changed',
+                 description: 'Your password has been updated successfully.',
+               });
+               setIsPasswordDialogOpen(false);
+               setCurrentPassword('');
+               setNewPassword('');
+               setConfirmPassword('');
+             } else {
+               const errorData = await response.json();
+               throw new Error(errorData.error || 'Failed to change password.');
+             }
+           } catch (error: any) {
+             toast({
+               variant: 'destructive',
+               title: 'Update Failed',
+               description: error.message,
+             });
+           } finally {
+             setIsChangingPassword(false);
+           }
+         };
+
+         if (isLoading) {
+           return (
+             <div className="flex min-h-screen flex-col bg-zinc-950 text-gray-200">
+               <main className="w-full max-w-2xl flex-1 self-center p-6">
+                 <div className="space-y-8">
+                   <div className="space-y-4 rounded-lg bg-zinc-900 p-6">
+                     <Skeleton className="h-7 w-32 rounded-md" />
+                     <Skeleton className="h-14 w-full rounded-lg" />
+                     <Skeleton className="h-14 w-full rounded-lg" />
+                   </div>
+                   <div className="space-y-4 rounded-lg bg-zinc-900 p-6">
+                     <Skeleton className="h-7 w-24 rounded-md" />
+                     <Skeleton className="h-14 w-full rounded-lg" />
+                     <Skeleton className="h-14 w-full rounded-lg" />
+                     <Skeleton className="h-14 w-full rounded-lg" />
+                   </div>
+                   <div className="space-y-4 rounded-lg bg-zinc-900 p-6">
+                     <Skeleton className="h-7 w-24 rounded-md" />
+                     <Skeleton className="h-14 w-full rounded-lg" />
+                     <Skeleton className="h-14 w-full rounded-lg" />
+                   </div>
+                 </div>
+               </main>
+             </div>
+           );
+         }
+
+         return (
+           <div className="flex min-h-screen flex-col bg-zinc-950 text-gray-200">
+              <header className="sticky top-0 z-10 w-full bg-zinc-900/50 p-4 shadow-md backdrop-blur-sm">
+               <div className="container mx-auto flex items-center justify-center">
+                 <h1 className="text-xl font-semibold">Settings</h1>
+               </div>
+             </header>
+             <main className="w-full max-w-2xl flex-1 self-center p-6 overflow-y-auto pb-28">
+               <div className="space-y-8">
+                 <div className="space-y-4 rounded-lg bg-zinc-900 p-6">
+                   <h2 className="text-lg font-semibold text-white">Account</h2>
+                   <SettingsItem icon={UserCircle} label="Profile & Personal Goals" onClick={() => setActiveView('profile')} />
+                   <Dialog
+                     open={isPasswordDialogOpen}
+                     onOpenChange={setIsPasswordDialogOpen}
+                   >
+                     <DialogTrigger asChild>
+                       <button className="w-full">
+                          <SettingsItem icon={Lock} label="Change Password" />
+                       </button>
+                     </DialogTrigger>
+                     <DialogContent>
+                       <DialogHeader>
+                         <DialogTitle>Change Password</DialogTitle>
+                       </DialogHeader>
+                       <form
+                         onSubmit={handlePasswordChange}
+                         className="space-y-4 py-4"
+                       >
+                         <div className="space-y-2">
+                           <Label htmlFor="current-password">Current Password</Label>
+                           <Input id="current-password" type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} required />
+                         </div>
+                         <div className="space-y-2">
+                           <Label htmlFor="new-password">New Password</Label>
+                           <Input id="new-password" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required />
+                         </div>
+                          <div className="space-y-2">
+                           <Label htmlFor="confirm-password">Confirm New Password</Label>
+                           <Input id="confirm-password" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required />
+                         </div>
+                       </form>
+                       <DialogFooter>
+                         <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
+                         <Button onClick={handlePasswordChange} disabled={isChangingPassword}>
+                           {isChangingPassword ? <Loader2 className="animate-spin" /> : 'Save Changes'}
+                         </Button>
+                       </DialogFooter>
+                     </DialogContent>
+                   </Dialog>
+                 </div>
+
+                 <div className="space-y-4 rounded-lg bg-zinc-900 p-6">
+                     <h2 className="text-lg font-semibold text-white">Billing</h2>
+                     <div className="flex items-center p-4">
+                       <Wallet className="mr-4 h-5 w-5 text-gray-300" />
+                       <span className="flex-1 font-medium text-white">My Wallet</span>
+                       <span className="font-semibold text-white">
+                           {creditBalance !== null ? `${creditBalance} Credits` : <Loader2 className="h-4 w-4 animate-spin" />}
+                       </span>
+                     </div>
+                    <SettingsItem
+                     icon={Repeat}
+                     label="Manage Subscription"
+                     href="/pricing"
+                   />
+                    <SettingsItem
+                     icon={CreditCard}
+                     label="Buy Credits"
+                     href="/credits"
+                   />
+                 </div>
+                 
+                 <div className="space-y-4 rounded-lg bg-zinc-900 p-6">
+                    <h2 className="text-lg font-semibold text-white">Actions</h2>
+                     <SettingsItem icon={LogOut} label="Log Out" onClick={handleLogout} />
+                     <AlertDialog>
+                     <AlertDialogTrigger asChild>
+                       <button className="w-full">
+                          <DestructiveSettingsItem icon={Trash2} label="Delete Account" onClick={() => {}} />
+                       </button>
+                     </AlertDialogTrigger>
+                     <AlertDialogContent>
+                       <AlertDialogHeader>
+                         <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                         <AlertDialogDescription>
+                           This action cannot be undone. This will permanently delete your account and remove your data from our servers.
+                         </AlertDialogDescription>
+                       </AlertDialogHeader>
+                       <AlertDialogFooter>
+                         <AlertDialogCancel>Cancel</AlertDialogCancel>
+                         <AlertDialogAction className={buttonVariants({ variant: 'destructive' })} onClick={handleDeleteAccount} disabled={isDeleting}>
+                           {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Delete My Account
+                         </AlertDialogAction>
+                       </AlertDialogFooter>
+                     </AlertDialogContent>
+                   </AlertDialog>
+                 </div>
+               </div>
+             </main>
+           </div>
+         );
+      default:
+        return <HomeView />;
+    }
+  };
+
+  return (
+    <div className="relative h-screen overflow-hidden">
+      {renderView()}
+      <BottomNav activeView={activeView} onNavigate={handleNavigate} />
+    </div>
   );
 }
