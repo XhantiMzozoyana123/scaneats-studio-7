@@ -1202,13 +1202,13 @@ const SettingsView = ({ onNavigateToProfile }: { onNavigateToProfile: () => void
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-zinc-950 text-gray-200">
+    <div className="h-full overflow-y-auto bg-zinc-950 text-gray-200">
        <header className="sticky top-0 z-10 w-full bg-zinc-900/50 p-4 shadow-md backdrop-blur-sm">
         <div className="container mx-auto flex items-center justify-center">
           <h1 className="text-xl font-semibold">Settings</h1>
         </div>
       </header>
-      <main className="w-full max-w-2xl flex-1 self-center p-6 overflow-y-auto pb-28">
+      <main className="w-full max-w-2xl mx-auto p-6 pb-28">
         <div className="space-y-8">
             <div className="space-y-4 rounded-lg bg-zinc-900 p-6">
             <h2 className="text-lg font-semibold text-white">Account</h2>
@@ -1331,7 +1331,7 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="relative h-screen overflow-hidden">
+    <div className="relative h-screen">
       {renderView()}
       <BottomNav activeView={activeView} onNavigate={handleNavigate} />
     </div>
