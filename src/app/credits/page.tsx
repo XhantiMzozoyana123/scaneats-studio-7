@@ -82,8 +82,8 @@ export default function CreditsPage() {
 
       if (response.ok) {
         const result = await response.json();
-        if (result.url) {
-          window.location.href = result.url;
+        if (result.authorizationUrl) {
+          window.location.href = result.authorizationUrl;
         } else {
           throw new Error('Payment URL not received.');
         }
@@ -96,8 +96,8 @@ export default function CreditsPage() {
           } else {
               try {
                   const errorData = await response.json();
-                  if (errorData.error) {
-                      errorMessage = errorData.error;
+                  if (errorData.message) {
+                      errorMessage = errorData.message;
                   }
               } catch {
                   // Keep generic message
