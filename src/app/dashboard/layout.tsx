@@ -15,17 +15,17 @@ export default function DashboardLayout({
   const [isVerifying, setIsVerifying] = useState(true);
 
   useEffect(() => {
-    // Check for auth token on the client side
+    // Check for auth token on the client side. This now runs only once.
     const token = localStorage.getItem('authToken');
     if (!token) {
       router.replace('/login');
     } else {
       setIsVerifying(false);
     }
-  }, [router, pathname]);
+  }, [router]);
 
   const showBottomNav =
-    pathname !== '/dashboard/sally' && pathname !== '/dashboard/settings';
+    pathname !== '/dashboard/sally';
 
   // While verifying, show a loading spinner to prevent flashing of protected content
   if (isVerifying) {

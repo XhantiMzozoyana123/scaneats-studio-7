@@ -66,7 +66,7 @@ export default function PricingPage() {
 
     try {
       const response = await fetch(
-        `https://api.scaneats.app/api/subscription/create`,
+        `https://gjy9aw4wpj.loclx.io/api/subscription/create`,
         {
           method: 'POST',
           headers: {
