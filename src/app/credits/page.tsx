@@ -83,6 +83,7 @@ export default function CreditsPage() {
       if (response.ok) {
         const result = await response.json();
         if (result.authorizationUrl) {
+          localStorage.setItem('paymentType', 'credit_purchase');
           window.location.href = result.authorizationUrl;
         } else {
           throw new Error('Payment URL not received.');
