@@ -82,8 +82,8 @@ export default function PricingPage() {
 
       if (response.ok) {
         const result = await response.json();
-        if (result.data.authorization_url) {
-          window.location.href = result.data.authorization_url;
+        if (result.authorizationUrl) {
+          window.location.href = result.authorizationUrl;
         } else {
           throw new Error('Payment URL not received.');
         }
