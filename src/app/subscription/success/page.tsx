@@ -37,29 +37,30 @@ function SubscriptionSuccessContent() {
       }
 
       try {
-        // NOTE: You will need to create this /api/subscription/verify endpoint on your backend.
-        // It should take the 'reference' and verify the transaction with Paystack.
         const response = await fetch(
-          `https://gjy9aw4wpj.loclx.io/api/subscription/verify`,
+          `https://gjy9aw4wpj.loclx.io/api/subscription/verify?reference=${encodeURIComponent(reference)}`,
           {
-            method: 'POST',
+            method: 'GET',
             headers: {
-              'Content-Type': 'application/json',
               Authorization: `Bearer ${token}`,
             },
-            body: JSON.stringify({ reference }),
           }
         );
 
         if (response.ok) {
-          setStatus('success');
-          toast({
-            title: 'Subscription Activated!',
-            description: 'Your account has been successfully upgraded.',
-          });
-          setTimeout(() => {
-            router.push('/dashboard');
-          }, 3000);
+          const verificationData = await response.json();
+          if (verificationData && verificationData.status === 'success') {
+            setStatus('success');
+            toast({
+              title: 'Subscription Activated!',
+              description: 'Your account has been successfully upgraded.',
+            });
+            setTimeout(() => {
+              router.push('/dashboard');
+            }, 3000);
+          } else {
+            throw new Error(`Payment verification failed. Status: ${verificationData?.status || 'unknown'}`);
+          }
         } else {
             let errorMsg = 'Failed to verify your subscription.';
              if (response.status === 401) {
