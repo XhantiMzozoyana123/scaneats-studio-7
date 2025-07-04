@@ -51,6 +51,11 @@ function SubscriptionSuccessContent() {
         if (response.ok) {
           const verificationData = await response.json();
           if (verificationData && verificationData.status === 'success') {
+            // If the backend sends a new token with updated claims, store it.
+            if (verificationData.token) {
+              localStorage.setItem('authToken', verificationData.token);
+            }
+            
             setStatus('success');
             toast({
               title: 'Subscription Activated!',
