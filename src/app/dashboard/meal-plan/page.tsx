@@ -26,8 +26,7 @@ declare global {
 }
 
 export default function MealPlanPage() {
-  const [foods, setFoods] = useState<ScannedFood[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [foods, setFoods] = useState<ScannedFood[] | null>(null);
   const { toast } = useToast();
 
   // --- Sally State ---
@@ -85,13 +84,10 @@ export default function MealPlanPage() {
 
   // --- Data Fetching ---
   useEffect(() => {
-    setIsLoading(true);
     const storedFood = localStorage.getItem('scannedFood');
     if (storedFood) {
       try {
         const parsedFood = JSON.parse(storedFood);
-            console.log('Stored food data:', parsedFood);
-
         const formattedData: ScannedFood = {
           id: parsedFood.id,
           name: parsedFood.name || 'Unknown Food',
@@ -108,12 +104,17 @@ export default function MealPlanPage() {
           title: 'Error',
           description: 'Could not load stored meal plan data.',
         });
+        setFoods([]);
       }
+    } else {
+        setFoods([]);
     }
-    setIsLoading(false);
   }, [toast]);
 
   const totals = useMemo(() => {
+    if (!foods) {
+        return { calories: 0, protein: 0, fat: 0, carbs: 0 };
+    }
     return foods.reduce(
       (acc, food) => {
         acc.calories += food?.calories || 0;
@@ -233,7 +234,7 @@ export default function MealPlanPage() {
           </div>
         </header>
 
-        {isLoading ? (
+        {foods === null ? (
           <div className="flex flex-1 flex-col items-center justify-center">
             <Loader2 className="h-16 w-16 animate-spin text-white" />
             <p className="mt-4 text-white">Loading your meal plan...</p>
@@ -280,7 +281,7 @@ export default function MealPlanPage() {
               </>
             ) : (
               <div className="flex flex-1 flex-col items-center justify-center">
-                <p className="text-white">No food scanned yet.</p>
+                <p className="text-white">No food scanned yet. Scan an item to get started!</p>
               </div>
             )}
 
