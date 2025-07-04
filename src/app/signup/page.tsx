@@ -10,6 +10,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { BackgroundImage } from '@/components/background-image';
 import { User, Mail, KeyRound, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { API_BASE_URL } from '@/lib/api';
 
 export default function SignUpPage() {
   const router = useRouter();
@@ -24,7 +25,7 @@ export default function SignUpPage() {
     setIsLoading(true);
 
     try {
-      const response = await fetch(`https://gjy9aw4wpj.loclx.io/api/Auth/register`, {
+      const response = await fetch(`${API_BASE_URL}/api/Auth/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -76,6 +76,7 @@ import { cn } from '@/lib/utils';
 import { BottomNav } from '@/components/bottom-nav';
 import { BackgroundImage } from '@/components/background-image';
 import { textToSpeech } from '@/ai/flows/text-to-speech';
+import { API_BASE_URL } from '@/lib/api';
 
 
 // --- Views (previously separate pages) ---
@@ -302,7 +303,7 @@ const MealPlanView = () => {
 
     try {
       const response = await fetch(
-        `https://gjy9aw4wpj.loclx.io/api/sally/meal-planner`,
+        `${API_BASE_URL}/api/sally/meal-planner`,
         {
           method: 'POST',
           headers: {
@@ -550,7 +551,7 @@ const SallyView = () => {
 
     try {
       const response = await fetch(
-        `https://gjy9aw4wpj.loclx.io/api/sally/body-assessment`,
+        `${API_BASE_URL}/api/sally/body-assessment`,
         {
           method: 'POST',
           headers: {
@@ -737,8 +738,8 @@ const ProfileView = () => {
 
     const method = profile.id ? 'PUT' : 'POST';
     const url = profile.id
-      ? `https://gjy9aw4wpj.loclx.io/api/profile/${profile.id}`
-      : `https://gjy9aw4wpj.loclx.io/api/profile`;
+      ? `${API_BASE_URL}/api/profile/${profile.id}`
+      : `${API_BASE_URL}/api/profile`;
       
     const profileData: any = {
       ...profile,
@@ -1056,7 +1057,7 @@ const SettingsView = ({ onNavigateToProfile }: { onNavigateToProfile: () => void
     }
 
     try {
-      const response = await fetch(`https://gjy9aw4wpj.loclx.io/api/Auth/delete`, {
+      const response = await fetch(`${API_BASE_URL}/api/Auth/delete`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -1122,7 +1123,7 @@ const SettingsView = ({ onNavigateToProfile }: { onNavigateToProfile: () => void
 
     try {
       const response = await fetch(
-        `https://gjy9aw4wpj.loclx.io/api/Auth/update`,
+        `${API_BASE_URL}/api/Auth/update`,
         {
           method: 'POST',
           headers: {

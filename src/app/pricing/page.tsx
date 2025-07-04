@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -17,6 +16,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import { API_BASE_URL } from '@/lib/api';
 
 const FeatureListItem = ({ children }: { children: React.ReactNode }) => (
     <li className="flex items-center text-sm text-gray-300">
@@ -66,7 +66,7 @@ export default function PricingPage() {
 
     try {
       const response = await fetch(
-        `https://gjy9aw4wpj.loclx.io/api/subscription/create`,
+        `${API_BASE_URL}/api/subscription/create`,
         {
           method: 'POST',
           headers: {

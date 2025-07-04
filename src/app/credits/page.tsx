@@ -16,6 +16,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import { API_BASE_URL } from '@/lib/api';
 
 type CreditProduct = {
   id: number;
@@ -65,7 +66,7 @@ export default function CreditsPage() {
 
     try {
       const response = await fetch(
-        `https://gjy9aw4wpj.loclx.io/api/credit/purchase`,
+        `${API_BASE_URL}/api/credit/purchase`,
         {
           method: 'POST',
           headers: {

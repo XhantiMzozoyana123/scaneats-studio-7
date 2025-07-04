@@ -7,6 +7,7 @@ import { Loader2, CheckCircle, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { BackgroundImage } from '@/components/background-image';
+import { API_BASE_URL } from '@/lib/api';
 
 function SubscriptionSuccessContent() {
   const router = useRouter();
@@ -38,7 +39,7 @@ function SubscriptionSuccessContent() {
 
       try {
         const response = await fetch(
-          `https://gjy9aw4wpj.loclx.io/api/subscription/verify?reference=${encodeURIComponent(reference)}`,
+          `${API_BASE_URL}/api/subscription/verify?reference=${encodeURIComponent(reference)}`,
           {
             method: 'GET',
             headers: {

@@ -9,6 +9,7 @@ import { BackgroundImage } from '@/components/background-image';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Loader2, Camera, RefreshCw, Send, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { API_BASE_URL } from '@/lib/api';
 
 export default function ScanFoodPage() {
   const { toast } = useToast();
@@ -118,7 +119,7 @@ export default function ScanFoodPage() {
 
     try {
       localStorage.removeItem('scannedFood');
-      const response = await fetch(`https://gjy9aw4wpj.loclx.io/api/scan`, {
+      const response = await fetch(`${API_BASE_URL}/api/scan`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

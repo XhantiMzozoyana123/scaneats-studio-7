@@ -9,6 +9,7 @@ import {
   useCallback,
 } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import { API_BASE_URL } from '@/lib/api';
 
 type Profile = {
   id: number | null;
@@ -57,10 +58,10 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
     setIsLoading(true);
     try {
       const [profileRes, creditRes] = await Promise.all([
-        fetch(`https://gjy9aw4wpj.loclx.io/api/profile`, {
+        fetch(`${API_BASE_URL}/api/profile`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
-        fetch(`https://gjy9aw4wpj.loclx.io/api/credit/balance`, {
+        fetch(`${API_BASE_URL}/api/credit/balance`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
       ]);
