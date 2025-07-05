@@ -337,24 +337,18 @@ const MealPlanView = () => {
           }
         }
       } else {
-          let errorMessage = 'Failed to get a response from Sally.';
-          if (response.status === 401) {
-              errorMessage = 'Your session has expired. Please log in again.';
-          } else if (response.status === 429) {
-              errorMessage = 'You have reached your daily request limit.';
-          } else if (response.status >= 500) {
-              errorMessage = 'Our servers are currently unavailable. Please try again later.';
-          } else {
-              try {
-                  const errorData = await response.json();
-                  if (errorData.error) {
-                      errorMessage = errorData.error;
-                  }
-              } catch {
-                  // Keep generic message
-              }
+        let errorMessage;
+        if (response.status === 401) {
+          errorMessage = 'Your session has expired. Please log in again.';
+        } else {
+          try {
+            const errorText = await response.text();
+            errorMessage = errorText || 'An unknown error occurred while communicating with Sally.';
+          } catch {
+            errorMessage = 'Our servers are having some trouble. Please try again later.';
           }
-          throw new Error(errorMessage);
+        }
+        throw new Error(errorMessage);
       }
     } catch (error: any) {
       toast({
@@ -585,24 +579,18 @@ const SallyView = () => {
           }
         }
       } else {
-          let errorMessage = 'Failed to get a response from Sally.';
-          if (response.status === 401) {
-              errorMessage = 'Your session has expired. Please log in again.';
-          } else if (response.status === 429) {
-              errorMessage = 'You have reached your daily request limit.';
-          } else if (response.status >= 500) {
-              errorMessage = 'Our servers are currently unavailable. Please try again later.';
-          } else {
-              try {
-                  const errorData = await response.json();
-                  if (errorData.error) {
-                      errorMessage = errorData.error;
-                  }
-              } catch {
-                  // Keep generic message
-              }
+        let errorMessage;
+        if (response.status === 401) {
+          errorMessage = 'Your session has expired. Please log in again.';
+        } else {
+          try {
+            const errorText = await response.text();
+            errorMessage = errorText || 'An unknown error occurred while communicating with Sally.';
+          } catch {
+            errorMessage = 'Our servers are having some trouble. Please try again later.';
           }
-          throw new Error(errorMessage);
+        }
+        throw new Error(errorMessage);
       }
     } catch (error: any) {
       toast({
