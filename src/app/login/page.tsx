@@ -24,6 +24,34 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
+  const handleSSOLogin = async (provider: 'google' | 'apple') => {
+    setIsLoading(true);
+    try {
+      const redirectUri = `${window.location.origin}/sso-callback`;
+      const response = await fetch(`${API_BASE_URL}/api/Auth/sso/login-url?provider=${provider}&redirectUri=${encodeURIComponent(redirectUri)}`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.url) {
+          localStorage.setItem('sso_provider', provider);
+          window.location.href = data.url;
+        } else {
+          throw new Error('SSO login URL not provided by the server.');
+        }
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to retrieve SSO login URL.');
+      }
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'SSO Error',
+        description: error.message,
+      });
+      setIsLoading(false);
+    }
+  };
+
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setIsLoading(true);
@@ -137,21 +165,34 @@ export default function LoginPage() {
             </div>
           </div>
           
-          <div className="space-y-4 pt-4">
+          <div className="pt-4">
             <Button type="submit" disabled={isLoading} className="w-full rounded-full bg-stone-900 py-6 text-base font-semibold hover:bg-stone-800">
               {isLoading ? <Loader2 className="animate-spin" /> : 'Log In'}
             </Button>
+          </div>
+        </form>
 
-            <Button variant="outline" className="w-full rounded-full border-transparent bg-white py-6 text-base font-semibold text-black hover:bg-gray-200">
+        <div className="relative my-6">
+          <div className="absolute inset-0 flex items-center">
+            <span className="w-full border-t border-white/40" />
+          </div>
+          <div className="relative flex justify-center text-xs uppercase">
+            <span className="bg-black/60 px-2 text-white/70">
+              Or log in with
+            </span>
+          </div>
+        </div>
+
+        <div className="space-y-4">
+            <Button variant="outline" onClick={() => handleSSOLogin('apple')} disabled={isLoading} className="w-full rounded-full border-transparent bg-white py-6 text-base font-semibold text-black hover:bg-gray-200">
               <Apple className="mr-2 h-6 w-6" /> Log in with Apple
             </Button>
             
-            <Button variant="outline" className="w-full rounded-full border-transparent bg-white py-6 text-base font-semibold text-black hover:bg-gray-200">
+            <Button variant="outline" onClick={() => handleSSOLogin('google')} disabled={isLoading} className="w-full rounded-full border-transparent bg-white py-6 text-base font-semibold text-black hover:bg-gray-200">
                 <GoogleIcon />
                  Log in with Google
             </Button>
-          </div>
-        </form>
+        </div>
 
         <p className="mt-8 text-center text-sm text-white/70">
           Don&apos;t have an account?{' '}
