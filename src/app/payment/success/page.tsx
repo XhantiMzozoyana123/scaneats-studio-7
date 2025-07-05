@@ -46,8 +46,6 @@ function PaymentSuccessContent() {
       if (paymentType === 'subscription') {
         verificationUrl = `${API_BASE_URL}/api/subscription/verify?reference=${encodeURIComponent(reference)}`;
       } else if (paymentType === 'credit_purchase') {
-        // NOTE: Assuming a verification endpoint for credit purchases exists at /api/credit/verify.
-        // You will need to implement this on your backend.
         verificationUrl = `${API_BASE_URL}/api/credit/verify?reference=${encodeURIComponent(reference)}`;
       } else {
         setStatus('error');
@@ -65,7 +63,21 @@ function PaymentSuccessContent() {
 
         if (response.ok) {
           const verificationData = await response.json();
-          if (verificationData && verificationData.status === 'success') {
+          let isSuccess = false;
+          let verificationStatus = 'unknown';
+
+          if (paymentType === 'subscription') {
+            // Subscription verification returns a custom DTO with a top-level 'status' property
+            isSuccess = verificationData && verificationData.status === 'success';
+            verificationStatus = verificationData?.status;
+          } else if (paymentType === 'credit_purchase') {
+            // Credit verification returns the raw Paystack response where the status is nested
+            isSuccess = verificationData && verificationData.data && verificationData.data.status === 'success';
+            verificationStatus = verificationData?.data?.status;
+          }
+
+
+          if (isSuccess) {
             // Update token if a new one is provided (for subscriptions)
             if (verificationData.accessToken) {
               localStorage.setItem('authToken', verificationData.accessToken);
@@ -93,7 +105,7 @@ function PaymentSuccessContent() {
             }, 3000);
 
           } else {
-            throw new Error(`Payment verification failed. Status: ${verificationData?.status || 'unknown'}`);
+            throw new Error(`Payment verification failed. Status: ${verificationStatus}`);
           }
         } else {
             let errorMsg = 'Failed to verify your payment.';
