@@ -51,46 +51,33 @@ function PaymentSuccessContent() {
         });
 
         if (response.ok) {
-          const verificationData = await response.json();
-          const paymentType = localStorage.getItem('paymentType');
+          const data = await response.json();
 
-          if (paymentType === 'subscription') {
-            // For subscriptions, we expect the PaystackVerifyResultDto
-            const isSuccess = verificationData && verificationData.status === 'success';
+          // Check for the new access token and update it if it exists.
+          if (data.userAccesToken) {
+            localStorage.setItem('authToken', data.userAccesToken);
+          }
+          
+          const isSuccess = data.title && data.title.toLowerCase().includes('successful');
 
-            if (isSuccess) {
-              if (verificationData.accessToken) {
-                localStorage.setItem('authToken', verificationData.accessToken);
-              }
-              
-              setStatus('success');
-              setMessage({
-                  title: 'Subscription Activated!',
-                  description: 'Your account has been successfully upgraded.'
-              });
-            } else {
-              throw new Error(`Payment verification failed. Status: ${verificationData?.status || 'unknown'}`);
-            }
-          } else if (paymentType === 'credit_purchase') {
-            // For credit purchases, we expect the EventMessageDto
-            if (verificationData && verificationData.title && verificationData.message) {
-              setStatus('success');
-              setMessage({
-                  title: verificationData.title,
-                  description: verificationData.message,
-              });
-            } else {
-              throw new Error('Credit purchase confirmation is invalid.');
-            }
+          if (isSuccess) {
+            setStatus('success');
+            setMessage({
+                title: data.title,
+                description: data.message,
+            });
+            setTimeout(() => {
+                router.push('/dashboard');
+            }, 3000);
           } else {
-            throw new Error('Could not determine payment type for verification.');
+             setStatus('error');
+             setMessage({
+                title: data.title || 'Verification Failed',
+                description: data.message || 'The transaction could not be verified.',
+             });
           }
 
           localStorage.removeItem('paymentType');
-
-          setTimeout(() => {
-            router.push('/dashboard');
-          }, 3000);
 
         } else {
             let errorMsg = 'Failed to verify your payment.';
