@@ -18,13 +18,12 @@ function PaymentSuccessContent() {
 
   useEffect(() => {
     const reference = searchParams.get('reference');
-    const paymentType = localStorage.getItem('paymentType');
 
-    if (!reference || !paymentType) {
+    if (!reference) {
       setStatus('error');
       setMessage({
         title: 'Verification Error',
-        description: 'Payment reference or type not found. Your transaction could not be verified.'
+        description: 'Payment reference not found. Your transaction could not be verified.'
       });
       return;
     }
@@ -41,17 +40,8 @@ function PaymentSuccessContent() {
         return;
       }
 
-      // Determine verification URL based on payment type
-      let verificationUrl = '';
-      if (paymentType === 'subscription') {
-        verificationUrl = `${API_BASE_URL}/api/subscription/verify?reference=${encodeURIComponent(reference)}`;
-      } else if (paymentType === 'credit_purchase') {
-        verificationUrl = `${API_BASE_URL}/api/credit/verify?reference=${encodeURIComponent(reference)}`;
-      } else {
-        setStatus('error');
-        setMessage({ title: 'Invalid Payment Type', description: 'The payment type is unknown.' });
-        return;
-      }
+      // Use the new single verification endpoint
+      const verificationUrl = `${API_BASE_URL}/api/event/last?reference=${encodeURIComponent(reference)}`;
 
       try {
         const response = await fetch(verificationUrl, {
@@ -63,19 +53,7 @@ function PaymentSuccessContent() {
 
         if (response.ok) {
           const verificationData = await response.json();
-          let isSuccess = false;
-          let verificationStatus = 'unknown';
-
-          if (paymentType === 'subscription') {
-            // Subscription verification returns a custom DTO with a top-level 'status' property
-            isSuccess = verificationData && verificationData.status === 'success';
-            verificationStatus = verificationData?.status;
-          } else if (paymentType === 'credit_purchase') {
-            // Credit verification returns the raw Paystack response where the status is nested
-            isSuccess = verificationData && verificationData.data && verificationData.data.status === 'success';
-            verificationStatus = verificationData?.data?.status;
-          }
-
+          const isSuccess = verificationData && verificationData.status === 'success';
 
           if (isSuccess) {
             // Update token if a new one is provided (for subscriptions)
@@ -84,20 +62,22 @@ function PaymentSuccessContent() {
             }
             
             setStatus('success');
-            // Set success message based on payment type
+            
+            // Use localStorage just for displaying the correct message
+            const paymentType = localStorage.getItem('paymentType');
             if (paymentType === 'subscription') {
                 setMessage({
                     title: 'Subscription Activated!',
                     description: 'Your account has been successfully upgraded.'
                 });
-            } else {
+            } else { // Assumes credit_purchase
                 setMessage({
                     title: 'Purchase Successful!',
                     description: 'Your credits have been added to your wallet.'
                 });
             }
 
-            // Clear the payment type from storage
+            // Clean up localStorage
             localStorage.removeItem('paymentType');
 
             setTimeout(() => {
@@ -105,12 +85,14 @@ function PaymentSuccessContent() {
             }, 3000);
 
           } else {
-            throw new Error(`Payment verification failed. Status: ${verificationStatus}`);
+            throw new Error(`Payment verification failed. Status: ${verificationData?.status || 'unknown'}`);
           }
         } else {
             let errorMsg = 'Failed to verify your payment.';
              if (response.status === 401) {
                 errorMsg = 'Your session has expired. Please log in again.';
+            } else if (response.status === 404) {
+                errorMsg = 'Could not find the payment event to verify. Please contact support.';
             } else if (response.status >= 500) {
                 errorMsg = 'Our servers are experiencing issues. Please try again later.';
             } else {
