@@ -40,7 +40,6 @@ function PaymentSuccessContent() {
         return;
       }
 
-      // Use the new single verification endpoint
       const verificationUrl = `${API_BASE_URL}/api/event/last?reference=${encodeURIComponent(reference)}`;
 
       try {
@@ -53,40 +52,46 @@ function PaymentSuccessContent() {
 
         if (response.ok) {
           const verificationData = await response.json();
-          const isSuccess = verificationData && verificationData.status === 'success';
+          const paymentType = localStorage.getItem('paymentType');
 
-          if (isSuccess) {
-            // Update token if a new one is provided (for subscriptions)
-            if (verificationData.accessToken) {
-              localStorage.setItem('authToken', verificationData.accessToken);
+          if (paymentType === 'subscription') {
+            // For subscriptions, we expect the PaystackVerifyResultDto
+            const isSuccess = verificationData && verificationData.status === 'success';
+
+            if (isSuccess) {
+              if (verificationData.accessToken) {
+                localStorage.setItem('authToken', verificationData.accessToken);
+              }
+              
+              setStatus('success');
+              setMessage({
+                  title: 'Subscription Activated!',
+                  description: 'Your account has been successfully upgraded.'
+              });
+            } else {
+              throw new Error(`Payment verification failed. Status: ${verificationData?.status || 'unknown'}`);
             }
-            
-            setStatus('success');
-            
-            // Use localStorage just for displaying the correct message
-            const paymentType = localStorage.getItem('paymentType');
-            if (paymentType === 'subscription') {
-                setMessage({
-                    title: 'Subscription Activated!',
-                    description: 'Your account has been successfully upgraded.'
-                });
-            } else { // Assumes credit_purchase
-                setMessage({
-                    title: 'Purchase Successful!',
-                    description: 'Your credits have been added to your wallet.'
-                });
+          } else if (paymentType === 'credit_purchase') {
+            // For credit purchases, we expect the EventMessageDto
+            if (verificationData && verificationData.title && verificationData.message) {
+              setStatus('success');
+              setMessage({
+                  title: verificationData.title,
+                  description: verificationData.message,
+              });
+            } else {
+              throw new Error('Credit purchase confirmation is invalid.');
             }
-
-            // Clean up localStorage
-            localStorage.removeItem('paymentType');
-
-            setTimeout(() => {
-              router.push('/dashboard');
-            }, 3000);
-
           } else {
-            throw new Error(`Payment verification failed. Status: ${verificationData?.status || 'unknown'}`);
+            throw new Error('Could not determine payment type for verification.');
           }
+
+          localStorage.removeItem('paymentType');
+
+          setTimeout(() => {
+            router.push('/dashboard');
+          }, 3000);
+
         } else {
             let errorMsg = 'Failed to verify your payment.';
              if (response.status === 401) {
