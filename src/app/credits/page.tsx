@@ -25,28 +25,79 @@ type CreditProduct = {
   description: string;
 };
 
-const creditProducts: CreditProduct[] = [
-    { id: 1, credit: 50, price: 4.99, description: 'Perfect for getting started.' },
-    { id: 2, credit: 120, price: 9.99, description: 'Our most popular option.' },
-    { id: 3, credit: 250, price: 19.99, description: 'Great value for regular users.' },
-    { id: 4, credit: 550, price: 39.99, description: 'For the power user.' },
-    { id: 5, credit: 1000, price: 69.99, description: 'Best value, never run out.' },
-];
-
 export default function CreditsPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const [products, setProducts] = useState<CreditProduct[]>(creditProducts);
-  const [isLoading, setIsLoading] = useState(false); // No longer loading from API
+  const [products, setProducts] = useState<CreditProduct[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [isPurchasing, setIsPurchasing] = useState<number | null>(null);
 
   useEffect(() => {
-    // Auth check remains important
     const token = localStorage.getItem('authToken');
     if (!token) {
       toast({ variant: 'destructive', title: 'Authentication Error', description: "Please log in to purchase credits." });
       router.push('/login');
+      return;
     }
+
+    const fetchCreditProducts = async () => {
+      setIsLoading(true);
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/credit/shop`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          // Add descriptions based on credit amount to match original UI
+          const productsWithDescriptions = data.map((p: any) => {
+            let description = 'Top-up your credits.';
+            if (p.credit <= 50) {
+              description = 'Perfect for getting started.';
+            } else if (p.credit <= 120) {
+              description = 'Our most popular option.';
+            } else if (p.credit <= 250) {
+              description = 'Great value for regular users.';
+            } else if (p.credit <= 550) {
+              description = 'For the power user.';
+            } else {
+              description = 'Best value, never run out.';
+            }
+            return { ...p, description };
+          });
+          setProducts(productsWithDescriptions);
+        } else {
+          let errorMessage = 'Could not load credit packages.';
+          if (response.status === 401) {
+            errorMessage = 'Your session has expired. Please log in again.';
+          } else if (response.status >= 500) {
+            errorMessage = 'Our servers are experiencing issues. Please try again later.';
+          } else {
+            try {
+              const errorData = await response.json();
+              if (errorData.message) {
+                errorMessage = errorData.message;
+              }
+            } catch {
+              // Keep generic message
+            }
+          }
+          throw new Error(errorMessage);
+        }
+      } catch (error: any) {
+        toast({
+          variant: 'destructive',
+          title: 'Error Loading Shop',
+          description: error.message,
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchCreditProducts();
   }, [router, toast]);
 
   const handlePurchase = async (product: CreditProduct) => {
