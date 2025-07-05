@@ -139,22 +139,18 @@ export default function ScanFoodPage() {
         router.push('/dashboard/meal-plan');
         handleRetake();
       } else {
-        let errorMessage = 'The scan failed. Please try again.';
+        let errorMessage;
         if (response.status === 401) {
-            errorMessage = 'Your session has expired. Please log in again.';
+          errorMessage = 'Your session has expired. Please log in again.';
         } else if (response.status === 429) {
-            errorMessage = 'You have reached your daily scan limit.';
-        } else if (response.status >= 500) {
-            errorMessage = 'Our servers are experiencing issues. Please try again later.';
+          errorMessage = 'You have run out of credits. Please purchase more to continue scanning.';
         } else {
-            try {
-                const errorData = await response.json();
-                if (errorData.error) {
-                    errorMessage = errorData.error;
-                }
-            } catch {
-                // Keep generic message
-            }
+          try {
+            const errorText = await response.text();
+            errorMessage = errorText || 'Our servers are having some trouble. Please try again later.';
+          } catch {
+            errorMessage = 'Our servers are having some trouble. Please try again later.';
+          }
         }
         throw new Error(errorMessage);
       }
