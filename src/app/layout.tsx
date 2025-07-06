@@ -29,13 +29,36 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+
+  if (!googleClientId) {
+    console.error("FATAL: Google Client ID is not defined in environment variables.");
+    // You might want to render an error page or return null
+    return (
+       <html lang="en" className="dark">
+        <body
+          className={`${ptSans.variable} ${playfairDisplay.variable} font-body antialiased`}
+        >
+          <div className="flex h-screen w-full items-center justify-center bg-background text-foreground">
+            <div className="text-center">
+              <h1 className="text-2xl font-bold text-destructive">Configuration Error</h1>
+              <p className="text-muted-foreground">
+                Google Client ID is missing. The application cannot start.
+              </p>
+            </div>
+          </div>
+        </body>
+      </html>
+    )
+  }
+
   return (
     <html lang="en" className="dark">
       <body
         className={`${ptSans.variable} ${playfairDisplay.variable} font-body antialiased`}
       >
         <GoogleOAuthProvider
-          clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!}
+          clientId={googleClientId}
         >
           {children}
           <Toaster />

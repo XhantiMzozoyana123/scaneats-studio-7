@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   useGoogleOneTapLogin,
+  GoogleLogin,
   type CredentialResponse,
 } from '@react-oauth/google';
 import { Button } from '@/components/ui/button';
@@ -214,6 +215,16 @@ export default function LoginPage() {
               Or log in with Google
             </span>
           </div>
+        </div>
+
+        <div className="flex justify-center">
+          <GoogleLogin
+            onSuccess={handleGoogleSuccess}
+            onError={handleGoogleError}
+            theme="filled_black"
+            shape="rectangular"
+            size="large"
+          />
         </div>
 
         <p className="mt-8 text-center text-sm text-white/70">
