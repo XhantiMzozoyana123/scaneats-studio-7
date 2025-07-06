@@ -12,7 +12,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { BackgroundImage } from '@/components/background-image';
 import { KeyRound, Mail, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { API_BASE_URL } from '@/lib/api';
+import { API_BASE_URL, googleLogin } from '@/lib/api';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -24,37 +24,33 @@ export default function LoginPage() {
   const handleGoogleSuccess = async (
     credentialResponse: CredentialResponse
   ) => {
+    if (!credentialResponse.credential) {
+      toast({
+        variant: 'destructive',
+        title: 'Login Failed',
+        description: 'Could not retrieve Google credentials.',
+      });
+      return;
+    }
     setIsLoading(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/api/googleauth/onetap`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ idToken: credentialResponse.credential }),
+      const data = await googleLogin(credentialResponse.credential);
+      localStorage.setItem('authToken', data.token);
+      localStorage.setItem('userId', data.userId);
+      localStorage.setItem('userEmail', data.userEmail);
+
+      toast({
+        title: 'Login Successful!',
+        description: 'Welcome back.',
       });
-
-      if (response.ok) {
-        const data = await response.json();
-        localStorage.setItem('authToken', data.token);
-        localStorage.setItem('userId', data.user.id);
-        localStorage.setItem('userEmail', data.user.email);
-
-        toast({
-          title: 'Login Successful!',
-          description: 'Welcome back.',
-        });
-        router.push('/dashboard');
-      } else {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Google One Tap login failed.');
-      }
+      router.push('/dashboard');
     } catch (error: any) {
       toast({
         variant: 'destructive',
         title: 'Login Failed',
         description: error.message,
       });
+    } finally {
       setIsLoading(false);
     }
   };
