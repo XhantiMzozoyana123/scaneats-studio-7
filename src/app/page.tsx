@@ -3,10 +3,7 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import {
-  GoogleLogin,
-  type CredentialResponse,
-} from '@react-oauth/google';
+import { GoogleLogin } from '@react-oauth/google';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -14,7 +11,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { BackgroundImage } from '@/components/background-image';
 import { User, Mail, KeyRound, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { API_BASE_URL, googleLogin } from '@/lib/api';
+import { API_BASE_URL } from '@/lib/api';
 
 export default function HomePage() {
   const router = useRouter();
@@ -24,46 +21,44 @@ export default function HomePage() {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleGoogleSuccess = async (
-    credentialResponse: CredentialResponse
-  ) => {
-    if (!credentialResponse.credential) {
-      toast({
-        variant: 'destructive',
-        title: 'Sign Up Failed',
-        description: 'Could not retrieve Google credentials.',
-      });
-      return;
+  const googleLogin = async (idToken: string) => {
+    if (!idToken) {
+      throw new Error('Google ID token is missing.');
     }
-    setIsLoading(true);
-    try {
-      const data = await googleLogin(credentialResponse.credential);
-      localStorage.setItem('authToken', data.token);
-      localStorage.setItem('userId', data.userId);
-      localStorage.setItem('userEmail', data.userEmail);
 
-      toast({
-        title: 'Sign Up Successful!',
-        description: 'Welcome to ScanEats.',
-      });
-      router.push('/dashboard');
-    } catch (error: any) {
-      toast({
-        variant: 'destructive',
-        title: 'Sign Up Failed',
-        description: error.message,
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleGoogleError = () => {
-    toast({
-      variant: 'destructive',
-      title: 'Sign Up Failed',
-      description: 'Google authentication failed. Please try again.',
+    const response = await fetch(`${API_BASE_URL}/api/googleauth/onetap`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ idToken }),
     });
+
+    if (!response.ok) {
+      let errorMsg = 'Google One Tap login failed.';
+      try {
+          const errorData = await response.json();
+          if (errorData.error) {
+              errorMsg = errorData.error;
+          } else if (errorData.details) {
+              errorMsg = errorData.details.map((d: any) => d.description).join(', ');
+          }
+      } catch {
+          // Keep generic message
+      }
+      throw new Error(errorMsg);
+    }
+
+    const data = await response.json();
+    if (!data.token || !data.user || !data.user.id || !data.user.email) {
+      throw new Error('Invalid response received from server.');
+    }
+    
+    return {
+      token: data.token,
+      userId: data.user.id,
+      userEmail: data.user.email,
+    };
   };
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -77,9 +72,9 @@ export default function HomePage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          userName: username,
-          email: email,
-          password: password,
+          UserName: username,
+          Email: email,
+          Password: password,
         }),
       });
 
@@ -208,19 +203,55 @@ export default function HomePage() {
           </div>
           <div className="relative flex justify-center text-xs uppercase">
             <span className="bg-black/60 px-2 text-white/70">
-              Or continue with Google
+              Or continue with
             </span>
           </div>
         </div>
 
         <div className="flex justify-center">
-          <GoogleLogin
-            onSuccess={handleGoogleSuccess}
-            onError={handleGoogleError}
-            theme="filled_black"
-            shape="rectangular"
-            size="large"
-          />
+            <GoogleLogin
+              onSuccess={async credentialResponse => {
+                if (!credentialResponse.credential) {
+                  toast({
+                    variant: 'destructive',
+                    title: 'Sign Up Failed',
+                    description: 'Could not retrieve Google credentials.',
+                  });
+                  return;
+                }
+                setIsLoading(true);
+                try {
+                  const data = await googleLogin(credentialResponse.credential);
+                  localStorage.setItem('authToken', data.token);
+                  localStorage.setItem('userId', data.userId);
+                  localStorage.setItem('userEmail', data.userEmail);
+
+                  toast({
+                    title: 'Sign Up Successful!',
+                    description: 'Welcome to ScanEats.',
+                  });
+                  router.push('/dashboard');
+                } catch (error: any) {
+                  toast({
+                    variant: 'destructive',
+                    title: 'Sign Up Failed',
+                    description: error.message,
+                  });
+                } finally {
+                  setIsLoading(false);
+                }
+              }}
+              onError={() => {
+                toast({
+                  variant: 'destructive',
+                  title: 'Sign Up Failed',
+                  description: 'Google authentication failed. Please try again.',
+                });
+              }}
+              theme="filled_black"
+              shape="rectangular"
+              size="large"
+            />
         </div>
 
         <p className="mt-8 text-center text-sm text-white/70">

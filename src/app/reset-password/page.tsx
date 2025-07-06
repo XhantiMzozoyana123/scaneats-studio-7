@@ -68,9 +68,9 @@ function ResetPasswordForm() {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    id: id,
-                    token: token,
-                    newPassword: password,
+                    Id: id,
+                    Token: token,
+                    NewPassword: password,
                 }),
             });
 
