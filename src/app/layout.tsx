@@ -34,7 +34,9 @@ export default function RootLayout({
       <body
         className={`${ptSans.variable} ${playfairDisplay.variable} font-body antialiased`}
       >
-        <GoogleOAuthProvider clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!}>
+        <GoogleOAuthProvider
+          clientId={process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!}
+        >
           {children}
           <Toaster />
         </GoogleOAuthProvider>

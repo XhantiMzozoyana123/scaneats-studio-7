@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -20,7 +21,9 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleGoogleSuccess = async (credentialResponse: CredentialResponse) => {
+  const handleGoogleSuccess = async (
+    credentialResponse: CredentialResponse
+  ) => {
     setIsLoading(true);
     try {
       const response = await fetch(`${API_BASE_URL}/api/googleauth/onetap`, {
@@ -36,7 +39,7 @@ export default function LoginPage() {
         localStorage.setItem('authToken', data.token);
         localStorage.setItem('userId', data.user.id);
         localStorage.setItem('userEmail', data.user.email);
-        
+
         toast({
           title: 'Login Successful!',
           description: 'Welcome back.',
@@ -85,7 +88,7 @@ export default function LoginPage() {
         localStorage.setItem('authToken', data.token);
         localStorage.setItem('userId', data.userId);
         localStorage.setItem('userEmail', email);
-        
+
         toast({
           title: 'Login Successful!',
           description: 'Welcome back.',
@@ -96,16 +99,17 @@ export default function LoginPage() {
         if (response.status === 401) {
           errorMessage = 'Incorrect email or password. Please try again.';
         } else if (response.status >= 500) {
-          errorMessage = 'Our servers are currently unavailable. Please try again later.';
+          errorMessage =
+            'Our servers are currently unavailable. Please try again later.';
         } else {
-            try {
-                const errorData = await response.json();
-                if (errorData.error) {
-                    errorMessage = errorData.error;
-                }
-            } catch {
-                // Keep the generic message
+          try {
+            const errorData = await response.json();
+            if (errorData.error) {
+              errorMessage = errorData.error;
             }
+          } catch {
+            // Keep the generic message
+          }
         }
         throw new Error(errorMessage);
       }
@@ -131,7 +135,11 @@ export default function LoginPage() {
 
   return (
     <div className="relative flex min-h-screen items-center justify-center p-4">
-      <BackgroundImage src="https://placehold.co/1200x800.png" data-ai-hint="abstract purple" className="blur-md" />
+      <BackgroundImage
+        src="https://placehold.co/1200x800.png"
+        data-ai-hint="abstract purple"
+        className="blur-md"
+      />
       <div className="relative z-10 mx-auto w-full max-w-md rounded-3xl bg-black/60 p-8 backdrop-blur-lg">
         <div className="mb-8 text-left">
           <h2 className="font-headline text-4xl font-bold leading-tight">
@@ -163,22 +171,32 @@ export default function LoginPage() {
               required
               className="border-0 bg-transparent pl-8 text-base placeholder:text-white/70 focus-visible:ring-0 focus-visible:ring-offset-0"
             />
-            <Link href="/forgot-password" className="absolute right-0 top-3 text-sm text-white/70 transition-colors hover:text-white">
+            <Link
+              href="/forgot-password"
+              className="absolute right-0 top-3 text-sm text-white/70 transition-colors hover:text-white"
+            >
               Forgot?
             </Link>
           </div>
 
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
-              <Checkbox id="remember-me" className="border-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground" />
+              <Checkbox
+                id="remember-me"
+                className="border-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
+              />
               <Label htmlFor="remember-me" className="text-white/70">
                 Remember me
               </Label>
             </div>
           </div>
-          
+
           <div className="pt-4">
-            <Button type="submit" disabled={isLoading} className="w-full rounded-full bg-stone-900 py-6 text-base font-semibold hover:bg-stone-800">
+            <Button
+              type="submit"
+              disabled={isLoading}
+              className="w-full rounded-full bg-stone-900 py-6 text-base font-semibold hover:bg-stone-800"
+            >
               {isLoading ? <Loader2 className="animate-spin" /> : 'Log In'}
             </Button>
           </div>
@@ -194,7 +212,7 @@ export default function LoginPage() {
             </span>
           </div>
         </div>
-        
+
         <div className="flex justify-center">
           <GoogleLogin
             onSuccess={handleGoogleSuccess}

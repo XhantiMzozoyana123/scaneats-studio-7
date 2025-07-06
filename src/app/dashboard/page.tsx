@@ -1,6 +1,14 @@
+
 'use client';
 
-import { useState, useEffect, useMemo, useRef, useCallback, type ChangeEvent } from 'react';
+import {
+  useState,
+  useEffect,
+  useMemo,
+  useRef,
+  useCallback,
+  type ChangeEvent,
+} from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -78,11 +86,10 @@ import { BackgroundImage } from '@/components/background-image';
 import { textToSpeech } from '@/ai/flows/text-to-speech';
 import { API_BASE_URL } from '@/lib/api';
 
-
 // --- Views (previously separate pages) ---
 
 const HomeView = () => {
-    const [background, setBackground] = useState({
+  const [background, setBackground] = useState({
     src: 'https://placehold.co/1920x1080.png',
     hint: 'food abstract day',
   });
@@ -122,7 +129,7 @@ const HomeView = () => {
           src="/scaneats-logo.png"
           alt="ScanEats Logo"
           fill
-          style={{objectFit: 'contain'}}
+          style={{ objectFit: 'contain' }}
         />
       </header>
 
@@ -141,9 +148,9 @@ const HomeView = () => {
             Welcome home, wink wink
           </h2>
           <p className="mx-auto max-w-md font-body text-base leading-relaxed text-gray-300 opacity-95 md:text-lg">
-            Meet Sally, your personal assistant who’ll help you stay on track with
-            your meals and let you know if you&apos;re eating well — without the
-            need to constantly go for health foods.
+            Meet Sally, your personal assistant who’ll help you stay on track
+            with your meals and let you know if you&apos;re eating well —
+            without the need to constantly go for health foods.
           </p>
         </div>
 
@@ -157,7 +164,6 @@ const HomeView = () => {
     </>
   );
 };
-
 
 type ScannedFood = {
   id: number;
@@ -178,6 +184,7 @@ declare global {
 const MealPlanView = () => {
   const [foods, setFoods] = useState<ScannedFood[] | null>(null);
   const { toast } = useToast();
+  const { setSubscriptionModalOpen } = useUserData();
   const [sallyResponse, setSallyResponse] = useState<string>(
     "Ask me about this meal and I'll tell you everything."
   );
@@ -253,13 +260,13 @@ const MealPlanView = () => {
         setFoods([]);
       }
     } else {
-        setFoods([]);
+      setFoods([]);
     }
   }, [toast]);
 
   const totals = useMemo(() => {
     if (!foods) {
-        return { calories: 0, protein: 0, fat: 0, carbs: 0 };
+      return { calories: 0, protein: 0, fat: 0, carbs: 0 };
     }
     return foods.reduce(
       (acc, food) => {
@@ -320,7 +327,7 @@ const MealPlanView = () => {
       if (response.ok) {
         const data = await response.json();
         setSallyResponse(data.agentDialogue);
-        
+
         if (data.agentDialogue) {
           try {
             const { media } = await textToSpeech({ text: data.agentDialogue });
@@ -332,22 +339,33 @@ const MealPlanView = () => {
             toast({
               variant: 'destructive',
               title: 'Audio Error',
-              description: 'Could not generate audio for the response. The text-to-speech service may be unavailable.',
+              description:
+                'Could not generate audio for the response. The text-to-speech service may be unavailable.',
             });
           }
         }
       } else {
+        if (response.status === 401 || response.status === 403) {
+          setSubscriptionModalOpen(true);
+          setSallyResponse(
+            "Ask me about this meal and I'll tell you everything."
+          );
+          return;
+        }
+
         let errorMessage;
-        if (response.status === 401) {
-          errorMessage = 'Your session has expired. Please log in again.';
-        } else if (response.status === 429) {
-          errorMessage = 'You have run out of credits. Please purchase more to continue scanning.';
+        if (response.status === 429) {
+          errorMessage =
+            'You have run out of credits. Please purchase more to continue scanning.';
         } else {
           try {
             const errorText = await response.text();
-            errorMessage = errorText || 'An unknown error occurred while communicating with Sally.';
+            errorMessage =
+              errorText ||
+              'An unknown error occurred while communicating with Sally.';
           } catch {
-            errorMessage = 'Our servers are having some trouble. Please try again later.';
+            errorMessage =
+              'Our servers are having some trouble. Please try again later.';
           }
         }
         throw new Error(errorMessage);
@@ -431,7 +449,9 @@ const MealPlanView = () => {
               </>
             ) : (
               <div className="flex flex-1 flex-col items-center justify-center">
-                <p className="text-white">No food scanned yet. Scan an item to get started!</p>
+                <p className="text-white">
+                  No food scanned yet. Scan an item to get started!
+                </p>
               </div>
             )}
 
@@ -445,9 +465,7 @@ const MealPlanView = () => {
                   : 'animate-breathe-glow'
               )}
             >
-              <Mic
-                className="h-16 w-16"
-              />
+              <Mic className="h-16 w-16" />
             </button>
 
             <div className="max-w-md p-3 text-center text-lg font-normal text-muted-foreground">
@@ -465,7 +483,6 @@ const MealPlanView = () => {
   );
 };
 
-
 const SallyView = () => {
   const [sallyResponse, setSallyResponse] = useState<string>(
     "I'm your personal assistant, ask me anything about your body."
@@ -476,6 +493,7 @@ const SallyView = () => {
   const recognitionRef = useRef<any>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const { toast } = useToast();
+  const { setSubscriptionModalOpen } = useUserData();
 
   useEffect(() => {
     if (audioUrl && audioRef.current) {
@@ -560,7 +578,7 @@ const SallyView = () => {
           }),
         }
       );
-      
+
       if (response.ok) {
         const data = await response.json();
         setSallyResponse(data.agentDialogue);
@@ -581,17 +599,27 @@ const SallyView = () => {
           }
         }
       } else {
+        if (response.status === 401 || response.status === 403) {
+          setSubscriptionModalOpen(true);
+          setSallyResponse(
+            "I'm your personal assistant, ask me anything about your body."
+          );
+          return;
+        }
+
         let errorMessage;
-        if (response.status === 401) {
-          errorMessage = 'Your session has expired. Please log in again.';
-        } else if (response.status === 429) {
-          errorMessage = 'You have run out of credits. Please purchase more to continue scanning.';
+        if (response.status === 429) {
+          errorMessage =
+            'You have run out of credits. Please purchase more to continue scanning.';
         } else {
           try {
             const errorText = await response.text();
-            errorMessage = errorText || 'An unknown error occurred while communicating with Sally.';
+            errorMessage =
+              errorText ||
+              'An unknown error occurred while communicating with Sally.';
           } catch {
-            errorMessage = 'Our servers are having some trouble. Please try again later.';
+            errorMessage =
+              'Our servers are having some trouble. Please try again later.';
           }
         }
         throw new Error(errorMessage);
@@ -665,10 +693,10 @@ const SallyView = () => {
   );
 };
 
-
 const ProfileView = () => {
   const { toast } = useToast();
-  const { profile, setProfile, isLoading } = useUserData();
+  const { profile, setProfile, isLoading, setSubscriptionModalOpen } =
+    useUserData();
   const [isSaving, setIsSaving] = useState(false);
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
 
@@ -709,13 +737,13 @@ const ProfileView = () => {
     setIsSaving(true);
     const token = localStorage.getItem('authToken');
     if (!token) {
-        toast({
-            variant: 'destructive',
-            title: 'Authentication Error',
-            description: 'You must be logged in to save your profile.',
-        });
-        setIsSaving(false);
-        return;
+      toast({
+        variant: 'destructive',
+        title: 'Authentication Error',
+        description: 'You must be logged in to save your profile.',
+      });
+      setIsSaving(false);
+      return;
     }
 
     const calculateAge = (birthDate: Date): number => {
@@ -732,7 +760,7 @@ const ProfileView = () => {
     const url = profile.id
       ? `${API_BASE_URL}/api/profile/${profile.id}`
       : `${API_BASE_URL}/api/profile`;
-      
+
     const profileData: any = {
       ...profile,
       weight: String(profile.weight || ''),
@@ -747,54 +775,59 @@ const ProfileView = () => {
     }
 
     try {
-        const response = await fetch(url, {
-            method: method,
-            headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify(profileData),
-        });
+      const response = await fetch(url, {
+        method: method,
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(profileData),
+      });
 
-        if (response.ok) {
-            toast({
-              title: 'Success',
-              description: 'Your profile has been saved successfully.',
-            });
-            const newProfile = await response.json();
-            setProfile({
-              ...newProfile,
-              birthDate: newProfile.birthDate ? new Date(newProfile.birthDate) : null,
-            });
-        } else {
-            let errorMessage = 'Failed to save profile.';
-            if (response.status === 401) {
-                errorMessage = 'Your session has expired. Please log in again.';
-            } else if (response.status >= 500) {
-                errorMessage = 'Our servers are experiencing issues. Please try again later.';
-            } else {
-                try {
-                    const errorData = await response.json();
-                    if (errorData.error) {
-                        errorMessage = errorData.error;
-                    }
-                } catch {
-                    // Keep generic message
-                }
-            }
-            throw new Error(errorMessage);
-        }
-    } catch (error: any) {
+      if (response.ok) {
         toast({
-            variant: 'destructive',
-            title: 'Save Failed',
-            description: error.message,
+          title: 'Success',
+          description: 'Your profile has been saved successfully.',
         });
+        const newProfile = await response.json();
+        setProfile({
+          ...newProfile,
+          birthDate: newProfile.birthDate
+            ? new Date(newProfile.birthDate)
+            : null,
+        });
+      } else {
+        if (response.status === 401 || response.status === 403) {
+          setSubscriptionModalOpen(true);
+          return;
+        }
+        let errorMessage = 'Failed to save profile.';
+        if (response.status >= 500) {
+          errorMessage =
+            'Our servers are experiencing issues. Please try again later.';
+        } else {
+          try {
+            const errorData = await response.json();
+            if (errorData.error) {
+              errorMessage = errorData.error;
+            }
+          } catch {
+            // Keep generic message
+          }
+        }
+        throw new Error(errorMessage);
+      }
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Save Failed',
+        description: error.message,
+      });
     } finally {
-        setIsSaving(false);
+      setIsSaving(false);
     }
   };
-  
+
   if (isLoading || !profile) {
     return (
       <div className="flex min-h-screen flex-col items-center bg-black pb-40 pt-5">
@@ -836,131 +869,152 @@ const ProfileView = () => {
     <div className="flex min-h-screen flex-col items-center bg-black pb-40 pt-5">
       <div className="w-[90%] max-w-[600px] rounded-lg bg-[rgba(14,1,15,0.32)] p-5">
         <div className="mb-8 flex justify-center">
-            <Image
-              src="/profile-goals-logo.png"
-              alt="Profile & Personal Goals"
-              width={140}
-              height={140}
-              className="max-h-[140px] w-auto max-w-full"
-            />
+          <Image
+            src="/profile-goals-logo.png"
+            alt="Profile & Personal Goals"
+            width={140}
+            height={140}
+            className="max-h-[140px] w-auto max-w-full"
+          />
         </div>
         <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="form-group">
-              <Label htmlFor="name" className="mb-1.5 block font-bold transition-all hover:[text-shadow:0_0_10px_rgba(255,255,255,0.8)]">
-                Name
-              </Label>
-              <Input
-                id="name"
-                value={profile.name}
-                onChange={handleInputChange}
-                placeholder="Your Name"
-                className="w-full rounded-full border-2 border-[#555] bg-black px-4 py-3 text-base"
-              />
-            </div>
-            
-            <div className="form-group">
-              <Label htmlFor="gender" className="mb-1.5 block font-bold transition-all hover:[text-shadow:0_0_10px_rgba(255,255,255,0.8)]">
-                Gender
-              </Label>
-              <Select value={profile.gender} onValueChange={handleSelectChange}>
-                <SelectTrigger className="w-full rounded-full border-2 border-[#555] bg-black px-4 py-3 text-base">
-                  <SelectValue placeholder="Select Gender" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Male">Male</SelectItem>
-                  <SelectItem value="Female">Female</SelectItem>
-                  <SelectItem value="Other">Other</SelectItem>
-                  <SelectItem value="Prefer not to say">
-                    Prefer not to say
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="form-group">
-              <Label htmlFor="weight" className="mb-1.5 block font-bold transition-all hover:[text-shadow:0_0_10px_rgba(255,255,255,0.8)]">
-                Weight (kg)
-              </Label>
-              <Input
-                id="weight"
-                type="number"
-                value={profile.weight}
-                onChange={handleInputChange}
-                placeholder="e.g., 70"
-                className="w-full rounded-full border-2 border-[#555] bg-black px-4 py-3 text-base"
-              />
-            </div>
+          <div className="form-group">
+            <Label
+              htmlFor="name"
+              className="mb-1.5 block font-bold transition-all hover:[text-shadow:0_0_10px_rgba(255,255,255,0.8)]"
+            >
+              Name
+            </Label>
+            <Input
+              id="name"
+              value={profile.name}
+              onChange={handleInputChange}
+              placeholder="Your Name"
+              className="w-full rounded-full border-2 border-[#555] bg-black px-4 py-3 text-base"
+            />
+          </div>
 
-            <div className="form-group">
-              <Label htmlFor="birthDate" className="mb-1.5 block font-bold transition-all hover:[text-shadow:0_0_10px_rgba(255,255,255,0.8)]">
-                Birth Date
-              </Label>
-              <Popover open={isDatePickerOpen} onOpenChange={setIsDatePickerOpen}>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant={'outline'}
-                    className={cn(
-                      'w-full justify-start rounded-full border-2 border-[#555] bg-black px-4 py-3 text-left text-base font-normal hover:bg-black/80',
-                      !profile.birthDate && 'text-gray-400'
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {profile.birthDate ? (
-                      format(profile.birthDate, 'PPP')
-                    ) : (
-                      <span>Pick a date</span>
-                    )}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                   <Calendar
-                    mode="single"
-                    selected={profile.birthDate ?? undefined}
-                    onSelect={handleDateChange}
-                    disabled={(date) =>
-                      date > new Date() || date < new Date('1900-01-01')
-                    }
-                    initialFocus
-                    captionLayout="dropdown-buttons"
-                    fromYear={1900}
-                    toYear={new Date().getFullYear()}
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
+          <div className="form-group">
+            <Label
+              htmlFor="gender"
+              className="mb-1.5 block font-bold transition-all hover:[text-shadow:0_0_10px_rgba(255,255,255,0.8)]"
+            >
+              Gender
+            </Label>
+            <Select value={profile.gender} onValueChange={handleSelectChange}>
+              <SelectTrigger className="w-full rounded-full border-2 border-[#555] bg-black px-4 py-3 text-base">
+                <SelectValue placeholder="Select Gender" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Male">Male</SelectItem>
+                <SelectItem value="Female">Female</SelectItem>
+                <SelectItem value="Other">Other</SelectItem>
+                <SelectItem value="Prefer not to say">
+                  Prefer not to say
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
-            <div className="form-group">
-              <Label htmlFor="goals" className="mb-1.5 block font-bold transition-all hover:[text-shadow:0_0_10px_rgba(255,255,255,0.8)]">
-                Body Goal
-              </Label>
-              <Textarea
-                id="goals"
-                value={profile.goals}
-                onChange={handleInputChange}
-                placeholder="e.g., Lose 5kg, build muscle, improve cardiovascular health..."
-                className="min-h-[100px] w-full rounded-3xl border-2 border-[#555] bg-black px-4 py-3 text-base"
-              />
-            </div>
+          <div className="form-group">
+            <Label
+              htmlFor="weight"
+              className="mb-1.5 block font-bold transition-all hover:[text-shadow:0_0_10px_rgba(255,255,255,0.8)]"
+            >
+              Weight (kg)
+            </Label>
+            <Input
+              id="weight"
+              type="number"
+              value={profile.weight}
+              onChange={handleInputChange}
+              placeholder="e.g., 70"
+              className="w-full rounded-full border-2 border-[#555] bg-black px-4 py-3 text-base"
+            />
+          </div>
 
-            <div className="pt-4">
-              <Button
-                type="submit"
-                size="lg"
-                disabled={isSaving || isLoading}
-                className="w-full rounded-lg bg-[#7F00FF] py-3 text-lg font-bold text-white transition-all hover:bg-[#9300FF] hover:shadow-[0_0_12px_6px_rgba(127,0,255,0.8)] disabled:opacity-50"
-                style={{
-                  boxShadow: '0 0 8px 2px rgba(127, 0, 255, 0.6)'
-                }}
-              >
-                {isSaving ? <Loader2 className="animate-spin" /> : 'Save Profile'}
-              </Button>
-            </div>
+          <div className="form-group">
+            <Label
+              htmlFor="birthDate"
+              className="mb-1.5 block font-bold transition-all hover:[text-shadow:0_0_10px_rgba(255,255,255,0.8)]"
+            >
+              Birth Date
+            </Label>
+            <Popover
+              open={isDatePickerOpen}
+              onOpenChange={setIsDatePickerOpen}
+            >
+              <PopoverTrigger asChild>
+                <Button
+                  variant={'outline'}
+                  className={cn(
+                    'w-full justify-start rounded-full border-2 border-[#555] bg-black px-4 py-3 text-left text-base font-normal hover:bg-black/80',
+                    !profile.birthDate && 'text-gray-400'
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {profile.birthDate ? (
+                    format(profile.birthDate, 'PPP')
+                  ) : (
+                    <span>Pick a date</span>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0">
+                <Calendar
+                  mode="single"
+                  selected={profile.birthDate ?? undefined}
+                  onSelect={handleDateChange}
+                  disabled={(date) =>
+                    date > new Date() || date < new Date('1900-01-01')
+                  }
+                  initialFocus
+                  captionLayout="dropdown-buttons"
+                  fromYear={1900}
+                  toYear={new Date().getFullYear()}
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+
+          <div className="form-group">
+            <Label
+              htmlFor="goals"
+              className="mb-1.5 block font-bold transition-all hover:[text-shadow:0_0_10px_rgba(255,255,255,0.8)]"
+            >
+              Body Goal
+            </Label>
+            <Textarea
+              id="goals"
+              value={profile.goals}
+              onChange={handleInputChange}
+              placeholder="e.g., Lose 5kg, build muscle, improve cardiovascular health..."
+              className="min-h-[100px] w-full rounded-3xl border-2 border-[#555] bg-black px-4 py-3 text-base"
+            />
+          </div>
+
+          <div className="pt-4">
+            <Button
+              type="submit"
+              size="lg"
+              disabled={isSaving || isLoading}
+              className="w-full rounded-lg bg-[#7F00FF] py-3 text-lg font-bold text-white transition-all hover:bg-[#9300FF] hover:shadow-[0_0_12px_6px_rgba(127,0,255,0.8)] disabled:opacity-50"
+              style={{
+                boxShadow: '0 0 8px 2px rgba(127, 0, 255, 0.6)',
+              }}
+            >
+              {isSaving ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                'Save Profile'
+              )}
+            </Button>
+          </div>
         </form>
       </div>
     </div>
   );
 };
-
 
 const SettingsItem = ({
   icon: Icon,
@@ -1011,10 +1065,15 @@ const DestructiveSettingsItem = ({
   </div>
 );
 
-const SettingsView = ({ onNavigateToProfile }: { onNavigateToProfile: () => void; }) => {
+const SettingsView = ({
+  onNavigateToProfile,
+}: {
+  onNavigateToProfile: () => void;
+}) => {
   const router = useRouter();
   const { toast } = useToast();
-  const { profile, creditBalance, isLoading } = useUserData();
+  const { profile, creditBalance, isLoading, setSubscriptionModalOpen } =
+    useUserData();
 
   const [isDeleting, setIsDeleting] = useState(false);
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
@@ -1061,11 +1120,14 @@ const SettingsView = ({ onNavigateToProfile }: { onNavigateToProfile: () => void
         });
         handleLogout();
       } else {
+        if (response.status === 401 || response.status === 403) {
+          setSubscriptionModalOpen(true);
+          return;
+        }
         let errorMessage = 'Failed to delete account.';
-         if (response.status === 401) {
-            errorMessage = 'Your session has expired. Please log in again.';
-        } else if (response.status >= 500) {
-            errorMessage = 'Our servers are experiencing issues. Please try again later.';
+        if (response.status >= 500) {
+          errorMessage =
+            'Our servers are experiencing issues. Please try again later.';
         }
         throw new Error(errorMessage);
       }
@@ -1114,17 +1176,14 @@ const SettingsView = ({ onNavigateToProfile }: { onNavigateToProfile: () => void
     };
 
     try {
-      const response = await fetch(
-        `${API_BASE_URL}/api/Auth/update`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify(payload),
-        }
-      );
+      const response = await fetch(`${API_BASE_URL}/api/Auth/update`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      });
 
       if (response.ok) {
         toast({
@@ -1136,22 +1195,25 @@ const SettingsView = ({ onNavigateToProfile }: { onNavigateToProfile: () => void
         setNewPassword('');
         setConfirmPassword('');
       } else {
+        if (response.status === 401 || response.status === 403) {
+          setSubscriptionModalOpen(true);
+          return;
+        }
         let errorMessage = 'Failed to change password.';
-        if (response.status === 401) {
-            errorMessage = 'Your session has expired. Please log in again.';
-        } else if (response.status === 400) {
-            errorMessage = 'The current password you entered is incorrect.';
+        if (response.status === 400) {
+          errorMessage = 'The current password you entered is incorrect.';
         } else if (response.status >= 500) {
-            errorMessage = 'Our servers are experiencing issues. Please try again later.';
+          errorMessage =
+            'Our servers are experiencing issues. Please try again later.';
         } else {
-            try {
-                const errorData = await response.json();
-                if (errorData.error) {
-                    errorMessage = errorData.error;
-                }
-            } catch {
-                // Keep generic message
+          try {
+            const errorData = await response.json();
+            if (errorData.error) {
+              errorMessage = errorData.error;
             }
+          } catch {
+            // Keep generic message
+          }
         }
         throw new Error(errorMessage);
       }
@@ -1195,23 +1257,27 @@ const SettingsView = ({ onNavigateToProfile }: { onNavigateToProfile: () => void
 
   return (
     <div className="h-full overflow-y-auto bg-zinc-950 text-gray-200">
-       <header className="sticky top-0 z-10 w-full bg-zinc-900/50 p-4 shadow-md backdrop-blur-sm">
+      <header className="sticky top-0 z-10 w-full bg-zinc-900/50 p-4 shadow-md backdrop-blur-sm">
         <div className="container mx-auto flex items-center justify-center">
           <h1 className="text-xl font-semibold">Settings</h1>
         </div>
       </header>
       <main className="w-full max-w-2xl mx-auto p-6 pb-28">
         <div className="space-y-8">
-            <div className="space-y-4 rounded-lg bg-zinc-900 p-6">
+          <div className="space-y-4 rounded-lg bg-zinc-900 p-6">
             <h2 className="text-lg font-semibold text-white">Account</h2>
-             <SettingsItem icon={UserCircle} label="Profile & Personal Goals" onClick={onNavigateToProfile} />
+            <SettingsItem
+              icon={UserCircle}
+              label="Profile & Personal Goals"
+              onClick={onNavigateToProfile}
+            />
             <Dialog
               open={isPasswordDialogOpen}
               onOpenChange={setIsPasswordDialogOpen}
             >
               <DialogTrigger asChild>
                 <button className="w-full">
-                   <SettingsItem icon={Lock} label="Change Password" />
+                  <SettingsItem icon={Lock} label="Change Password" />
                 </button>
               </DialogTrigger>
               <DialogContent>
@@ -1224,21 +1290,50 @@ const SettingsView = ({ onNavigateToProfile }: { onNavigateToProfile: () => void
                 >
                   <div className="space-y-2">
                     <Label htmlFor="current-password">Current Password</Label>
-                    <Input id="current-password" type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} required />
+                    <Input
+                      id="current-password"
+                      type="password"
+                      value={currentPassword}
+                      onChange={(e) => setCurrentPassword(e.target.value)}
+                      required
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="new-password">New Password</Label>
-                    <Input id="new-password" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required />
+                    <Input
+                      id="new-password"
+                      type="password"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      required
+                    />
                   </div>
-                   <div className="space-y-2">
-                    <Label htmlFor="confirm-password">Confirm New Password</Label>
-                    <Input id="confirm-password" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required />
+                  <div className="space-y-2">
+                    <Label htmlFor="confirm-password">
+                      Confirm New Password
+                    </Label>
+                    <Input
+                      id="confirm-password"
+                      type="password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      required
+                    />
                   </div>
                 </form>
                 <DialogFooter>
-                  <DialogClose asChild><Button variant="outline">Cancel</Button></DialogClose>
-                  <Button onClick={handlePasswordChange} disabled={isChangingPassword}>
-                    {isChangingPassword ? <Loader2 className="animate-spin" /> : 'Save Changes'}
+                  <DialogClose asChild>
+                    <Button variant="outline">Cancel</Button>
+                  </DialogClose>
+                  <Button
+                    onClick={handlePasswordChange}
+                    disabled={isChangingPassword}
+                  >
+                    {isChangingPassword ? (
+                      <Loader2 className="animate-spin" />
+                    ) : (
+                      'Save Changes'
+                    )}
                   </Button>
                 </DialogFooter>
               </DialogContent>
@@ -1246,46 +1341,62 @@ const SettingsView = ({ onNavigateToProfile }: { onNavigateToProfile: () => void
           </div>
 
           <div className="space-y-4 rounded-lg bg-zinc-900 p-6">
-              <h2 className="text-lg font-semibold text-white">Billing</h2>
-              <div className="flex items-center p-4">
-                <Wallet className="mr-4 h-5 w-5 text-gray-300" />
-                <span className="flex-1 font-medium text-white">My Wallet</span>
-                <span className="font-semibold text-white">
-                    {creditBalance !== null ? `${creditBalance} Credits` : <Loader2 className="h-4 w-4 animate-spin" />}
-                </span>
-              </div>
-             <SettingsItem
+            <h2 className="text-lg font-semibold text-white">Billing</h2>
+            <div className="flex items-center p-4">
+              <Wallet className="mr-4 h-5 w-5 text-gray-300" />
+              <span className="flex-1 font-medium text-white">My Wallet</span>
+              <span className="font-semibold text-white">
+                {creditBalance !== null ? (
+                  `${creditBalance} Credits`
+                ) : (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                )}
+              </span>
+            </div>
+            <SettingsItem
               icon={Repeat}
               label="Manage Subscription"
               href="/pricing"
             />
-             <SettingsItem
+            <SettingsItem
               icon={CreditCard}
               label="Buy Credits"
               href="/credits"
             />
           </div>
-          
+
           <div className="space-y-4 rounded-lg bg-zinc-900 p-6">
-             <h2 className="text-lg font-semibold text-white">Actions</h2>
-              <SettingsItem icon={LogOut} label="Log Out" onClick={handleLogout} />
-              <AlertDialog>
+            <h2 className="text-lg font-semibold text-white">Actions</h2>
+            <SettingsItem icon={LogOut} label="Log Out" onClick={handleLogout} />
+            <AlertDialog>
               <AlertDialogTrigger asChild>
                 <button className="w-full">
-                   <DestructiveSettingsItem icon={Trash2} label="Delete Account" onClick={() => {}} />
+                  <DestructiveSettingsItem
+                    icon={Trash2}
+                    label="Delete Account"
+                    onClick={() => {}}
+                  />
                 </button>
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
                   <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    This action cannot be undone. This will permanently delete your account and remove your data from our servers.
+                    This action cannot be undone. This will permanently delete
+                    your account and remove your data from our servers.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                   <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction className={buttonVariants({ variant: 'destructive' })} onClick={handleDeleteAccount} disabled={isDeleting}>
-                    {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Delete My Account
+                  <AlertDialogAction
+                    className={buttonVariants({ variant: 'destructive' })}
+                    onClick={handleDeleteAccount}
+                    disabled={isDeleting}
+                  >
+                    {isDeleting && (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    )}{' '}
+                    Delete My Account
                   </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
@@ -1302,9 +1413,9 @@ export default function DashboardPage() {
   const [activeView, setActiveView] = useState<View>('home');
 
   const handleNavigate = (view: View) => {
-     setActiveView(view);
+    setActiveView(view);
   };
-  
+
   const renderView = () => {
     switch (activeView) {
       case 'home':
@@ -1316,7 +1427,9 @@ export default function DashboardPage() {
       case 'profile':
         return <ProfileView />;
       case 'settings':
-         return <SettingsView onNavigateToProfile={() => setActiveView('profile')} />;
+        return (
+          <SettingsView onNavigateToProfile={() => setActiveView('profile')} />
+        );
       default:
         return <HomeView />;
     }

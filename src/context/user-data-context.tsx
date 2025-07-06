@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -10,6 +11,18 @@ import {
 } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { API_BASE_URL } from '@/lib/api';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
 
 type Profile = {
   id: number | null;
@@ -25,9 +38,10 @@ type UserDataContextType = {
   profile: Profile | null;
   creditBalance: number | null;
   isLoading: boolean;
-  isSubscriptionError: boolean;
   setProfile: React.Dispatch<React.SetStateAction<Profile | null>>;
   fetchProfile: () => Promise<void>;
+  isSubscriptionModalOpen: boolean;
+  setSubscriptionModalOpen: React.Dispatch<React.SetStateAction<boolean>>;
 };
 
 const UserDataContext = createContext<UserDataContextType | undefined>(
@@ -48,7 +62,7 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [creditBalance, setCreditBalance] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isSubscriptionError, setIsSubscriptionError] = useState(false);
+  const [isSubscriptionModalOpen, setSubscriptionModalOpen] = useState(false);
 
   const fetchProfile = useCallback(async () => {
     const token = localStorage.getItem('authToken');
@@ -58,7 +72,6 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
     }
 
     setIsLoading(true);
-    setIsSubscriptionError(false);
     try {
       const [profileRes, creditRes] = await Promise.all([
         fetch(`${API_BASE_URL}/api/profile`, {
@@ -70,42 +83,43 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
       ]);
 
       if (profileRes.status === 401 || profileRes.status === 403) {
-        setIsSubscriptionError(true);
-        setIsLoading(false);
-        return;
-      }
-
-      if (!profileRes.ok) {
-        throw new Error('Could not load your profile information.');
+        // Don't block the page, just set an empty profile
+        setProfile(initialProfileState);
+      } else if (profileRes.ok) {
+        const data = await profileRes.json();
+        if (data && data.length > 0) {
+          const userProfile = data[0];
+          setProfile({
+            ...userProfile,
+            birthDate: userProfile.birthDate
+              ? new Date(userProfile.birthDate)
+              : null,
+          });
+        } else {
+          setProfile(initialProfileState);
+        }
+      } else {
+         throw new Error('Could not load your profile information.');
       }
       
-      const data = await profileRes.json();
-      if (data && data.length > 0) {
-        const userProfile = data[0];
-        setProfile({
-          ...userProfile,
-          birthDate: userProfile.birthDate
-            ? new Date(userProfile.birthDate)
-            : null,
-        });
-      } else {
-        setProfile(initialProfileState);
-      }
-
       if (creditRes.ok) {
         const data = await creditRes.json();
         setCreditBalance(data.credits);
       } else {
         console.error('Failed to fetch credit balance');
       }
+
     } catch (error: any) {
       console.error('Failed to fetch user data', error);
+       if (!(error.message.includes('401') || error.message.includes('403'))) {
+         toast({
+          variant: 'destructive',
+          title: 'Could Not Load Data',
+          description:
+            error.message || 'There was a problem connecting to the server.',
+        });
+       }
       setProfile(initialProfileState);
-      toast({
-        variant: 'destructive',
-        title: 'Could Not Load Data',
-        description: error.message || 'There was a problem connecting to the server.',
-      });
     } finally {
       setIsLoading(false);
     }
@@ -114,19 +128,42 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     fetchProfile();
   }, [fetchProfile]);
-  
+
   const value = {
     profile,
     creditBalance,
     isLoading,
     setProfile,
     fetchProfile,
-    isSubscriptionError,
+    isSubscriptionModalOpen,
+    setSubscriptionModalOpen,
   };
 
   return (
     <UserDataContext.Provider value={value}>
       {children}
+      <AlertDialog
+        open={isSubscriptionModalOpen}
+        onOpenChange={setSubscriptionModalOpen}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Subscription Required</AlertDialogTitle>
+            <AlertDialogDescription>
+              You need an active subscription to access this feature. Please
+              subscribe to unlock all features.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel asChild>
+              <Button variant="outline">Cancel</Button>
+            </AlertDialogCancel>
+            <AlertDialogAction asChild>
+              <Link href="/pricing">Subscribe Now</Link>
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </UserDataContext.Provider>
   );
 }

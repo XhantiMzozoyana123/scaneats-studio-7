@@ -22,7 +22,9 @@ export default function HomePage() {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleGoogleSuccess = async (credentialResponse: CredentialResponse) => {
+  const handleGoogleSuccess = async (
+    credentialResponse: CredentialResponse
+  ) => {
     setIsLoading(true);
     try {
       const response = await fetch(`${API_BASE_URL}/api/googleauth/onetap`, {
@@ -38,7 +40,7 @@ export default function HomePage() {
         localStorage.setItem('authToken', data.token);
         localStorage.setItem('userId', data.user.id);
         localStorage.setItem('userEmail', data.user.email);
-        
+
         toast({
           title: 'Login Successful!',
           description: 'Welcome to ScanEats.',
@@ -92,16 +94,17 @@ export default function HomePage() {
       } else {
         let errorMessage = 'An unknown error occurred during registration.';
         if (response.status >= 500) {
-          errorMessage = 'Our servers are currently unavailable. Please try again later.';
+          errorMessage =
+            'Our servers are currently unavailable. Please try again later.';
         } else {
-            try {
-                const errorData = await response.json();
-                if (errorData.error) {
-                    errorMessage = errorData.error;
-                }
-            } catch {
-                // Keep the generic message
+          try {
+            const errorData = await response.json();
+            if (errorData.error) {
+              errorMessage = errorData.error;
             }
+          } catch {
+            // Keep the generic message
+          }
         }
         throw new Error(errorMessage);
       }
@@ -209,13 +212,13 @@ export default function HomePage() {
         </div>
 
         <div className="flex justify-center">
-            <GoogleLogin
-                onSuccess={handleGoogleSuccess}
-                onError={handleGoogleError}
-                useOneTap
-                theme="filled_black"
-                shape="circle"
-            />
+          <GoogleLogin
+            onSuccess={handleGoogleSuccess}
+            onError={handleGoogleError}
+            useOneTap
+            theme="filled_black"
+            shape="circle"
+          />
         </div>
 
         <p className="mt-8 text-center text-sm text-white/70">

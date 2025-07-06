@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
@@ -10,14 +11,18 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Loader2, Camera, RefreshCw, Send, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { API_BASE_URL } from '@/lib/api';
+import { useUserData } from '@/context/user-data-context';
 
-export default function ScanFoodPage() {
+function ScanFoodContent() {
   const { toast } = useToast();
   const router = useRouter();
+  const { setSubscriptionModalOpen } = useUserData();
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
+  const [hasCameraPermission, setHasCameraPermission] = useState<
+    boolean | null
+  >(null);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isSending, setIsSending] = useState(false);
@@ -37,7 +42,9 @@ export default function ScanFoodPage() {
       }
 
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'environment' },
+        });
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
         }
@@ -48,7 +55,8 @@ export default function ScanFoodPage() {
         toast({
           variant: 'destructive',
           title: 'Camera Access Denied',
-          description: 'Please enable camera permissions in your browser settings.',
+          description:
+            'Please enable camera permissions in your browser settings.',
         });
       } finally {
         setIsLoading(false);
@@ -61,7 +69,7 @@ export default function ScanFoodPage() {
     return () => {
       if (videoRef.current && videoRef.current.srcObject) {
         const stream = videoRef.current.srcObject as MediaStream;
-        stream.getTracks().forEach(track => track.stop());
+        stream.getTracks().forEach((track) => track.stop());
       }
     };
   }, [toast]);
@@ -71,7 +79,7 @@ export default function ScanFoodPage() {
 
     const video = videoRef.current;
     const canvas = canvasRef.current;
-    
+
     // Set canvas dimensions to match video stream
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
@@ -103,18 +111,18 @@ export default function ScanFoodPage() {
       setIsSending(false);
       return;
     }
-    
+
     // Extract raw base64 string
     const base64Image = capturedImage.split(',')[1];
-    
+
     const promptDto = {
-        Base64: base64Image,
-        Logging: {
-            ChatId: 0,
-            ScanId: 0,
-            ProfileId: 0,
-            FoodId: 0
-        }
+      Base64: base64Image,
+      Logging: {
+        ChatId: 0,
+        ScanId: 0,
+        ProfileId: 0,
+        FoodId: 0,
+      },
     };
 
     try {
@@ -123,9 +131,9 @@ export default function ScanFoodPage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(promptDto)
+        body: JSON.stringify(promptDto),
       });
 
       if (response.ok) {
@@ -139,22 +147,28 @@ export default function ScanFoodPage() {
         router.push('/dashboard/meal-plan');
         handleRetake();
       } else {
+        if (response.status === 401 || response.status === 403) {
+          setSubscriptionModalOpen(true);
+          return;
+        }
+
         let errorMessage;
-        if (response.status === 401) {
-          errorMessage = 'Your session has expired. Please log in again.';
-        } else if (response.status === 429) {
-          errorMessage = 'You have run out of credits. Please purchase more to continue scanning.';
+        if (response.status === 429) {
+          errorMessage =
+            'You have run out of credits. Please purchase more to continue scanning.';
         } else {
           try {
             const errorText = await response.text();
-            errorMessage = errorText || 'Our servers are having some trouble. Please try again later.';
+            errorMessage =
+              errorText ||
+              'Our servers are having some trouble. Please try again later.';
           } catch {
-            errorMessage = 'Our servers are having some trouble. Please try again later.';
+            errorMessage =
+              'Our servers are having some trouble. Please try again later.';
           }
         }
         throw new Error(errorMessage);
       }
-
     } catch (error: any) {
       toast({
         variant: 'destructive',
@@ -182,7 +196,8 @@ export default function ScanFoodPage() {
           <AlertTriangle className="h-4 w-4" />
           <AlertTitle>Camera Access Required</AlertTitle>
           <AlertDescription>
-            This feature requires camera access. Please grant permission in your browser settings and refresh the page.
+            This feature requires camera access. Please grant permission in your
+            browser settings and refresh the page.
           </AlertDescription>
         </Alert>
       );
@@ -192,24 +207,52 @@ export default function ScanFoodPage() {
       <div className="w-full max-w-lg space-y-4">
         <div className="relative w-full overflow-hidden rounded-lg border-4 border-primary/50 shadow-lg aspect-video bg-black">
           {capturedImage ? (
-            <Image src={capturedImage} alt="Captured food" layout="fill" objectFit="cover" />
+            <Image
+              src={capturedImage}
+              alt="Captured food"
+              layout="fill"
+              objectFit="cover"
+            />
           ) : (
-            <video ref={videoRef} className="h-full w-full object-cover" autoPlay muted playsInline />
+            <video
+              ref={videoRef}
+              className="h-full w-full object-cover"
+              autoPlay
+              muted
+              playsInline
+            />
           )}
         </div>
 
         <div className="flex justify-center gap-4">
           {capturedImage ? (
             <>
-              <Button onClick={handleRetake} variant="outline" className="text-lg py-6 flex-1">
+              <Button
+                onClick={handleRetake}
+                variant="outline"
+                className="text-lg py-6 flex-1"
+              >
                 <RefreshCw className="mr-2" /> Retake
               </Button>
-              <Button onClick={handleSendScan} disabled={isSending} className="text-lg py-6 flex-1 bg-primary">
-                {isSending ? <Loader2 className="animate-spin" /> : <><Send className="mr-2" /> Analyze</>}
+              <Button
+                onClick={handleSendScan}
+                disabled={isSending}
+                className="text-lg py-6 flex-1 bg-primary"
+              >
+                {isSending ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <>
+                    <Send className="mr-2" /> Analyze
+                  </>
+                )}
               </Button>
             </>
           ) : (
-            <Button onClick={handleCapture} className="w-48 h-16 rounded-full text-lg bg-primary animate-breathe-glow">
+            <Button
+              onClick={handleCapture}
+              className="w-48 h-16 rounded-full text-lg bg-primary animate-breathe-glow"
+            >
               <Camera className="mr-2" /> Capture
             </Button>
           )}
@@ -230,5 +273,14 @@ export default function ScanFoodPage() {
         {renderContent()}
       </main>
     </>
+  );
+}
+
+export default function ScanFoodPage() {
+  // This page needs access to the UserData context, so we wrap it
+  return (
+    <UserDataProvider>
+      <ScanFoodContent />
+    </UserDataProvider>
   );
 }
