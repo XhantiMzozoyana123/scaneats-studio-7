@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -8,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { BackgroundImage } from '@/components/background-image';
-import { User, Mail, KeyRound, Loader2, Apple } from 'lucide-react';
+import { User, Mail, KeyRound, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { API_BASE_URL } from '@/lib/api';
 
@@ -26,23 +27,22 @@ export default function HomePage() {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSSOLogin = async (provider: 'google' | 'apple') => {
+  const handleGoogleLogin = async () => {
     setIsLoading(true);
     try {
       const redirectUri = `${window.location.origin}/sso-callback`;
-      const response = await fetch(`${API_BASE_URL}/api/Auth/sso/login-url?provider=${provider}&redirectUri=${encodeURIComponent(redirectUri)}`);
+      const response = await fetch(`${API_BASE_URL}/api/Auth/google-login-url?redirectUri=${encodeURIComponent(redirectUri)}`);
 
       if (response.ok) {
         const data = await response.json();
-        if (data.url) {
-          localStorage.setItem('sso_provider', provider);
-          window.location.href = data.url;
+        if (data.Url) {
+          window.location.href = data.Url;
         } else {
-          throw new Error('SSO login URL not provided by the server.');
+          throw new Error('Google login URL not provided by the server.');
         }
       } else {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to retrieve SSO login URL.');
+        throw new Error(errorData.error || 'Failed to retrieve Google login URL.');
       }
     } catch (error: any) {
       toast({
@@ -197,11 +197,7 @@ export default function HomePage() {
         </div>
 
         <div className="space-y-4">
-            <Button variant="outline" onClick={() => handleSSOLogin('apple')} disabled={isLoading} className="w-full rounded-full border-transparent bg-white py-6 text-base font-semibold text-black hover:bg-gray-200">
-              <Apple className="mr-2 h-6 w-6" /> Sign up with Apple
-            </Button>
-            
-            <Button variant="outline" onClick={() => handleSSOLogin('google')} disabled={isLoading} className="w-full rounded-full border-transparent bg-white py-6 text-base font-semibold text-black hover:bg-gray-200">
+            <Button variant="outline" onClick={handleGoogleLogin} disabled={isLoading} className="w-full rounded-full border-transparent bg-white py-6 text-base font-semibold text-black hover:bg-gray-200">
                 <GoogleIcon />
                  Sign up with Google
             </Button>

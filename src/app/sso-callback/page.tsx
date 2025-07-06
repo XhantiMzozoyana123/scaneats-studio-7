@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState, Suspense } from 'react';
@@ -17,35 +18,28 @@ function SSOCallbackContent() {
 
   useEffect(() => {
     const code = searchParams.get('code');
-    const provider = localStorage.getItem('sso_provider');
+    const errorParam = searchParams.get('error');
 
-    if (!code || !provider) {
+    if (errorParam) {
+      setError(`SSO failed: ${errorParam}. Please try logging in again.`);
+      return;
+    }
+
+    if (!code) {
       setError('SSO callback is missing required parameters. Please try logging in again.');
       return;
     }
 
     const handleCallback = async () => {
       try {
-        localStorage.removeItem('sso_provider');
-        
         const redirectUri = `${window.location.origin}/sso-callback`;
-
-        const response = await fetch(`${API_BASE_URL}/api/Auth/sso/callback`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            provider,
-            code,
-            redirectUri,
-          }),
-        });
+        const response = await fetch(`${API_BASE_URL}/api/Auth/google-callback?code=${encodeURIComponent(code)}&redirectUri=${encodeURIComponent(redirectUri)}`);
 
         if (response.ok) {
           const data = await response.json();
           localStorage.setItem('authToken', data.token);
           localStorage.setItem('userId', data.userId);
+          localStorage.setItem('userEmail', data.email);
 
           toast({
             title: 'Login Successful!',
@@ -54,10 +48,10 @@ function SSOCallbackContent() {
           router.push('/dashboard');
         } else {
           const errorData = await response.json();
-          throw new Error(errorData.error || 'Failed to complete SSO login.');
+          throw new Error(errorData.error || 'Failed to complete Google login.');
         }
       } catch (err: any) {
-        setError(err.message || 'An unexpected error occurred during SSO login.');
+        setError(err.message || 'An unexpected error occurred during Google login.');
         toast({
           variant: 'destructive',
           title: 'SSO Login Failed',
