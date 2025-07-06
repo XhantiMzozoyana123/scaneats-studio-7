@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  useGoogleOneTapLogin,
   GoogleLogin,
   type CredentialResponse,
 } from '@react-oauth/google';
@@ -65,11 +64,6 @@ export default function LoginPage() {
       description: 'Google authentication failed. Please try again.',
     });
   };
-
-  useGoogleOneTapLogin({
-    onSuccess: handleGoogleSuccess,
-    onError: handleGoogleError,
-  });
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
