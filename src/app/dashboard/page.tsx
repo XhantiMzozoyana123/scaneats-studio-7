@@ -340,6 +340,8 @@ const MealPlanView = () => {
         let errorMessage;
         if (response.status === 401) {
           errorMessage = 'Your session has expired. Please log in again.';
+        } else if (response.status === 429) {
+          errorMessage = 'You have run out of credits. Please purchase more to continue scanning.';
         } else {
           try {
             const errorText = await response.text();
@@ -582,6 +584,8 @@ const SallyView = () => {
         let errorMessage;
         if (response.status === 401) {
           errorMessage = 'Your session has expired. Please log in again.';
+        } else if (response.status === 429) {
+          errorMessage = 'You have run out of credits. Please purchase more to continue scanning.';
         } else {
           try {
             const errorText = await response.text();
@@ -1045,7 +1049,7 @@ const SettingsView = ({ onNavigateToProfile }: { onNavigateToProfile: () => void
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/Auth/delete`, {
+      const response = await fetch(`${API_BASE_URL}/api/Auth/delete-account`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });

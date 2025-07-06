@@ -151,7 +151,7 @@ export default function LoginPage() {
               required
               className="border-0 bg-transparent pl-8 text-base placeholder:text-white/70 focus-visible:ring-0 focus-visible:ring-offset-0"
             />
-            <Link href="#" className="absolute right-0 top-3 text-sm text-white/70 transition-colors hover:text-white">
+            <Link href="/forgot-password" className="absolute right-0 top-3 text-sm text-white/70 transition-colors hover:text-white">
               Forgot?
             </Link>
           </div>
