@@ -11,12 +11,12 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Loader2, Camera, RefreshCw, Send, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { API_BASE_URL } from '@/lib/api';
-import { useUserData } from '@/context/user-data-context';
+import { UserDataProvider, useUserData } from '@/context/user-data-context';
 
 function ScanFoodContent() {
   const { toast } = useToast();
   const router = useRouter();
-  const { setSubscriptionModalOpen } = useUserData();
+  const { setSubscriptionModalOpen, updateCreditBalance } = useUserData();
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -141,7 +141,8 @@ function ScanFoodContent() {
           title: 'Success!',
           description: 'Your scan was submitted successfully.',
         });
-
+        
+        await updateCreditBalance(true);
         const responseData = await response.json();
         localStorage.setItem('scannedFood', JSON.stringify(responseData));
         router.push('/dashboard/meal-plan');

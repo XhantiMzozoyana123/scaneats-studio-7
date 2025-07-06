@@ -65,6 +65,7 @@ function PaymentSuccessContent() {
                 title: data.title,
                 description: data.message,
             });
+            localStorage.removeItem('creditBalance');
             setTimeout(() => {
                 router.push('/dashboard');
             }, 3000);

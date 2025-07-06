@@ -40,6 +40,7 @@ type UserDataContextType = {
   isLoading: boolean;
   setProfile: React.Dispatch<React.SetStateAction<Profile | null>>;
   fetchProfile: () => Promise<void>;
+  updateCreditBalance: (force?: boolean) => Promise<void>;
   isSubscriptionModalOpen: boolean;
   setSubscriptionModalOpen: React.Dispatch<React.SetStateAction<boolean>>;
 };
@@ -57,12 +58,52 @@ const initialProfileState: Profile = {
   birthDate: null,
 };
 
+const getCachedCredits = (): number | null => {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+  const cached = localStorage.getItem('creditBalance');
+  return cached ? JSON.parse(cached) : null;
+};
+
 export function UserDataProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [creditBalance, setCreditBalance] = useState<number | null>(null);
+  const [creditBalance, setCreditBalance] = useState<number | null>(
+    getCachedCredits()
+  );
   const [isLoading, setIsLoading] = useState(true);
   const [isSubscriptionModalOpen, setSubscriptionModalOpen] = useState(false);
+
+  const updateCreditBalance = useCallback(async (force = false) => {
+    const token = localStorage.getItem('authToken');
+    if (!token) return;
+
+    if (!force) {
+      const cached = getCachedCredits();
+      if (cached !== null) {
+        setCreditBalance(cached);
+      }
+    }
+
+    try {
+      const creditRes = await fetch(`${API_BASE_URL}/api/credit/balance`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (creditRes.ok) {
+        const data = await creditRes.json();
+        setCreditBalance(data.credits);
+        localStorage.setItem('creditBalance', JSON.stringify(data.credits));
+      } else {
+        console.error(
+          'Failed to fetch credit balance, using cached value if available.'
+        );
+      }
+    } catch (error) {
+      console.error('Failed to fetch credit balance', error);
+    }
+  }, []);
 
   const fetchProfile = useCallback(async () => {
     const token = localStorage.getItem('authToken');
@@ -73,17 +114,11 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
 
     setIsLoading(true);
     try {
-      const [profileRes, creditRes] = await Promise.all([
-        fetch(`${API_BASE_URL}/api/profile`, {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-        fetch(`${API_BASE_URL}/api/credit/balance`, {
-          headers: { Authorization: `Bearer ${token}` },
-        }),
-      ]);
+      const profileRes = await fetch(`${API_BASE_URL}/api/profile`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
       if (profileRes.status === 401 || profileRes.status === 403) {
-        // Don't block the page, just set an empty profile
         setProfile(initialProfileState);
       } else if (profileRes.ok) {
         const data = await profileRes.json();
@@ -99,26 +134,18 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
           setProfile(initialProfileState);
         }
       } else {
-         throw new Error('Could not load your profile information.');
+        throw new Error('Could not load your profile information.');
       }
-      
-      if (creditRes.ok) {
-        const data = await creditRes.json();
-        setCreditBalance(data.credits);
-      } else {
-        console.error('Failed to fetch credit balance');
-      }
-
     } catch (error: any) {
       console.error('Failed to fetch user data', error);
-       if (!(error.message.includes('401') || error.message.includes('403'))) {
-         toast({
+      if (!(error.message.includes('401') || error.message.includes('403'))) {
+        toast({
           variant: 'destructive',
           title: 'Could Not Load Data',
           description:
             error.message || 'There was a problem connecting to the server.',
         });
-       }
+      }
       setProfile(initialProfileState);
     } finally {
       setIsLoading(false);
@@ -127,7 +154,8 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     fetchProfile();
-  }, [fetchProfile]);
+    updateCreditBalance(true);
+  }, [fetchProfile, updateCreditBalance]);
 
   const value = {
     profile,
@@ -135,6 +163,7 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
     isLoading,
     setProfile,
     fetchProfile,
+    updateCreditBalance,
     isSubscriptionModalOpen,
     setSubscriptionModalOpen,
   };

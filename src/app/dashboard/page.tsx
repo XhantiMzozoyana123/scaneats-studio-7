@@ -184,7 +184,7 @@ declare global {
 const MealPlanView = () => {
   const [foods, setFoods] = useState<ScannedFood[] | null>(null);
   const { toast } = useToast();
-  const { setSubscriptionModalOpen } = useUserData();
+  const { setSubscriptionModalOpen, updateCreditBalance } = useUserData();
   const [sallyResponse, setSallyResponse] = useState<string>(
     "Ask me about this meal and I'll tell you everything."
   );
@@ -327,6 +327,7 @@ const MealPlanView = () => {
       if (response.ok) {
         const data = await response.json();
         setSallyResponse(data.agentDialogue);
+        await updateCreditBalance(true);
 
         if (data.agentDialogue) {
           try {
@@ -493,7 +494,7 @@ const SallyView = () => {
   const recognitionRef = useRef<any>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const { toast } = useToast();
-  const { setSubscriptionModalOpen } = useUserData();
+  const { setSubscriptionModalOpen, updateCreditBalance } = useUserData();
 
   useEffect(() => {
     if (audioUrl && audioRef.current) {
@@ -582,6 +583,7 @@ const SallyView = () => {
       if (response.ok) {
         const data = await response.json();
         setSallyResponse(data.agentDialogue);
+        await updateCreditBalance(true);
 
         if (data.agentDialogue) {
           try {
@@ -1086,6 +1088,7 @@ const SettingsView = ({
     localStorage.removeItem('authToken');
     localStorage.removeItem('userId');
     localStorage.removeItem('userEmail');
+    localStorage.removeItem('creditBalance');
     toast({
       title: 'Logged Out',
       description: 'You have been successfully logged out.',
