@@ -1,5 +1,4 @@
 import type { Metadata } from 'next';
-import { GoogleOAuthProvider } from '@react-oauth/google';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { PT_Sans, Playfair_Display } from 'next/font/google';
@@ -34,9 +33,7 @@ export default function RootLayout({
       <body
         className={`${ptSans.variable} ${playfairDisplay.variable} font-body antialiased`}
       >
-        <GoogleOAuthProvider clientId="944464077207-s4qkbo01fa6bteoarbjoro43dogsgokv.apps.googleusercontent.com">
-          {children}
-        </GoogleOAuthProvider>
+        {children}
         <Toaster />
       </body>
     </html>
