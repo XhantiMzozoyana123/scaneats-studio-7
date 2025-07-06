@@ -25,6 +25,7 @@ type UserDataContextType = {
   profile: Profile | null;
   creditBalance: number | null;
   isLoading: boolean;
+  isSubscriptionError: boolean;
   setProfile: React.Dispatch<React.SetStateAction<Profile | null>>;
   fetchProfile: () => Promise<void>;
 };
@@ -47,6 +48,7 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [creditBalance, setCreditBalance] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSubscriptionError, setIsSubscriptionError] = useState(false);
 
   const fetchProfile = useCallback(async () => {
     const token = localStorage.getItem('authToken');
@@ -56,6 +58,7 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
     }
 
     setIsLoading(true);
+    setIsSubscriptionError(false);
     try {
       const [profileRes, creditRes] = await Promise.all([
         fetch(`${API_BASE_URL}/api/profile`, {
@@ -66,11 +69,14 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
         }),
       ]);
 
+      if (profileRes.status === 401 || profileRes.status === 403) {
+        setIsSubscriptionError(true);
+        setIsLoading(false);
+        return;
+      }
+
       if (!profileRes.ok) {
-        if (profileRes.status === 401) {
-            throw new Error("Your session has expired. Please log in again.");
-        }
-        throw new Error("Could not load your profile information.");
+        throw new Error('Could not load your profile information.');
       }
       
       const data = await profileRes.json();
@@ -115,6 +121,7 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
     isLoading,
     setProfile,
     fetchProfile,
+    isSubscriptionError,
   };
 
   return (

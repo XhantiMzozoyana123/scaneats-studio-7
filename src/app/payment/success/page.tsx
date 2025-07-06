@@ -52,13 +52,12 @@ function PaymentSuccessContent() {
 
         if (response.ok) {
           const data = await response.json();
-
-          // Check for the new access token and update it if it exists.
+          
           if (data.userAccesToken) {
             localStorage.setItem('authToken', data.userAccesToken);
           }
           
-          const isSuccess = data.title && data.title.toLowerCase().includes('successful');
+          const isSuccess = data.title && !data.title.toLowerCase().includes('failed');
 
           if (isSuccess) {
             setStatus('success');
