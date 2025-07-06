@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  GoogleLogin,
   useGoogleOneTapLogin,
   type CredentialResponse,
 } from '@react-oauth/google';
@@ -212,19 +211,9 @@ export default function LoginPage() {
           </div>
           <div className="relative flex justify-center text-xs uppercase">
             <span className="bg-black/60 px-2 text-white/70">
-              Or log in with
+              Or log in with Google
             </span>
           </div>
-        </div>
-
-        <div className="flex justify-center">
-          <GoogleLogin
-            onSuccess={handleGoogleSuccess}
-            onError={handleGoogleError}
-            theme="filled_black"
-            shape="rectangular"
-            text="signin_with"
-          />
         </div>
 
         <p className="mt-8 text-center text-sm text-white/70">
