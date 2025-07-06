@@ -3,7 +3,11 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { GoogleLogin, type CredentialResponse } from '@react-oauth/google';
+import {
+  GoogleLogin,
+  useGoogleOneTapLogin,
+  type CredentialResponse,
+} from '@react-oauth/google';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -63,6 +67,11 @@ export default function HomePage() {
     });
   };
 
+  useGoogleOneTapLogin({
+    onSuccess: handleGoogleSuccess,
+    onError: handleGoogleError,
+  });
+
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setIsLoading(true);
@@ -96,6 +105,10 @@ export default function HomePage() {
             const errorData = await response.json();
             if (errorData.error) {
               errorMessage = errorData.error;
+            } else if (errorData.details) {
+              errorMessage = errorData.details
+                .map((d: any) => d.description)
+                .join(', ');
             }
           } catch {
             // Keep the generic message
@@ -210,9 +223,9 @@ export default function HomePage() {
           <GoogleLogin
             onSuccess={handleGoogleSuccess}
             onError={handleGoogleError}
-            useOneTap
             theme="filled_black"
-            shape="circle"
+            shape="rectangular"
+            text="signup_with"
           />
         </div>
 

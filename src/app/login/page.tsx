@@ -3,7 +3,11 @@
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { GoogleLogin, type CredentialResponse } from '@react-oauth/google';
+import {
+  GoogleLogin,
+  useGoogleOneTapLogin,
+  type CredentialResponse,
+} from '@react-oauth/google';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -61,6 +65,11 @@ export default function LoginPage() {
       description: 'Google authentication failed. Please try again.',
     });
   };
+
+  useGoogleOneTapLogin({
+    onSuccess: handleGoogleSuccess,
+    onError: handleGoogleError,
+  });
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -212,9 +221,9 @@ export default function LoginPage() {
           <GoogleLogin
             onSuccess={handleGoogleSuccess}
             onError={handleGoogleError}
-            useOneTap
             theme="filled_black"
-            shape="circle"
+            shape="rectangular"
+            text="signin_with"
           />
         </div>
 
