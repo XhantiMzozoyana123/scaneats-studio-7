@@ -39,8 +39,9 @@ export default function Home() {
           className="mb-4"
         />
         <p className="mb-8 font-body text-lg leading-relaxed">
-          Scan your food and Sally, your personal assistant, will tell you
-          everything about your meal and about your week.
+          Scan your food and Sally, your personal assistant, will have a
+          conversation with you about what you have been eating and if its
+          working for you or not.
         </p>
         <Button
           asChild
