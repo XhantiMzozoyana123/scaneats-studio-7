@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, ArrowLeft } from 'lucide-react';
 import {
@@ -27,11 +28,23 @@ const FeatureListItem = ({ children }: { children: React.ReactNode }) => (
   </li>
 );
 
+type GeoData = {
+  countryName: string;
+  countryCode: string;
+  currency: string;
+  localPrice: string;
+  flagUrl: string;
+};
+
+const ZAR_BASE_PRICE = 210;
+
 export default function PricingPage() {
   const router = useRouter();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
   const [isSubscribing, setIsSubscribing] = useState(false);
+  const [geoData, setGeoData] = useState<GeoData | null>(null);
+  const [isGeoLoading, setIsGeoLoading] = useState(true);
 
   useEffect(() => {
     const checkAuth = () => {
@@ -45,7 +58,51 @@ export default function PricingPage() {
     };
     checkAuth();
   }, [router, toast]);
+  
+  useEffect(() => {
+    const fetchGeoData = async () => {
+      setIsGeoLoading(true);
+      try {
+        const ipResponse = await fetch('https://ipapi.co/json/');
+        if (!ipResponse.ok) throw new Error('Could not fetch location data.');
+        const ipData = await ipResponse.json();
 
+        const ratesResponse = await fetch('https://open.er-api.com/v6/latest/ZAR');
+        if (!ratesResponse.ok) throw new Error('Could not fetch exchange rates.');
+        const ratesData = await ratesResponse.json();
+
+        const userCurrency = ipData.currency;
+        const rate = ratesData.rates[userCurrency];
+
+        if (rate) {
+          const localPrice = ZAR_BASE_PRICE * rate;
+          const formatter = new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: userCurrency,
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0,
+          });
+
+          setGeoData({
+            countryName: ipData.country_name,
+            countryCode: ipData.country_code,
+            currency: userCurrency,
+            localPrice: formatter.format(localPrice).replace(/\s/g, ''),
+            flagUrl: `https://flagcdn.com/w40/${ipData.country_code.toLowerCase()}.png`,
+          });
+        } else {
+          setGeoData(null);
+        }
+      } catch (error) {
+        console.error("Geo pricing error:", error);
+        setGeoData(null);
+      } finally {
+        setIsGeoLoading(false);
+      }
+    };
+    
+    fetchGeoData();
+  }, []);
 
   const handleSubscribe = async () => {
     setIsSubscribing(true);
@@ -113,6 +170,27 @@ export default function PricingPage() {
       setIsSubscribing(false);
     }
   };
+  
+  const displayPrice = () => {
+    if (isGeoLoading) {
+      return <div className="h-[48px] flex items-center"><Loader2 className="h-10 w-10 animate-spin" /></div>;
+    }
+    if (geoData) {
+      return (
+        <div className="text-5xl font-semibold text-white">
+          {geoData.localPrice}
+          <span className="text-xl font-normal text-gray-400">/m = (ZAR {ZAR_BASE_PRICE})</span>
+        </div>
+      );
+    }
+    // Default price if geo location fails
+    return (
+      <div className="text-5xl font-semibold text-white">
+        ${(ZAR_BASE_PRICE / 18).toFixed(0)}
+        <span className="text-xl font-normal text-gray-400">/m</span>
+      </div>
+    );
+  };
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center overflow-y-auto bg-black p-5 text-gray-200">
@@ -137,13 +215,34 @@ export default function PricingPage() {
         ) : (
           <div className="flex flex-col gap-6">
             <div>
-              <div className="text-base font-medium text-gray-400">
-                Active Account
+              <div className="flex justify-between items-center">
+                <div className="text-base font-medium text-gray-400">
+                  Active Account
+                </div>
+                {isGeoLoading ? (
+                  <Loader2 className="h-6 w-6 animate-spin text-white/50" />
+                ) : (
+                  geoData && (
+                    <div className="flex items-center gap-2">
+                      <Image 
+                        src={geoData.flagUrl} 
+                        alt={`${geoData.countryName} flag`} 
+                        width={32} 
+                        height={20}
+                        className="rounded-sm" 
+                      />
+                    </div>
+                  )
+                )}
               </div>
-              <div className="mt-2 text-5xl font-semibold text-white">
-                $11
-                <span className="text-xl font-normal text-gray-400">/m</span>
+              <div className="mt-2">
+                {displayPrice()}
               </div>
+               {geoData && (
+                  <p className="mt-2 text-xs text-gray-400">
+                    Payment will be charged in ZAR (R{ZAR_BASE_PRICE}). The price in {geoData.currency} is an estimate based on current exchange rates.
+                  </p>
+                )}
             </div>
 
             <ul className="flex list-none flex-col gap-4 p-0">
@@ -176,7 +275,7 @@ export default function PricingPage() {
                   <AlertDialogTitle>Confirm Your Subscription</AlertDialogTitle>
                   <AlertDialogDescription>
                     You are about to subscribe to the Active Account plan for
-                    $11/month. This includes 50 credits, delivered monthly.
+                    ZAR {ZAR_BASE_PRICE}/month. This includes 50 credits, delivered monthly.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
