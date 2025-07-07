@@ -1,269 +1,53 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { GoogleLogin } from '@react-oauth/google';
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
-import { BackgroundImage } from '@/components/background-image';
-import { User, Mail, KeyRound, Loader2 } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-import { API_BASE_URL } from '@/lib/api';
 
-export default function HomePage() {
-  const router = useRouter();
-  const { toast } = useToast();
-  const [username, setUsername] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-
-  const googleLogin = async (idToken: string) => {
-    if (!idToken) {
-      throw new Error('Google ID token is missing.');
-    }
-
-    const response = await fetch(`${API_BASE_URL}/api/googleauth/onetap`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ idToken }),
-    });
-
-    if (!response.ok) {
-      let errorMsg = 'Google One Tap login failed.';
-      try {
-          const errorData = await response.json();
-          if (errorData.error) {
-              errorMsg = errorData.error;
-          } else if (errorData.details) {
-              errorMsg = errorData.details.map((d: any) => d.description).join(', ');
-          }
-      } catch {
-          // Keep generic message
-      }
-      throw new Error(errorMsg);
-    }
-
-    const data = await response.json();
-    if (!data.token || !data.user || !data.user.id || !data.user.email) {
-      throw new Error('Invalid response received from server.');
-    }
-    
-    return {
-      token: data.token,
-      userId: data.user.id,
-      userEmail: data.user.email,
-    };
-  };
-
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setIsLoading(true);
-
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/Auth/register`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          UserName: username,
-          Email: email,
-          Password: password,
-        }),
-      });
-
-      if (response.ok) {
-        toast({
-          title: 'Success!',
-          description: 'Registration successful. Please log in.',
-        });
-        router.push('/login');
-      } else {
-        let errorMessage = 'An unknown error occurred during registration.';
-        if (response.status >= 500) {
-          errorMessage =
-            'Our servers are currently unavailable. Please try again later.';
-        } else {
-          try {
-            const errorData = await response.json();
-            if (errorData.error) {
-              errorMessage = errorData.error;
-            } else if (errorData.details) {
-              errorMessage = errorData.details
-                .map((d: any) => d.description)
-                .join(', ');
-            }
-          } catch {
-            // Keep the generic message
-          }
-        }
-        throw new Error(errorMessage);
-      }
-    } catch (error: any) {
-      toast({
-        variant: 'destructive',
-        title: 'Registration Failed',
-        description: error.message,
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
+export default function LandingPage() {
   return (
-    <div className="relative flex min-h-screen items-center justify-center p-4">
-      <BackgroundImage
-        src="https://placehold.co/1200x800.png"
-        data-ai-hint="abstract purple"
-        className="blur-md"
+    <div className="relative flex h-screen w-full flex-col items-center justify-center overflow-hidden">
+      {/* Background Image */}
+      <Image
+        src="https://placehold.co/1080x1920.png"
+        alt="A delicious meal on a plate"
+        layout="fill"
+        objectFit="cover"
+        className="z-0"
+        data-ai-hint="healthy food meal"
+        priority
       />
-      <div className="relative z-10 mx-auto w-full max-w-md rounded-3xl bg-black/60 p-8 backdrop-blur-lg">
-        <div className="mb-8 text-left">
-          <h1 className="font-headline text-4xl font-bold leading-tight">
-            Create your
-            <br />
-            account
-          </h1>
+      <div className="absolute inset-0 bg-black/30 z-10" />
+
+      {/* Footer */}
+      <footer className="absolute bottom-4 left-0 right-0 z-20 text-center text-sm text-white/80">
+        <p>&copy; {new Date().getFullYear()} ScanEats. All rights reserved.</p>
+        <div className="mt-2 space-x-4">
+            <Link href="/privacy-policy" className="hover:underline">Privacy Policy</Link>
+            <Link href="/contact" className="hover:underline">Contact Us</Link>
         </div>
+      </footer>
 
-        <form className="space-y-6" onSubmit={handleSubmit}>
-          <div className="relative border-b border-white/40">
-            <User className="absolute left-0 top-3 h-5 w-5 text-white/70" />
-            <Input
-              type="text"
-              placeholder="Username"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              required
-              className="border-0 bg-transparent pl-8 text-base placeholder:text-white/70 focus-visible:ring-0 focus-visible:ring-offset-0"
-            />
-          </div>
-
-          <div className="relative border-b border-white/40">
-            <Mail className="absolute left-0 top-3 h-5 w-5 text-white/70" />
-            <Input
-              type="email"
-              placeholder="Email Address"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className="border-0 bg-transparent pl-8 text-base placeholder:text-white/70 focus-visible:ring-0 focus-visible:ring-offset-0"
-            />
-          </div>
-
-          <div className="relative border-b border-white/40">
-            <KeyRound className="absolute left-0 top-3 h-5 w-5 text-white/70" />
-            <Input
-              type="password"
-              placeholder="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              className="border-0 bg-transparent pl-8 text-base placeholder:text-white/70 focus-visible:ring-0 focus-visible:ring-offset-0"
-            />
-          </div>
-
-          <div className="flex items-center space-x-2 pt-2">
-            <Checkbox
-              id="terms"
-              required
-              className="border-primary data-[state=checked]:bg-primary"
-            />
-            <Label htmlFor="terms" className="text-sm text-white/70">
-              I agree to the{' '}
-              <Link
-                href="#"
-                className="font-semibold text-white underline hover:no-underline"
-              >
-                Terms & Conditions
-              </Link>
-            </Label>
-          </div>
-
-          <div className="pt-4">
-            <Button
-              type="submit"
-              disabled={isLoading}
-              className="w-full rounded-full bg-stone-900 py-6 text-base font-semibold hover:bg-stone-800"
-            >
-              {isLoading ? <Loader2 className="animate-spin" /> : 'Sign Up'}
-            </Button>
-          </div>
-        </form>
-
-        <div className="relative my-6">
-          <div className="absolute inset-0 flex items-center">
-            <span className="w-full border-t border-white/40" />
-          </div>
-          <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-black/60 px-2 text-white/70">
-              Or continue with
-            </span>
-          </div>
-        </div>
-
-        <div className="flex justify-center">
-            <GoogleLogin
-              onSuccess={async credentialResponse => {
-                if (!credentialResponse.credential) {
-                  toast({
-                    variant: 'destructive',
-                    title: 'Sign Up Failed',
-                    description: 'Could not retrieve Google credentials.',
-                  });
-                  return;
-                }
-                setIsLoading(true);
-                try {
-                  const data = await googleLogin(credentialResponse.credential);
-                  localStorage.setItem('authToken', data.token);
-                  localStorage.setItem('userId', data.userId);
-                  localStorage.setItem('userEmail', data.userEmail);
-
-                  toast({
-                    title: 'Sign Up Successful!',
-                    description: 'Welcome to ScanEats.',
-                  });
-                  router.push('/dashboard');
-                } catch (error: any) {
-                  toast({
-                    variant: 'destructive',
-                    title: 'Sign Up Failed',
-                    description: error.message,
-                  });
-                } finally {
-                  setIsLoading(false);
-                }
-              }}
-              onError={() => {
-                toast({
-                  variant: 'destructive',
-                  title: 'Sign Up Failed',
-                  description: 'Google authentication failed. Please try again.',
-                });
-              }}
-              theme="filled_black"
-              shape="rectangular"
-              size="large"
-            />
-        </div>
-
-        <p className="mt-8 text-center text-sm text-white/70">
-          Already have an account?{' '}
-          <Link
-            href="/login"
-            className="font-semibold text-white hover:underline"
-          >
-            Log In
-          </Link>
+      {/* Centered Content Card */}
+      <main className="relative z-20 flex w-full max-w-sm flex-col items-center rounded-3xl bg-white/20 p-8 text-center text-white backdrop-blur-lg">
+        <Image
+          src="/scaneats-logo.png"
+          alt="ScanEats Logo"
+          width={100}
+          height={100}
+          className="mb-4"
+        />
+        <p className="mb-8 font-body text-lg leading-relaxed">
+          Scan your food and Sally, your personal assistant, will tell you
+          everything about your meal and about your week.
         </p>
-      </div>
+        <Button
+          asChild
+          className="w-full rounded-xl bg-primary py-6 text-lg font-bold text-white shadow-[0_0_20px_4px_hsl(var(--primary)/0.6)] transition-all hover:bg-primary/90 hover:shadow-[0_0_25px_8px_hsl(var(--primary)/0.7)]"
+        >
+          <Link href="/signup">Download ScanEats.App</Link>
+        </Button>
+      </main>
     </div>
   );
 }

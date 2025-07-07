@@ -88,7 +88,7 @@ export default function SignUpPage() {
           title: 'Success!',
           description: 'Registration successful. Please log in.',
         });
-        router.push('/');
+        router.push('/login');
       } else {
         let errorMessage = 'An unknown error occurred during registration.';
         if (response.status >= 500) {
@@ -212,9 +212,9 @@ export default function SignUpPage() {
             <GoogleLogin
                 onSuccess={handleGoogleSuccess}
                 onError={handleGoogleError}
-                useOneTap
                 theme="filled_black"
-                shape="circle"
+                shape="rectangular"
+                size="large"
             />
         </div>
 
@@ -222,7 +222,7 @@ export default function SignUpPage() {
         <p className="mt-8 text-center text-sm text-white/70">
           Already have an account?{' '}
           <Link
-            href="/"
+            href="/login"
             className="font-semibold text-white hover:underline"
           >
             Log In
