@@ -46,7 +46,7 @@ export default function Home() {
           asChild
           className="w-full rounded-xl bg-primary py-6 text-lg font-bold text-white shadow-[0_0_20px_4px_hsl(var(--primary)/0.6)] transition-all hover:bg-primary/90 hover:shadow-[0_0_25px_8px_hsl(var(--primary)/0.7)]"
         >
-          <Link href="/signup">Get Started</Link>
+          <Link href="/signup">download ScanEats.App</Link>
         </Button>
         <p className="mt-4 text-sm">
           Already have an account?{' '}
