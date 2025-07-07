@@ -4,7 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 
-export default function LandingPage() {
+export default function Home() {
   return (
     <div className="relative flex h-screen w-full flex-col items-center justify-center overflow-hidden">
       {/* Background Image */}
@@ -45,8 +45,14 @@ export default function LandingPage() {
           asChild
           className="w-full rounded-xl bg-primary py-6 text-lg font-bold text-white shadow-[0_0_20px_4px_hsl(var(--primary)/0.6)] transition-all hover:bg-primary/90 hover:shadow-[0_0_25px_8px_hsl(var(--primary)/0.7)]"
         >
-          <Link href="/signup">Download ScanEats.App</Link>
+          <Link href="/signup">Get Started</Link>
         </Button>
+        <p className="mt-4 text-sm">
+          Already have an account?{' '}
+          <Link href="/login" className="font-semibold text-white hover:underline">
+            Log In
+          </Link>
+        </p>
       </main>
     </div>
   );
