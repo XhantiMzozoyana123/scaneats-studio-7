@@ -34,6 +34,18 @@ export default function CreditsPage() {
   const [isPurchasing, setIsPurchasing] = useState<number | null>(null);
 
   useEffect(() => {
+    // Check for auth token on mount
+    const token = localStorage.getItem('authToken');
+    if (!token) {
+      toast({
+        variant: 'destructive',
+        title: 'Authentication Required',
+        description: 'You must be logged in to view the credits shop.',
+      });
+      router.push('/login');
+      return; // Stop execution if not logged in
+    }
+
     const fetchCreditProducts = async () => {
       setIsLoading(true);
       try {
@@ -86,7 +98,7 @@ export default function CreditsPage() {
     };
 
     fetchCreditProducts();
-  }, [toast]);
+  }, [router, toast]);
 
   const handlePurchase = async (product: CreditProduct) => {
     setIsPurchasing(product.id);
