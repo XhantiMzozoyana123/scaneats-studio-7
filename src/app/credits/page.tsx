@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -33,21 +34,10 @@ export default function CreditsPage() {
   const [isPurchasing, setIsPurchasing] = useState<number | null>(null);
 
   useEffect(() => {
-    const token = localStorage.getItem('authToken');
-    if (!token) {
-      toast({ variant: 'destructive', title: 'Authentication Error', description: "Please log in to purchase credits." });
-      router.push('/login');
-      return;
-    }
-
     const fetchCreditProducts = async () => {
       setIsLoading(true);
       try {
-        const response = await fetch(`${API_BASE_URL}/api/credit/shop`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+        const response = await fetch(`${API_BASE_URL}/api/credit/shop`);
 
         if (response.ok) {
           const data = await response.json();
@@ -70,9 +60,7 @@ export default function CreditsPage() {
           setProducts(productsWithDescriptions);
         } else {
           let errorMessage = 'Could not load credit packages.';
-          if (response.status === 401) {
-            errorMessage = 'Your session has expired. Please log in again.';
-          } else if (response.status >= 500) {
+          if (response.status >= 500) {
             errorMessage = 'Our servers are experiencing issues. Please try again later.';
           } else {
             try {
@@ -98,7 +86,7 @@ export default function CreditsPage() {
     };
 
     fetchCreditProducts();
-  }, [router, toast]);
+  }, [toast]);
 
   const handlePurchase = async (product: CreditProduct) => {
     setIsPurchasing(product.id);
@@ -108,9 +96,10 @@ export default function CreditsPage() {
     if (!token || !email) {
       toast({
         variant: 'destructive',
-        title: 'Error',
-        description: 'User information not found. Please log in again.',
+        title: 'Login Required',
+        description: 'Please log in to purchase credits.',
       });
+      router.push('/login');
       setIsPurchasing(null);
       return;
     }
