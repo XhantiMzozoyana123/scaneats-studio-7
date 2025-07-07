@@ -238,11 +238,9 @@ export default function PricingPage() {
               <div className="mt-2">
                 {displayPrice()}
               </div>
-               {geoData && (
-                  <p className="mt-2 text-xs text-gray-400">
-                    Payment will be charged in ZAR (R{ZAR_BASE_PRICE}). The price in {geoData.currency} is an estimate based on current exchange rates.
-                  </p>
-                )}
+              <p className="mt-2 text-xs text-gray-400">
+                🌍 Trusted by users worldwide — you're in good hands
+              </p>
             </div>
 
             <ul className="flex list-none flex-col gap-4 p-0">
