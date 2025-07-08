@@ -19,6 +19,14 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  async rewrites() {
+    return [
+      {
+        source: '/api/:path*',
+        destination: 'https://api.scaneats.app/api/:path*',
+      },
+    ];
+  },
 };
 
 export default nextConfig;
