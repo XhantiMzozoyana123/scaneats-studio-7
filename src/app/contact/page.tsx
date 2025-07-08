@@ -19,10 +19,10 @@ export default function ContactPage() {
         <div className="mt-8">
           <p className="text-muted-foreground">The best way to reach us is by email:</p>
           <a
-            href="mailto:support@scaneats.app"
+            href="mailto:support@scaneats.com"
             className="mt-2 inline-block rounded-lg bg-primary px-6 py-3 text-lg font-semibold text-primary-foreground transition-transform hover:scale-105"
           >
-            support@scaneats.app
+            support@scaneats.com
           </a>
         </div>
       </div>

@@ -55,7 +55,7 @@ export default function PrivacyPolicyPage() {
             <ul className="list-disc pl-6 space-y-2 mt-2">
                 <li>You can update or delete your account information anytime.</li>
                 <li>You can opt out of marketing emails by clicking "unsubscribe."</li>
-                <li>You may request to delete your data by contacting us at <a href="mailto:support@scaneats.app" className="text-primary hover:underline">support@scaneats.app</a></li>
+                <li>You may request to delete your data by contacting us at <a href="mailto:support@scaneats.com" className="text-primary hover:underline">support@scaneats.com</a></li>
             </ul>
           </section>
 
@@ -77,7 +77,7 @@ export default function PrivacyPolicyPage() {
           <section>
             <h2 className="font-headline text-2xl font-bold mt-8 mb-4 text-foreground">8. Contact Us</h2>
             <p>If you have any questions or concerns about this Privacy Policy, please contact us at:</p>
-            <p><strong>Email:</strong> <a href="mailto:support@scaneats.app" className="text-primary hover:underline">support@scaneats.app</a></p>
+            <p><strong>Email:</strong> <a href="mailto:support@scaneats.com" className="text-primary hover:underline">support@scaneats.com</a></p>
             <p><strong>Website:</strong> <a href="https://www.scaneats.com" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">https://www.scaneats.com</a></p>
           </section>
         </div>
