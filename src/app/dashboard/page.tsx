@@ -76,6 +76,7 @@ import {
   ChevronRight,
   CreditCard,
   Calendar as CalendarIcon,
+  XCircle,
 } from 'lucide-react';
 
 import { useToast } from '@/hooks/use-toast';
@@ -1083,6 +1084,7 @@ const SettingsView = ({
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [isCancelling, setIsCancelling] = useState(false);
 
   const handleLogout = () => {
     localStorage.removeItem('authToken');
@@ -1094,6 +1096,57 @@ const SettingsView = ({
       description: 'You have been successfully logged out.',
     });
     router.push('/login');
+  };
+
+  const handleCancelSubscription = async () => {
+    setIsCancelling(true);
+    const token = localStorage.getItem('authToken');
+
+    if (!token) {
+      toast({
+        variant: 'destructive',
+        title: 'Authentication Error',
+        description: 'You are not logged in.',
+      });
+      setIsCancelling(false);
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/subscription/cancel`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (response.ok) {
+        toast({
+          title: 'Subscription Cancelled',
+          description: 'Your subscription has been successfully cancelled.',
+        });
+        // Optionally, refresh user data to reflect the change
+      } else {
+        if (response.status === 401 || response.status === 403) {
+          setSubscriptionModalOpen(true);
+          return;
+        }
+        let errorMessage = 'Failed to cancel subscription.';
+        if (response.status === 400) {
+          errorMessage = 'No active subscription found to cancel.';
+        } else if (response.status >= 500) {
+          errorMessage =
+            'Our servers are experiencing issues. Please try again later.';
+        }
+        throw new Error(errorMessage);
+      }
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Cancellation Failed',
+        description: error.message,
+      });
+    } finally {
+      setIsCancelling(false);
+    }
   };
 
   const handleDeleteAccount = async () => {
@@ -1371,6 +1424,42 @@ const SettingsView = ({
           <div className="space-y-4 rounded-lg bg-zinc-900 p-6">
             <h2 className="text-lg font-semibold text-white">Actions</h2>
             <SettingsItem icon={LogOut} label="Log Out" onClick={handleLogout} />
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <button className="w-full">
+                  <DestructiveSettingsItem
+                    icon={XCircle}
+                    label="Cancel Subscription"
+                    onClick={() => {}}
+                  />
+                </button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>
+                    Are you sure you want to cancel?
+                  </AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will cancel your subscription at the end of the
+                    current billing period. You will lose access to premium
+                    features, but your data will be saved.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Keep Subscription</AlertDialogCancel>
+                  <AlertDialogAction
+                    className={buttonVariants({ variant: 'destructive' })}
+                    onClick={handleCancelSubscription}
+                    disabled={isCancelling}
+                  >
+                    {isCancelling && (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    )}
+                    Yes, Cancel Subscription
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <button className="w-full">
