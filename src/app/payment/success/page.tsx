@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState, Suspense } from 'react';
@@ -40,7 +41,7 @@ function PaymentSuccessContent() {
         return;
       }
 
-      const verificationUrl = `${API_BASE_URL}/api/event/last?reference=${encodeURIComponent(reference)}`;
+      const verificationUrl = `${API_BASE_URL}/api/event/last/${encodeURIComponent(reference)}`;
 
       try {
         const response = await fetch(verificationUrl, {

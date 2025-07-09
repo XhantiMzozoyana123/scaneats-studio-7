@@ -130,7 +130,7 @@ export default function PricingPage() {
           },
           body: JSON.stringify({
             email: email,
-            planCode: 'PLN_MONTHLY_ACTIVE_ACCOUNT',
+            planCode: 'PLN_zgktlu9fwpxo1uy',
           }),
         }
       );
