@@ -10,8 +10,8 @@ import { BackgroundImage } from '@/components/background-image';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Loader2, Camera, RefreshCw, Send, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { API_BASE_URL } from '@/lib/api';
 import { UserDataProvider, useUserData } from '@/context/user-data-context';
+import { foodScanNutrition } from '@/ai/flows/food-scan-nutrition';
 
 function ScanFoodContent() {
   const { toast } = useToast();
@@ -100,81 +100,36 @@ function ScanFoodContent() {
     if (!capturedImage) return;
 
     setIsSending(true);
-    const token = localStorage.getItem('authToken');
-
-    if (!token) {
-      toast({
-        variant: 'destructive',
-        title: 'Authentication Error',
-        description: 'You must be logged in to perform a scan.',
-      });
-      setIsSending(false);
-      return;
-    }
-
-    // Extract raw base64 string
-    const base64Image = capturedImage.split(',')[1];
-
-    const promptDto = {
-      Base64: base64Image,
-      Logging: {
-        ChatId: 0,
-        ScanId: 0,
-        ProfileId: 0,
-        FoodId: 0,
-      },
-    };
 
     try {
       localStorage.removeItem('scannedFood');
-      const response = await fetch(`${API_BASE_URL}/api/scan`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(promptDto),
+      
+      const responseData = await foodScanNutrition({ photoDataUri: capturedImage });
+      
+      // Transform the AI response to the structure expected by the meal-plan page
+      const formattedData = {
+        name: responseData.foodIdentification.name,
+        calories: responseData.nutritionInformation.calories,
+        protein: responseData.nutritionInformation.protein,
+        fat: responseData.nutritionInformation.fat,
+        carbs: responseData.nutritionInformation.carbohydrates,
+      };
+
+      localStorage.setItem('scannedFood', JSON.stringify(formattedData));
+      
+      toast({
+        title: 'Success!',
+        description: `Identified: ${responseData.foodIdentification.name}.`,
       });
 
-      if (response.ok) {
-        toast({
-          title: 'Success!',
-          description: 'Your scan was submitted successfully.',
-        });
-        
-        await updateCreditBalance(true);
-        const responseData = await response.json();
-        localStorage.setItem('scannedFood', JSON.stringify(responseData));
-        router.push('/dashboard/meal-plan');
-        handleRetake();
-      } else {
-        if (response.status === 401 || response.status === 403) {
-          setSubscriptionModalOpen(true);
-          return;
-        }
+      router.push('/dashboard/meal-plan');
+      handleRetake();
 
-        let errorMessage;
-        if (response.status === 429) {
-          errorMessage =
-            'You have run out of credits. Please purchase more to continue scanning.';
-        } else {
-          try {
-            const errorText = await response.text();
-            errorMessage =
-              errorText ||
-              'Our servers are having some trouble. Please try again later.';
-          } catch {
-            errorMessage =
-              'Our servers are having some trouble. Please try again later.';
-          }
-        }
-        throw new Error(errorMessage);
-      }
     } catch (error: any) {
       toast({
         variant: 'destructive',
         title: 'Scan Failed',
-        description: error.message,
+        description: error.message || 'An unexpected error occurred while analyzing the image.',
       });
     } finally {
       setIsSending(false);
@@ -211,7 +166,7 @@ function ScanFoodContent() {
             <Image
               src={capturedImage}
               alt="Captured food"
-              layout="fill"
+              fill
               objectFit="cover"
             />
           ) : (
