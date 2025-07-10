@@ -43,8 +43,13 @@ function ScanFoodContent() {
       }
 
       try {
+        // Request ideal mobile resolution
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: 'environment' },
+          video: { 
+            facingMode: 'environment',
+            width: { ideal: 1280 },
+            height: { ideal: 720 }
+          },
         });
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
@@ -162,7 +167,7 @@ function ScanFoodContent() {
             description: `Identified: ${responseData.name}.`,
         });
 
-        router.push('/dashboard/meal-plan');
+        router.push('/dashboard');
         handleRetake();
 
     } catch (error: any) {
@@ -179,7 +184,7 @@ function ScanFoodContent() {
   const renderContent = () => {
     if (isLoading || hasCameraPermission === null) {
       return (
-        <div className="flex flex-col items-center justify-center gap-4 text-white">
+        <div className="flex h-full flex-col items-center justify-center gap-4 text-white">
           <Loader2 className="h-12 w-12 animate-spin" />
           <p>Accessing Camera...</p>
         </div>
@@ -188,26 +193,29 @@ function ScanFoodContent() {
 
     if (!hasCameraPermission) {
       return (
-        <Alert variant="destructive" className="max-w-md">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertTitle>Camera Access Required</AlertTitle>
-          <AlertDescription>
-            This feature requires camera access. Please grant permission in your
-            browser settings and refresh the page.
-          </AlertDescription>
-        </Alert>
+        <div className="flex h-full items-center justify-center p-4">
+            <Alert variant="destructive" className="max-w-md">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>Camera Access Required</AlertTitle>
+            <AlertDescription>
+                This feature requires camera access. Please grant permission in your
+                browser settings and refresh the page.
+            </AlertDescription>
+            </Alert>
+        </div>
       );
     }
 
     return (
-      <div className="w-full max-w-lg space-y-4">
-        <div className="relative w-full overflow-hidden rounded-lg border-4 border-primary/50 shadow-lg aspect-video bg-black">
+      <div className="relative h-full w-full">
+        {/* Full-screen camera/image view */}
+        <div className="absolute inset-0 bg-black">
           {capturedImage ? (
             <Image
               src={capturedImage}
               alt="Captured food"
               fill
-              objectFit="cover"
+              className="object-cover"
             />
           ) : (
             <video
@@ -220,20 +228,21 @@ function ScanFoodContent() {
           )}
         </div>
 
-        <div className="flex justify-center gap-4">
+        {/* Controls Overlay */}
+        <div className="absolute bottom-0 left-0 right-0 z-10 flex justify-center gap-4 bg-gradient-to-t from-black/80 via-black/50 to-transparent p-8">
           {capturedImage ? (
             <>
               <Button
                 onClick={handleRetake}
                 variant="outline"
-                className="text-lg py-6 flex-1"
+                className="text-lg py-6 flex-1 max-w-xs bg-white/20 text-white border-white/50 backdrop-blur-sm hover:bg-white/30"
               >
                 <RefreshCw className="mr-2" /> Retake
               </Button>
               <Button
                 onClick={handleSendScan}
                 disabled={isSending}
-                className="text-lg py-6 flex-1 bg-primary"
+                className="text-lg py-6 flex-1 max-w-xs bg-primary"
               >
                 {isSending ? (
                   <Loader2 className="animate-spin" />
@@ -247,9 +256,10 @@ function ScanFoodContent() {
           ) : (
             <Button
               onClick={handleCapture}
-              className="w-48 h-16 rounded-full text-lg bg-primary animate-breathe-glow"
+              className="h-20 w-20 rounded-full border-4 border-white/50 bg-primary/80 text-white shadow-2xl animate-breathe-glow"
             >
-              <Camera className="mr-2" /> Capture
+              <Camera className="h-8 w-8" />
+              <span className="sr-only">Capture</span>
             </Button>
           )}
         </div>
@@ -259,16 +269,9 @@ function ScanFoodContent() {
   };
 
   return (
-    <>
-      <BackgroundImage
-        src="https://placehold.co/1920x1080.png"
-        data-ai-hint="abstract technology"
-        className="blur-md"
-      />
-      <main className="container z-10 mx-auto flex h-full flex-col items-center justify-center overflow-y-auto p-4 pb-28">
+    <div className="h-screen w-screen bg-black">
         {renderContent()}
-      </main>
-    </>
+    </div>
   );
 }
 
