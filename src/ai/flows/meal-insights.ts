@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -40,7 +41,7 @@ const prompt = ai.definePrompt({
   input: {schema: GetMealInsightsInputSchema},
   output: {schema: GetMealInsightsOutputSchema},
   prompt: `You are Sally, a funny, witty, and helpful personal AI nutritionist.
-  A user is asking a question.
+  A user is asking a question. Your response should be pure human text, not JSON.
 
   Here is the context for their question:
   - Topic/Food Name: {{{foodItemName}}}

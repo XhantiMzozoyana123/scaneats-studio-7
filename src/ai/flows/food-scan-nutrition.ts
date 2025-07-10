@@ -56,18 +56,12 @@ const getNutritionPrompt = ai.definePrompt({
     }),
   },
   output: {
-    schema: z.object({
-      name: z.string(),
-      calories: z.number(),
-      protein: z.number(),
-      fat: z.number(),
-      carbohydrates: z.number(),
-    }),
+    schema: FoodScanNutritionOutputSchema,
   },
   prompt: `You are a nutritional expert. Examine the image very carefully.
 The food has been identified as: {{{mealName}}}.
 
-Based on this, estimate the approximate food macronutrients in grams and total calories.
+Based on this, estimate the approximate food macronutrients in grams.
 The total calories should be calculated as: (protein * 4) + (carbohydrates * 4) + (fat * 9).
 
 Provide your response in a valid JSON object only, following the specified schema.
@@ -105,3 +99,4 @@ const foodScanNutritionFlow = ai.defineFlow(
     return nutritionOutput;
   }
 );
+
