@@ -142,19 +142,13 @@ function ScanFoodContent() {
             return;
         }
         
-        // CHECKPOINT 3: Core Logic (Frontend AI)
+        // CHECKPOINT 4 (Core Logic): Frontend AI processing
         const responseData = await foodScanNutrition({ photoDataUri: capturedImage });
         
-        const formattedData = {
-            name: responseData.foodIdentification.name,
-            calories: responseData.nutritionInformation.calories,
-            protein: responseData.nutritionInformation.protein,
-            fat: responseData.nutritionInformation.fat,
-            carbs: responseData.nutritionInformation.carbohydrates,
-        };
-        localStorage.setItem('scannedFood', JSON.stringify(formattedData));
+        // The AI flow now returns the final structure directly
+        localStorage.setItem('scannedFood', JSON.stringify(responseData));
         
-        // CHECKPOINT 4: Deduct Credit
+        // CHECKPOINT 3: Deduct Credit
         const deductResponse = await fetch(`${API_BASE_URL}/api/event/deduct-credits`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -165,7 +159,7 @@ function ScanFoodContent() {
         
         toast({
             title: 'Success!',
-            description: `Identified: ${responseData.foodIdentification.name}.`,
+            description: `Identified: ${responseData.name}.`,
         });
 
         router.push('/dashboard/meal-plan');
@@ -286,5 +280,3 @@ export default function ScanFoodPage() {
     </UserDataProvider>
   );
 }
-
-    
