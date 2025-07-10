@@ -43,12 +43,11 @@ function ScanFoodContent() {
       }
 
       try {
-        // Request ideal mobile resolution
         const stream = await navigator.mediaDevices.getUserMedia({
           video: { 
             facingMode: 'environment',
-            width: { ideal: 1280 },
-            height: { ideal: 720 }
+            width: { ideal: 1920 },
+            height: { ideal: 1080 }
           },
         });
         if (videoRef.current) {
@@ -71,7 +70,6 @@ function ScanFoodContent() {
 
     getCameraPermission();
 
-    // Cleanup function to stop video tracks when component unmounts
     return () => {
       if (videoRef.current && videoRef.current.srcObject) {
         const stream = videoRef.current.srcObject as MediaStream;
@@ -86,7 +84,6 @@ function ScanFoodContent() {
     const video = videoRef.current;
     const canvas = canvasRef.current;
 
-    // Set canvas dimensions to match video stream
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
 
@@ -114,7 +111,6 @@ function ScanFoodContent() {
     }
 
     try {
-        // CHECKPOINT 1: Subscription Status
         const subResponse = await fetch(`${API_BASE_URL}/api/event/subscription/status`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -132,7 +128,6 @@ function ScanFoodContent() {
             return;
         }
 
-        // CHECKPOINT 2: Remaining Credits
         const creditsResponse = await fetch(`${API_BASE_URL}/api/event/credits/remaining`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -147,20 +142,17 @@ function ScanFoodContent() {
             return;
         }
         
-        // CHECKPOINT 4 (Core Logic): Frontend AI processing
         const responseData = await foodScanNutrition({ photoDataUri: capturedImage });
         
-        // The AI flow now returns the final structure directly
         localStorage.setItem('scannedFood', JSON.stringify(responseData));
         
-        // CHECKPOINT 3: Deduct Credit
         const deductResponse = await fetch(`${API_BASE_URL}/api/event/deduct-credits`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
             body: JSON.stringify(1)
         });
         if (!deductResponse.ok) throw new Error('Failed to deduct credit.');
-        updateCreditBalance(true); // Force update balance
+        updateCreditBalance(true);
         
         toast({
             title: 'Success!',
@@ -178,6 +170,12 @@ function ScanFoodContent() {
         });
     } finally {
         setIsSending(false);
+    }
+  };
+  
+  const handleCanPlay = () => {
+    if (videoRef.current) {
+      videoRef.current.play();
     }
   };
 
@@ -208,14 +206,13 @@ function ScanFoodContent() {
 
     return (
       <div className="relative h-full w-full">
-        {/* Full-screen camera/image view */}
         <div className="absolute inset-0 bg-black">
           {capturedImage ? (
             <Image
               src={capturedImage}
               alt="Captured food"
               fill
-              className="object-cover"
+              className="object-contain"
             />
           ) : (
             <video
@@ -224,11 +221,11 @@ function ScanFoodContent() {
               autoPlay
               muted
               playsInline
+              onCanPlay={handleCanPlay}
             />
           )}
         </div>
 
-        {/* Controls Overlay */}
         <div className="absolute bottom-0 left-0 right-0 z-10 flex justify-center gap-4 bg-gradient-to-t from-black/80 via-black/50 to-transparent p-8">
           {capturedImage ? (
             <>
@@ -276,7 +273,6 @@ function ScanFoodContent() {
 }
 
 export default function ScanFoodPage() {
-  // This page needs access to the UserData context, so we wrap it
   return (
     <UserDataProvider>
       <ScanFoodContent />
