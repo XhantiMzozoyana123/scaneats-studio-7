@@ -612,10 +612,6 @@ const SallyView = () => {
         `The user's goal is: ${profile.goals}. Their weight is ${profile.weight}kg.` 
         : "I don't have the user's profile data.";
 
-      const fullPrompt = `${profileContext} The user asks: "${userInput}"`;
-
-      // NOTE: This should ideally be its own dedicated AI flow for body assessment.
-      // For now, we are using a simplified approach for demonstration.
       const insights = await getMealInsights({
         foodItemName: "your body and health",
         nutritionalInformation: JSON.stringify(profile),
@@ -1466,5 +1462,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
-    
