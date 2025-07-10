@@ -628,8 +628,7 @@ const SallyView = () => {
 
 const ProfileView = () => {
   const { toast } = useToast();
-  const { profile, setProfile, isLoading, setSubscriptionModalOpen } =
-    useUserData();
+  const { profile, setProfile, isLoading, saveProfile } = useUserData();
   const [isSaving, setIsSaving] = useState(false);
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
 
@@ -668,97 +667,8 @@ const ProfileView = () => {
     }
 
     setIsSaving(true);
-    const token = localStorage.getItem('authToken');
-    if (!token) {
-      toast({
-        variant: 'destructive',
-        title: 'Authentication Error',
-        description: 'You must be logged in to save your profile.',
-      });
-      setIsSaving(false);
-      return;
-    }
-
-    const calculateAge = (birthDate: Date): number => {
-      const today = new Date();
-      let age = today.getFullYear() - birthDate.getFullYear();
-      const m = today.getMonth() - birthDate.getMonth();
-      if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
-        age--;
-      }
-      return age;
-    };
-
-    const method = profile.id ? 'PUT' : 'POST';
-    const url = profile.id
-      ? `${API_BASE_URL}/api/profile/${profile.id}`
-      : `${API_BASE_URL}/api/profile`;
-
-    const profileData: any = {
-      ...profile,
-      weight: String(profile.weight || ''),
-      birthDate: profile.birthDate ? profile.birthDate.toISOString() : null,
-      age: calculateAge(profile.birthDate),
-    };
-
-    if (profile.id) {
-      profileData.id = profile.id;
-    } else {
-      delete profileData.id;
-    }
-
-    try {
-      const response = await fetch(url, {
-        method: method,
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(profileData),
-      });
-
-      if (response.ok) {
-        toast({
-          title: 'Success',
-          description: 'Your profile has been saved successfully.',
-        });
-        const newProfile = await response.json();
-        setProfile({
-          ...newProfile,
-          birthDate: newProfile.birthDate
-            ? new Date(newProfile.birthDate)
-            : null,
-        });
-      } else {
-        if (response.status === 401 || response.status === 403) {
-          setSubscriptionModalOpen(true);
-          return;
-        }
-        let errorMessage = 'Failed to save profile.';
-        if (response.status >= 500) {
-          errorMessage =
-            'Our servers are experiencing issues. Please try again later.';
-        } else {
-          try {
-            const errorData = await response.json();
-            if (errorData.error) {
-              errorMessage = errorData.error;
-            }
-          } catch {
-            // Keep generic message
-          }
-        }
-        throw new Error(errorMessage);
-      }
-    } catch (error: any) {
-      toast({
-        variant: 'destructive',
-        title: 'Save Failed',
-        description: error.message,
-      });
-    } finally {
-      setIsSaving(false);
-    }
+    await saveProfile(profile);
+    setIsSaving(false);
   };
 
   if (isLoading || !profile) {

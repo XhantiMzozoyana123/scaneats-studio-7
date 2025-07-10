@@ -39,7 +39,8 @@ type UserDataContextType = {
   creditBalance: number | null;
   isLoading: boolean;
   setProfile: React.Dispatch<React.SetStateAction<Profile | null>>;
-  fetchProfile: () => Promise<void>;
+  saveProfile: (profile: Profile) => Promise<void>;
+  fetchProfile: () => void;
   updateCreditBalance: (force?: boolean) => Promise<void>;
   isSubscriptionModalOpen: boolean;
   setSubscriptionModalOpen: React.Dispatch<React.SetStateAction<boolean>>;
@@ -50,7 +51,7 @@ const UserDataContext = createContext<UserDataContextType | undefined>(
 );
 
 const initialProfileState: Profile = {
-  id: null,
+  id: 1, // Use a default ID for local management
   name: '',
   gender: 'Prefer not to say',
   weight: '',
@@ -74,6 +75,74 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
   );
   const [isLoading, setIsLoading] = useState(true);
   const [isSubscriptionModalOpen, setSubscriptionModalOpen] = useState(false);
+
+  const fetchProfile = useCallback(() => {
+    setIsLoading(true);
+    try {
+      const storedProfile = localStorage.getItem('userProfile');
+      if (storedProfile) {
+        const parsedProfile = JSON.parse(storedProfile);
+        setProfile({
+          ...parsedProfile,
+          birthDate: parsedProfile.birthDate
+            ? new Date(parsedProfile.birthDate)
+            : null,
+        });
+      } else {
+        setProfile(initialProfileState);
+      }
+    } catch (error) {
+      console.error('Failed to load profile from localStorage', error);
+      setProfile(initialProfileState);
+      toast({
+        variant: 'destructive',
+        title: 'Could Not Load Profile',
+        description: 'There was an issue reading your local profile data.',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [toast]);
+
+  const saveProfile = useCallback(
+    async (profileData: Profile) => {
+      setIsLoading(true);
+      try {
+        const calculateAge = (birthDate: Date | null): number | undefined => {
+          if (!birthDate) return undefined;
+          const today = new Date();
+          let age = today.getFullYear() - birthDate.getFullYear();
+          const m = today.getMonth() - birthDate.getMonth();
+          if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+            age--;
+          }
+          return age;
+        };
+
+        const profileToSave = {
+          ...profileData,
+          age: calculateAge(profileData.birthDate),
+        };
+
+        localStorage.setItem('userProfile', JSON.stringify(profileToSave));
+        setProfile(profileToSave); // Update state
+        toast({
+          title: 'Success',
+          description: 'Your profile has been saved successfully.',
+        });
+      } catch (error) {
+        console.error('Failed to save profile to localStorage', error);
+        toast({
+          variant: 'destructive',
+          title: 'Save Failed',
+          description: 'Could not save your profile data locally.',
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [toast]
+  );
 
   const updateCreditBalance = useCallback(async (force = false) => {
     const token = localStorage.getItem('authToken');
@@ -105,53 +174,6 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const fetchProfile = useCallback(async () => {
-    const token = localStorage.getItem('authToken');
-    if (!token) {
-      setIsLoading(false);
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      const profileRes = await fetch(`${API_BASE_URL}/api/profile`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (profileRes.status === 401 || profileRes.status === 403) {
-        setProfile(initialProfileState);
-      } else if (profileRes.ok) {
-        const data = await profileRes.json();
-        if (data && data.length > 0) {
-          const userProfile = data[0];
-          setProfile({
-            ...userProfile,
-            birthDate: userProfile.birthDate
-              ? new Date(userProfile.birthDate)
-              : null,
-          });
-        } else {
-          setProfile(initialProfileState);
-        }
-      } else {
-        throw new Error('Could not load your profile information.');
-      }
-    } catch (error: any) {
-      console.error('Failed to fetch user data', error);
-      if (!(error.message.includes('401') || error.message.includes('403'))) {
-        toast({
-          variant: 'destructive',
-          title: 'Could Not Load Data',
-          description:
-            error.message || 'There was a problem connecting to the server.',
-        });
-      }
-      setProfile(initialProfileState);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [toast]);
-
   useEffect(() => {
     fetchProfile();
     updateCreditBalance(true);
@@ -162,6 +184,7 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
     creditBalance,
     isLoading,
     setProfile,
+    saveProfile,
     fetchProfile,
     updateCreditBalance,
     isSubscriptionModalOpen,
