@@ -760,10 +760,10 @@ const SallyView = () => {
                 <p className="text-[13px] text-gray-600">Sally is thinking...</p>
               </div>
            ) : (
-            <p className="text-[13px] leading-tight text-black">
+            <div className="text-[13px] leading-tight text-black flex-grow">
               <strong>Sally</strong>
               <span className="text-gray-600"> - {sallyResponse}</span>
-            </p>
+            </div>
            )}
         </div>
       </div>
@@ -860,7 +860,7 @@ const ProfileView = () => {
       <div className="w-[90%] max-w-[600px] rounded-lg bg-[rgba(14,1,15,0.32)] p-5">
         <div className="mb-8 flex justify-center">
           <Image
-            src="https://gallery.scaneats.app/images/ScanEatsLogo.png"
+            src="https://gallery.scaneats.app/images/Profile%20logo%20SE.png"
             alt="Profile & Personal Goals"
             width={140}
             height={140}
