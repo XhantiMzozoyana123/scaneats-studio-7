@@ -3,6 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, ArrowLeft } from 'lucide-react';
@@ -22,8 +23,14 @@ import { API_BASE_URL } from '@/lib/api';
 type CreditProduct = {
   id: number;
   credit: number;
-  price: number;
+  price: number; // Base price in ZAR
   description: string;
+};
+
+type GeoData = {
+  currency: string;
+  rate: number;
+  flagUrl: string;
 };
 
 export default function CreditsPage() {
@@ -32,6 +39,8 @@ export default function CreditsPage() {
   const [products, setProducts] = useState<CreditProduct[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isPurchasing, setIsPurchasing] = useState<number | null>(null);
+  const [geoData, setGeoData] = useState<GeoData | null>(null);
+  const [isGeoLoading, setIsGeoLoading] = useState(true);
 
   useEffect(() => {
     // Check for auth token on mount
@@ -53,20 +62,13 @@ export default function CreditsPage() {
 
         if (response.ok) {
           const data = await response.json();
-          // Add descriptions based on credit amount to match original UI
           const productsWithDescriptions = data.map((p: any) => {
             let description = 'Top-up your credits.';
-            if (p.credit <= 50) {
-              description = 'Perfect for getting started.';
-            } else if (p.credit <= 120) {
-              description = 'Our most popular option.';
-            } else if (p.credit <= 250) {
-              description = 'Great value for regular users.';
-            } else if (p.credit <= 550) {
-              description = 'For the power user.';
-            } else {
-              description = 'Best value, never run out.';
-            }
+            if (p.credit <= 50) description = 'Perfect for getting started.';
+            else if (p.credit <= 120) description = 'Our most popular option.';
+            else if (p.credit <= 250) description = 'Great value for regular users.';
+            else if (p.credit <= 550) description = 'For the power user.';
+            else description = 'Best value, never run out.';
             return { ...p, description };
           });
           setProducts(productsWithDescriptions);
@@ -77,12 +79,8 @@ export default function CreditsPage() {
           } else {
             try {
               const errorData = await response.json();
-              if (errorData.message) {
-                errorMessage = errorData.message;
-              }
-            } catch {
-              // Keep generic message
-            }
+              if (errorData.message) errorMessage = errorData.message;
+            } catch {}
           }
           throw new Error(errorMessage);
         }
@@ -97,8 +95,61 @@ export default function CreditsPage() {
       }
     };
 
+    const fetchGeoData = async () => {
+      setIsGeoLoading(true);
+      try {
+        const ipResponse = await fetch('https://ipapi.co/json/');
+        if (!ipResponse.ok) throw new Error('Could not fetch location data.');
+        const ipData = await ipResponse.json();
+
+        const ratesResponse = await fetch('https://open.er-api.com/v6/latest/ZAR');
+        if (!ratesResponse.ok) throw new Error('Could not fetch exchange rates.');
+        const ratesData = await ratesResponse.json();
+
+        const userCurrency = ipData.currency;
+        const rate = ratesData.rates[userCurrency];
+        
+        if (rate) {
+          setGeoData({
+            currency: userCurrency,
+            rate: rate,
+            flagUrl: `https://flagcdn.com/w40/${ipData.country_code.toLowerCase()}.png`,
+          });
+        } else {
+            // Fallback for currencies not in the list
+             setGeoData({ currency: 'ZAR', rate: 1, flagUrl: `https://flagcdn.com/w40/za.png`});
+        }
+      } catch (error) {
+        console.error("Geo pricing error:", error);
+        // Default to ZAR on error
+        setGeoData({ currency: 'ZAR', rate: 1, flagUrl: `https://flagcdn.com/w40/za.png`});
+      } finally {
+        setIsGeoLoading(false);
+      }
+    };
+
     fetchCreditProducts();
+    fetchGeoData();
   }, [router, toast]);
+  
+  const getDisplayPrice = (basePrice: number) => {
+    if (isGeoLoading || !geoData) {
+      return <Loader2 className="h-6 w-6 animate-spin" />;
+    }
+    
+    const localPrice = basePrice * geoData.rate;
+    const formatter = new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: geoData.currency,
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
+    });
+    
+    const formattedLocal = formatter.format(localPrice).replace(/\s/g, '');
+
+    return `${formattedLocal} = (ZAR ${basePrice.toFixed(0)})`;
+  };
+
 
   const handlePurchase = async (product: CreditProduct) => {
     setIsPurchasing(product.id);
@@ -152,9 +203,7 @@ export default function CreditsPage() {
                   if (errorData.message) {
                       errorMessage = errorData.message;
                   }
-              } catch {
-                  // Keep generic message
-              }
+              } catch {}
           }
           throw new Error(errorMessage);
       }
@@ -181,6 +230,18 @@ export default function CreditsPage() {
         </div>
       </Link>
 
+      <div className="absolute top-8 right-8 z-10">
+          {!isGeoLoading && geoData && (
+              <Image 
+                src={geoData.flagUrl} 
+                alt="Country flag" 
+                width={40} 
+                height={26}
+                className="rounded-md"
+              />
+          )}
+      </div>
+
       <h1 className="main-title relative z-[1]">
         Buy Credits
       </h1>
@@ -199,7 +260,9 @@ export default function CreditsPage() {
                             <p className="mt-1 text-sm text-gray-400">{product.description}</p>
                         </div>
                         <div>
-                             <div className="text-3xl font-bold text-white">${product.price.toFixed(2)}</div>
+                             <div className="text-3xl font-bold text-white">
+                                {getDisplayPrice(product.price)}
+                             </div>
                              <AlertDialog>
                                <AlertDialogTrigger asChild>
                                  <button
@@ -213,7 +276,7 @@ export default function CreditsPage() {
                                    <AlertDialogHeader>
                                        <AlertDialogTitle>Confirm Your Purchase</AlertDialogTitle>
                                        <AlertDialogDescription>
-                                           You are about to make a one-time purchase of {product.credit} credits for ${product.price.toFixed(2)}.
+                                           You are about to make a one-time purchase of {product.credit} credits for a price equivalent to ZAR {product.price.toFixed(2)}. The final amount will be in your local currency.
                                        </AlertDialogDescription>
                                    </AlertDialogHeader>
                                    <AlertDialogFooter>
