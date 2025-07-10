@@ -1,7 +1,7 @@
 'use server';
 
 /**
- * @fileOverview An AI agent that provides insights about a scanned meal.
+ * @fileOverview An AI agent that provides insights about a scanned meal or user health.
  *
  * - getMealInsights - A function that handles the process of providing meal insights.
  * - GetMealInsightsInput - The input type for the getMealInsights function.
@@ -12,20 +12,20 @@ import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
 const GetMealInsightsInputSchema = z.object({
-  foodItemName: z.string().describe('The name of the scanned food item.'),
+  foodItemName: z.string().describe('The name of the scanned food item, or a general topic like "my body".'),
   nutritionalInformation: z
     .string()
     .describe(
-      'A JSON string of nutritional information for the food item.'
+      'A JSON string of nutritional information for the food item or the user\'s profile data.'
     ),
-  userQuery: z.string().describe('The user\'s question about the meal.'),
+  userQuery: z.string().describe('The user\'s question about the meal or their health.'),
 });
 export type GetMealInsightsInput = z.infer<typeof GetMealInsightsInputSchema>;
 
 const GetMealInsightsOutputSchema = z.object({
   response: z
     .string()
-    .describe('A helpful and conversational response to the user\'s query about their meal.'),
+    .describe('A helpful and conversational response to the user\'s query about their meal or health.'),
 });
 export type GetMealInsightsOutput = z.infer<typeof GetMealInsightsOutputSchema>;
 
@@ -40,11 +40,11 @@ const prompt = ai.definePrompt({
   input: {schema: GetMealInsightsInputSchema},
   output: {schema: GetMealInsightsOutputSchema},
   prompt: `You are Sally, a funny, witty, and helpful personal AI nutritionist.
-  A user has just scanned a food item and is asking a question about it.
+  A user is asking a question.
 
-  Here is the information about the meal:
-  - Food Name: {{{foodItemName}}}
-  - Nutritional Information (JSON): {{{nutritionalInformation}}}
+  Here is the context for their question:
+  - Topic/Food Name: {{{foodItemName}}}
+  - Contextual Information (JSON): {{{nutritionalInformation}}}
 
   Here is the user's question:
   "{{{userQuery}}}"

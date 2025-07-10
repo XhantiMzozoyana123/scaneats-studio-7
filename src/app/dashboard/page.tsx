@@ -350,7 +350,7 @@ const MealPlanView = () => {
             return;
         }
 
-        // CHECKPOINT 3: Core Logic (Frontend AI)
+        // CHECKPOINT 4: Core Logic (Frontend AI)
         const lastFood = foods[0];
         const nutritionalInfo = JSON.stringify({
             calories: lastFood.calories,
@@ -367,7 +367,7 @@ const MealPlanView = () => {
         
         setSallyResponse(insights.response);
 
-        // CHECKPOINT 4: Deduct Credit
+        // CHECKPOINT 3: Deduct Credit
         const deductResponse = await fetch(`${API_BASE_URL}/api/event/deduct-credits`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -566,6 +566,7 @@ const SallyView = () => {
     if (!userInput.trim()) return;
 
     setIsLoading(true);
+    setSallyResponse(`Thinking about: "${userInput}"`);
     const token = localStorage.getItem('authToken');
 
     if (!token) {
@@ -607,11 +608,7 @@ const SallyView = () => {
             return;
         }
 
-      // CHECKPOINT 3: Core Logic (Frontend AI)
-      const profileContext = profile ? 
-        `The user's goal is: ${profile.goals}. Their weight is ${profile.weight}kg.` 
-        : "I don't have the user's profile data.";
-
+      // CHECKPOINT 4: Core Logic (Frontend AI)
       const insights = await getMealInsights({
         foodItemName: "your body and health",
         nutritionalInformation: JSON.stringify(profile),
@@ -620,7 +617,7 @@ const SallyView = () => {
       const aiResponse = insights.response;
       setSallyResponse(aiResponse);
       
-      // CHECKPOINT 4: Deduct Credit
+      // CHECKPOINT 3: Deduct Credit
       const deductResponse = await fetch(`${API_BASE_URL}/api/event/deduct-credits`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
