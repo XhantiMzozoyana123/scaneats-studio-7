@@ -10,13 +10,13 @@ export default function Home() {
     <div className="relative flex h-screen w-full flex-col items-center justify-center overflow-hidden">
       {/* Background Image */}
       <Image
-        src="https://placehold.co/1080x1920.png"
+        src="https://gallery.scaneats.app/images/Landing%20Page%20SE..gif"
         alt="A delicious meal on a plate"
         layout="fill"
         objectFit="cover"
         className="z-0"
-        data-ai-hint="healthy food meal"
         priority
+        unoptimized
       />
       <div className="absolute inset-0 bg-black/30 z-10" />
 
