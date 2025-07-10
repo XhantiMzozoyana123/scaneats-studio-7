@@ -129,7 +129,7 @@ const HomeView = () => {
 
       <header className="absolute top-1 left-1 z-10 h-10 w-24">
         <Image
-          src="/scaneats-logo.png"
+          src="https://gallery.scaneats.app/images/ScanEatsLogo.png"
           alt="ScanEats Logo"
           fill
           style={{ objectFit: 'contain' }}
@@ -441,7 +441,7 @@ const MealPlanView = () => {
         <header className="mb-5 flex w-full max-w-2xl shrink-0 items-center justify-start px-4">
           <div className="h-[75px] w-[150px] shrink-0 text-left">
             <Image
-              src="/scaneats-logo.png"
+              src="https://gallery.scaneats.app/images/ScanEatsLogo.png"
               alt="ScanEats Logo"
               width={150}
               height={75}
@@ -753,7 +753,7 @@ const SallyView = () => {
           </button>
         </div>
 
-        <div className="w-full min-h-[4rem] rounded-2xl border border-white/40 bg-white/80 p-3 text-left shadow-[inset_0_1px_2px_rgba(255,255,255,0.6),0_10px_30px_3px_rgba(100,90,140,0.45)] backdrop-blur-sm backdrop-saturate-150">
+        <div className="w-full min-h-[4rem] flex flex-col justify-center rounded-2xl border border-white/40 bg-white/80 p-3 text-left shadow-[inset_0_1px_2px_rgba(255,255,255,0.6),0_10px_30px_3px_rgba(100,90,140,0.45)] backdrop-blur-sm backdrop-saturate-150">
            {isLoading ? (
               <div className="space-y-2 text-center">
                 <Progress value={loadingProgress} className="w-full" />
@@ -860,7 +860,7 @@ const ProfileView = () => {
       <div className="w-[90%] max-w-[600px] rounded-lg bg-[rgba(14,1,15,0.32)] p-5">
         <div className="mb-8 flex justify-center">
           <Image
-            src="/profile-goals-logo.png"
+            src="https://gallery.scaneats.app/images/ScanEatsLogo.png"
             alt="Profile & Personal Goals"
             width={140}
             height={140}

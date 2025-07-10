@@ -32,7 +32,7 @@ export default function Home() {
       {/* Centered Content Card */}
       <main className="relative z-20 flex w-full max-w-sm flex-col items-center rounded-3xl bg-white/20 p-8 text-center text-white backdrop-blur-lg">
         <Image
-          src="/scaneats-logo.png"
+          src="https://gallery.scaneats.app/images/ScanEatsLogo.png"
           alt="ScanEats Logo"
           width={100}
           height={100}
