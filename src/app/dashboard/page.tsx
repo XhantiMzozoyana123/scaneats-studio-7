@@ -295,6 +295,17 @@ const MealPlanView = () => {
 
   const handleApiCall = async (userInput: string) => {
     if (!userInput.trim()) return;
+
+    setIsSallyLoading(true);
+    setSallyResponse(`Thinking about: "${userInput}"`);
+    const token = localStorage.getItem('authToken');
+
+    if (!token) {
+        toast({ variant: 'destructive', title: 'Authentication Error' });
+        setIsSallyLoading(false);
+        return;
+    }
+    
     if (!foods || foods.length === 0) {
       toast({
         variant: 'destructive',
@@ -302,53 +313,87 @@ const MealPlanView = () => {
         description: 'Please scan a food item before asking Sally.',
       });
       setSallyResponse("Scan a meal first, then we can talk!");
+      setIsSallyLoading(false);
       return;
     }
 
-    setIsSallyLoading(true);
-    setSallyResponse(`Thinking about: "${userInput}"`);
-
     try {
-      const lastFood = foods[0];
-      const nutritionalInfo = JSON.stringify({
-        calories: lastFood.calories,
-        protein: lastFood.protein,
-        fat: lastFood.fat,
-        carbs: lastFood.carbs,
-      });
-
-      const insights = await getMealInsights({
-        foodItemName: lastFood.name || 'your meal',
-        nutritionalInformation: nutritionalInfo,
-        userQuery: userInput,
-      });
-      
-      setSallyResponse(insights.response);
-
-      if (insights.response) {
-        try {
-          const { media } = await textToSpeech({ text: insights.response });
-          if (media) {
-            setAudioUrl(media);
-          }
-        } catch (ttsError) {
-          console.error('Error during TTS call:', ttsError);
-          toast({
-            variant: 'destructive',
-            title: 'Audio Error',
-            description: 'Could not generate audio for the response.',
-          });
+        // CHECKPOINT 1: Subscription Status
+        const subResponse = await fetch(`${API_BASE_URL}/api/event/subscription/status`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!subResponse.ok) {
+            if (subResponse.status === 401 || subResponse.status === 403) {
+                setSubscriptionModalOpen(true);
+                return;
+            }
+            throw new Error('Failed to check subscription status.');
         }
-      }
+        const subData = await subResponse.json();
+        if (!subData.isSubscribed) {
+            setSubscriptionModalOpen(true);
+            return;
+        }
+
+        // CHECKPOINT 2: Remaining Credits
+        const creditsResponse = await fetch(`${API_BASE_URL}/api/event/credits/remaining`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!creditsResponse.ok) throw new Error('Failed to check credits.');
+        const creditsData = await creditsResponse.json();
+        if (creditsData.remainingCredits <= 0) {
+            toast({
+                variant: 'destructive',
+                title: 'No Credits Left',
+                description: 'Please purchase more credits to continue using this feature.'
+            });
+            return;
+        }
+
+        // CHECKPOINT 3: Core Logic (Frontend AI)
+        const lastFood = foods[0];
+        const nutritionalInfo = JSON.stringify({
+            calories: lastFood.calories,
+            protein: lastFood.protein,
+            fat: lastFood.fat,
+            carbs: lastFood.carbs,
+        });
+
+        const insights = await getMealInsights({
+            foodItemName: lastFood.name || 'your meal',
+            nutritionalInformation: nutritionalInfo,
+            userQuery: userInput,
+        });
+        
+        setSallyResponse(insights.response);
+
+        // CHECKPOINT 4: Deduct Credit
+        const deductResponse = await fetch(`${API_BASE_URL}/api/event/deduct-credits`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify(1)
+        });
+        if (!deductResponse.ok) throw new Error('Failed to deduct credit.');
+        updateCreditBalance(true); // Force update balance
+
+        if (insights.response) {
+            try {
+                const { media } = await textToSpeech({ text: insights.response });
+                if (media) setAudioUrl(media);
+            } catch (ttsError) {
+                console.error('Error during TTS call:', ttsError);
+                toast({ variant: 'destructive', title: 'Audio Error', description: 'Could not generate audio for the response.' });
+            }
+        }
     } catch (error: any) {
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: error.message || 'An error occurred while talking to Sally.',
-      });
-      setSallyResponse('Sorry, I had trouble with that. Please try again.');
+        toast({
+            variant: 'destructive',
+            title: 'Error',
+            description: error.message || 'An error occurred while talking to Sally.',
+        });
+        setSallyResponse('Sorry, I had trouble with that. Please try again.');
     } finally {
-      setIsSallyLoading(false);
+        setIsSallyLoading(false);
     }
   };
 
@@ -463,7 +508,7 @@ const SallyView = () => {
   const recognitionRef = useRef<any>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const { toast } = useToast();
-  const { profile } = useUserData();
+  const { profile, setSubscriptionModalOpen, updateCreditBalance } = useUserData();
 
   useEffect(() => {
     if (audioUrl && audioRef.current) {
@@ -521,25 +566,72 @@ const SallyView = () => {
     if (!userInput.trim()) return;
 
     setIsLoading(true);
+    const token = localStorage.getItem('authToken');
+
+    if (!token) {
+        toast({ variant: 'destructive', title: 'Authentication Error' });
+        setIsLoading(false);
+        return;
+    }
 
     try {
-      // In a real app, you would get more comprehensive data.
-      // For now, we pass the user's profile goals and their query.
+        // CHECKPOINT 1: Subscription Status
+        const subResponse = await fetch(`${API_BASE_URL}/api/event/subscription/status`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!subResponse.ok) {
+            if (subResponse.status === 401 || subResponse.status === 403) {
+                setSubscriptionModalOpen(true);
+                return;
+            }
+            throw new Error('Failed to check subscription status.');
+        }
+        const subData = await subResponse.json();
+        if (!subData.isSubscribed) {
+            setSubscriptionModalOpen(true);
+            return;
+        }
+
+        // CHECKPOINT 2: Remaining Credits
+        const creditsResponse = await fetch(`${API_BASE_URL}/api/event/credits/remaining`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!creditsResponse.ok) throw new Error('Failed to check credits.');
+        const creditsData = await creditsResponse.json();
+        if (creditsData.remainingCredits <= 0) {
+            toast({
+                variant: 'destructive',
+                title: 'No Credits Left',
+                description: 'Please purchase more credits to continue using this feature.'
+            });
+            return;
+        }
+
+      // CHECKPOINT 3: Core Logic (Frontend AI)
       const profileContext = profile ? 
         `The user's goal is: ${profile.goals}. Their weight is ${profile.weight}kg.` 
         : "I don't have the user's profile data.";
 
       const fullPrompt = `${profileContext} The user asks: "${userInput}"`;
 
-      // This is a simplified call. A dedicated flow would be better.
-      const { text: agentDialogue } = await textToSpeech({ text: fullPrompt });
-
-      // For this migration, we're not calling a complex AI flow,
-      // but just demonstrating the principle. We will just get a simple text response.
-      // In a real scenario, you would create a `bodyAssessmentFlow` similar to `mealInsightsFlow`.
-      // The demo response below is just a placeholder.
-      const aiResponse = `Thinking about your question: "${userInput}". Based on your goals, let's figure this out. (This is a demo response).`;
+      // NOTE: This should ideally be its own dedicated AI flow for body assessment.
+      // For now, we are using a simplified approach for demonstration.
+      const insights = await getMealInsights({
+        foodItemName: "your body and health",
+        nutritionalInformation: JSON.stringify(profile),
+        userQuery: userInput,
+      });
+      const aiResponse = insights.response;
       setSallyResponse(aiResponse);
+      
+      // CHECKPOINT 4: Deduct Credit
+      const deductResponse = await fetch(`${API_BASE_URL}/api/event/deduct-credits`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify(1)
+        });
+      if (!deductResponse.ok) throw new Error('Failed to deduct credit.');
+      updateCreditBalance(true); // Force update balance
 
       if (aiResponse) {
         try {
@@ -1374,3 +1466,5 @@ export default function DashboardPage() {
     </div>
   );
 }
+
+    

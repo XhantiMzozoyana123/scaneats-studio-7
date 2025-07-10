@@ -12,6 +12,7 @@ import { Loader2, Camera, RefreshCw, Send, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { UserDataProvider, useUserData } from '@/context/user-data-context';
 import { foodScanNutrition } from '@/ai/flows/food-scan-nutrition';
+import { API_BASE_URL } from '@/lib/api';
 
 function ScanFoodContent() {
   const { toast } = useToast();
@@ -100,39 +101,84 @@ function ScanFoodContent() {
     if (!capturedImage) return;
 
     setIsSending(true);
+    const token = localStorage.getItem('authToken');
+    if (!token) {
+        toast({ variant: 'destructive', title: 'Authentication Error' });
+        setIsSending(false);
+        return;
+    }
 
     try {
-      localStorage.removeItem('scannedFood');
-      
-      const responseData = await foodScanNutrition({ photoDataUri: capturedImage });
-      
-      // Transform the AI response to the structure expected by the meal-plan page
-      const formattedData = {
-        name: responseData.foodIdentification.name,
-        calories: responseData.nutritionInformation.calories,
-        protein: responseData.nutritionInformation.protein,
-        fat: responseData.nutritionInformation.fat,
-        carbs: responseData.nutritionInformation.carbohydrates,
-      };
+        // CHECKPOINT 1: Subscription Status
+        const subResponse = await fetch(`${API_BASE_URL}/api/event/subscription/status`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
 
-      localStorage.setItem('scannedFood', JSON.stringify(formattedData));
-      
-      toast({
-        title: 'Success!',
-        description: `Identified: ${responseData.foodIdentification.name}.`,
-      });
+        if (!subResponse.ok) {
+            if (subResponse.status === 401 || subResponse.status === 403) {
+                setSubscriptionModalOpen(true);
+                return;
+            }
+            throw new Error('Failed to check subscription status.');
+        }
+        const subData = await subResponse.json();
+        if (!subData.isSubscribed) {
+            setSubscriptionModalOpen(true);
+            return;
+        }
 
-      router.push('/dashboard/meal-plan');
-      handleRetake();
+        // CHECKPOINT 2: Remaining Credits
+        const creditsResponse = await fetch(`${API_BASE_URL}/api/event/credits/remaining`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!creditsResponse.ok) throw new Error('Failed to check credits.');
+        const creditsData = await creditsResponse.json();
+        if (creditsData.remainingCredits <= 0) {
+            toast({
+                variant: 'destructive',
+                title: 'No Credits Left',
+                description: 'Please purchase more credits to continue using this feature.'
+            });
+            return;
+        }
+        
+        // CHECKPOINT 3: Core Logic (Frontend AI)
+        const responseData = await foodScanNutrition({ photoDataUri: capturedImage });
+        
+        const formattedData = {
+            name: responseData.foodIdentification.name,
+            calories: responseData.nutritionInformation.calories,
+            protein: responseData.nutritionInformation.protein,
+            fat: responseData.nutritionInformation.fat,
+            carbs: responseData.nutritionInformation.carbohydrates,
+        };
+        localStorage.setItem('scannedFood', JSON.stringify(formattedData));
+        
+        // CHECKPOINT 4: Deduct Credit
+        const deductResponse = await fetch(`${API_BASE_URL}/api/event/deduct-credits`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify(1)
+        });
+        if (!deductResponse.ok) throw new Error('Failed to deduct credit.');
+        updateCreditBalance(true); // Force update balance
+        
+        toast({
+            title: 'Success!',
+            description: `Identified: ${responseData.foodIdentification.name}.`,
+        });
+
+        router.push('/dashboard/meal-plan');
+        handleRetake();
 
     } catch (error: any) {
-      toast({
-        variant: 'destructive',
-        title: 'Scan Failed',
-        description: error.message || 'An unexpected error occurred while analyzing the image.',
-      });
+        toast({
+            variant: 'destructive',
+            title: 'Scan Failed',
+            description: error.message || 'An unexpected error occurred.',
+        });
     } finally {
-      setIsSending(false);
+        setIsSending(false);
     }
   };
 
@@ -240,3 +286,5 @@ export default function ScanFoodPage() {
     </UserDataProvider>
   );
 }
+
+    
