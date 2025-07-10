@@ -222,7 +222,7 @@ export default function CreditsPage() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center overflow-y-auto bg-black p-5 text-gray-200">
        <Link
-        href="/dashboard/settings"
+        href="/dashboard"
         className="absolute top-8 left-8 z-10 inline-block rounded-full border border-white/10 bg-zinc-800/60 py-2.5 px-4 text-sm font-medium text-white no-underline transition-colors hover:bg-zinc-700/80"
       >
         <div className="flex items-center gap-2">
