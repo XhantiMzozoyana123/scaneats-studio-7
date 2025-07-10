@@ -710,9 +710,9 @@ const SallyView = () => {
   };
 
   return (
-    <div className="flex min-h-screen w-full items-center justify-center overflow-hidden bg-gradient-to-br from-purple-50 via-indigo-100 to-blue-50">
-      <div className="flex w-[320px] flex-col items-center gap-6 rounded-3xl border border-white/40 bg-white/70 p-6 shadow-[0_20px_55px_8px_rgba(110,100,150,0.45)] backdrop-blur-2xl backdrop-saturate-150">
-        <div className="relative flex h-[130px] w-[130px] items-center justify-center">
+    <div className="flex min-h-screen w-full items-center justify-center overflow-hidden bg-gradient-to-br from-purple-50 via-indigo-100 to-blue-50 p-4">
+      <div className="flex w-full max-w-sm flex-col items-center gap-6 rounded-3xl border border-white/40 bg-white/70 p-6 shadow-[0_20px_55px_8px_rgba(110,100,150,0.45)] backdrop-blur-2xl backdrop-saturate-150">
+        <div className="relative flex h-[130px] w-[130px] shrink-0 items-center justify-center">
           <div
             className="absolute top-1/2 left-1/2 h-[160%] w-[160%] -translate-x-1/2 -translate-y-1/2 animate-breathe-glow-sally rounded-full"
             style={{
@@ -753,9 +753,9 @@ const SallyView = () => {
           </button>
         </div>
 
-        <div className="h-16 w-full rounded-2xl border border-white/40 bg-white/80 p-3 text-center shadow-[inset_0_1px_2px_rgba(255,255,255,0.6),0_10px_30px_3px_rgba(100,90,140,0.45)] backdrop-blur-sm backdrop-saturate-150">
+        <div className="w-full min-h-[4rem] rounded-2xl border border-white/40 bg-white/80 p-3 text-left shadow-[inset_0_1px_2px_rgba(255,255,255,0.6),0_10px_30px_3px_rgba(100,90,140,0.45)] backdrop-blur-sm backdrop-saturate-150">
            {isLoading ? (
-              <div className="space-y-2">
+              <div className="space-y-2 text-center">
                 <Progress value={loadingProgress} className="w-full" />
                 <p className="text-[13px] text-gray-600">Sally is thinking...</p>
               </div>
