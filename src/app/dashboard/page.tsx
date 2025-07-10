@@ -238,8 +238,8 @@ const MealPlanView = () => {
     }
   }, [toast]);
 
-  useEffect(() => {
-    const storedFood = localStorage.getItem('scannedFood');
+  const loadFoodFromStorage = useCallback(() => {
+     const storedFood = localStorage.getItem('scannedFood');
     if (storedFood) {
       try {
         const parsedFood = JSON.parse(storedFood);
@@ -252,6 +252,7 @@ const MealPlanView = () => {
           carbs: parsedFood.carbs || parsedFood.carbohydrates || 0,
         };
         setFoods([formattedData]);
+        return [formattedData];
       } catch (error) {
         console.error('Error parsing stored food data:', error);
         toast({
@@ -260,11 +261,18 @@ const MealPlanView = () => {
           description: 'Could not load stored meal plan data.',
         });
         setFoods([]);
+        return [];
       }
     } else {
       setFoods([]);
+      return [];
     }
   }, [toast]);
+
+
+  useEffect(() => {
+    loadFoodFromStorage();
+  }, [loadFoodFromStorage]);
 
   const totals = useMemo(() => {
     if (!foods) {
@@ -306,7 +314,13 @@ const MealPlanView = () => {
         return;
     }
     
-    if (!foods || foods.length === 0) {
+    let currentFoods = foods;
+    if (!currentFoods || currentFoods.length === 0) {
+      // Fix for race condition: if state hasn't updated, read directly from storage.
+      currentFoods = loadFoodFromStorage();
+    }
+
+    if (!currentFoods || currentFoods.length === 0) {
       toast({
         variant: 'destructive',
         title: 'No Meal Data',
@@ -351,7 +365,7 @@ const MealPlanView = () => {
         }
 
         // CHECKPOINT 4: Core Logic (Frontend AI)
-        const lastFood = foods[0];
+        const lastFood = currentFoods[0];
         const nutritionalInfo = JSON.stringify({
             calories: lastFood.calories,
             protein: lastFood.protein,
