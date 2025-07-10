@@ -53,6 +53,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Progress } from '@/components/ui/progress';
 
 import {
   Home,
@@ -192,6 +193,7 @@ const MealPlanView = () => {
   );
   const [isRecording, setIsRecording] = useState(false);
   const [isSallyLoading, setIsSallyLoading] = useState(false);
+  const [sallyProgress, setSallyProgress] = useState(0);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const recognitionRef = useRef<any>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -201,6 +203,21 @@ const MealPlanView = () => {
       audioRef.current.play().catch((e) => console.error('Audio play failed', e));
     }
   }, [audioUrl]);
+
+  useEffect(() => {
+    if (isSallyLoading) {
+      const interval = setInterval(() => {
+        setSallyProgress((prev) => {
+          if (prev >= 90) {
+            clearInterval(interval);
+            return 90;
+          }
+          return prev + 10;
+        });
+      }, 500);
+      return () => clearInterval(interval);
+    }
+  }, [isSallyLoading]);
 
   useEffect(() => {
     const SpeechRecognition =
@@ -305,6 +322,7 @@ const MealPlanView = () => {
     if (!userInput.trim()) return;
 
     setIsSallyLoading(true);
+    setSallyProgress(10);
     setSallyResponse(`Thinking about: "${userInput}"`);
     const token = localStorage.getItem('authToken');
 
@@ -407,7 +425,8 @@ const MealPlanView = () => {
         });
         setSallyResponse('Sorry, I had trouble with that. Please try again.');
     } finally {
-        setIsSallyLoading(false);
+        setSallyProgress(100);
+        setTimeout(() => setIsSallyLoading(false), 500);
     }
   };
 
@@ -497,9 +516,12 @@ const MealPlanView = () => {
               <Mic className="h-16 w-16" />
             </button>
 
-            <div className="max-w-md p-3 text-center text-lg font-normal text-muted-foreground">
+            <div className="w-full max-w-md p-3 text-center text-lg font-normal text-muted-foreground">
               {isSallyLoading ? (
-                <Loader2 className="mx-auto h-6 w-6 animate-spin" />
+                <div className="space-y-2">
+                   <Progress value={sallyProgress} className="w-full" />
+                   <p className="text-sm">Sally is thinking...</p>
+                </div>
               ) : (
                 sallyResponse
               )}
@@ -518,6 +540,7 @@ const SallyView = () => {
   );
   const [isRecording, setIsRecording] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [loadingProgress, setLoadingProgress] = useState(0);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const recognitionRef = useRef<any>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -529,6 +552,22 @@ const SallyView = () => {
       audioRef.current.play().catch((e) => console.error('Audio play failed', e));
     }
   }, [audioUrl]);
+
+  useEffect(() => {
+    if (isLoading) {
+      const interval = setInterval(() => {
+        setLoadingProgress((prev) => {
+          if (prev >= 90) {
+            clearInterval(interval);
+            return 90;
+          }
+          return prev + 10;
+        });
+      }, 500);
+      return () => clearInterval(interval);
+    }
+  }, [isLoading]);
+
 
   useEffect(() => {
     const SpeechRecognition =
@@ -580,6 +619,7 @@ const SallyView = () => {
     if (!userInput.trim()) return;
 
     setIsLoading(true);
+    setLoadingProgress(10);
     setSallyResponse(`Thinking about: "${userInput}"`);
     const token = localStorage.getItem('authToken');
 
@@ -664,7 +704,8 @@ const SallyView = () => {
       });
       setSallyResponse('Sorry, I had trouble with that. Please try again.');
     } finally {
-      setIsLoading(false);
+      setLoadingProgress(100);
+      setTimeout(() => setIsLoading(false), 500);
     }
   };
 
@@ -712,11 +753,18 @@ const SallyView = () => {
           </button>
         </div>
 
-        <div className="w-full rounded-2xl border border-white/40 bg-white/80 p-3 text-center shadow-[inset_0_1px_2px_rgba(255,255,255,0.6),0_10px_30px_3px_rgba(100,90,140,0.45)] backdrop-blur-sm backdrop-saturate-150">
-          <p className="text-[13px] leading-tight text-black">
-            <strong>Sally</strong>
-            <span className="text-gray-600"> - {sallyResponse}</span>
-          </p>
+        <div className="h-16 w-full rounded-2xl border border-white/40 bg-white/80 p-3 text-center shadow-[inset_0_1px_2px_rgba(255,255,255,0.6),0_10px_30px_3px_rgba(100,90,140,0.45)] backdrop-blur-sm backdrop-saturate-150">
+           {isLoading ? (
+              <div className="space-y-2">
+                <Progress value={loadingProgress} className="w-full" />
+                <p className="text-[13px] text-gray-600">Sally is thinking...</p>
+              </div>
+           ) : (
+            <p className="text-[13px] leading-tight text-black">
+              <strong>Sally</strong>
+              <span className="text-gray-600"> - {sallyResponse}</span>
+            </p>
+           )}
         </div>
       </div>
 
