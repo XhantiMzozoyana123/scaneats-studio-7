@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview Food item scanner and nutritional information provider.
@@ -46,10 +47,16 @@ const prompt = ai.definePrompt({
   name: 'foodScanNutritionPrompt',
   input: {schema: FoodScanNutritionInputSchema},
   output: {schema: FoodScanNutritionOutputSchema},
-  prompt: `You are a nutritional expert. You will identify the food item in the photo and provide detailed nutritional information, including calories, macro-nutrients (protein, fat, carbohydrates), and potential allergens.
+  prompt: `You are a nutritional expert. Examine the image very carefully.
+  First, identify the food item in the photo.
+  Second, provide detailed nutritional information, including an estimate of calories, macro-nutrients (protein, fat, carbohydrates), and potential allergens.
 
   Photo: {{media url=photoDataUri}}
-  \nGive me the food identification and nutrition information in JSON format. Make sure the data is accurate.`,
+
+  Provide your response in a valid JSON object only, following the specified schema.
+  - No extra explanation, comments, or text outside the JSON.
+  - Ensure the data is as accurate as possible based on the visual information.
+  `,
 });
 
 const foodScanNutritionFlow = ai.defineFlow(
@@ -63,3 +70,4 @@ const foodScanNutritionFlow = ai.defineFlow(
     return output!;
   }
 );
+
