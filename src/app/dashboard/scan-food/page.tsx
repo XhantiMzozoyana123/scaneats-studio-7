@@ -205,19 +205,21 @@ function ScanFoodContent() {
     }
 
     return (
-      <div className="relative h-full w-full">
-        <div className="absolute inset-0 flex items-center justify-center bg-black">
+      <div className="flex flex-col items-center justify-center h-full w-full p-4">
+        <div className="w-full max-w-2xl aspect-video bg-black rounded-lg overflow-hidden shadow-2xl mb-4 border-2 border-primary/50">
           {capturedImage ? (
             <Image
               src={capturedImage}
               alt="Captured food"
-              fill
+              layout="responsive"
+              width={1920}
+              height={1080}
               className="object-contain"
             />
           ) : (
             <video
               ref={videoRef}
-              className="max-h-full max-w-full"
+              className="w-full h-full"
               autoPlay
               muted
               playsInline
@@ -226,7 +228,7 @@ function ScanFoodContent() {
           )}
         </div>
 
-        <div className="absolute bottom-0 left-0 right-0 z-10 flex justify-center gap-4 bg-gradient-to-t from-black/80 via-black/50 to-transparent p-8">
+        <div className="flex justify-center gap-4 w-full max-w-2xl">
           {capturedImage ? (
             <>
               <Button
@@ -273,7 +275,7 @@ function ScanFoodContent() {
         className="z-0"
         unoptimized
       />
-      <div className="relative z-10 h-full w-full">
+      <div className="relative z-10 h-full w-full bg-black/50">
         {renderContent()}
       </div>
     </div>
