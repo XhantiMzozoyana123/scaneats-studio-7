@@ -266,8 +266,18 @@ function ScanFoodContent() {
   };
 
   return (
-    <div className="h-screen w-screen bg-black">
+    <div className="h-screen w-screen relative">
+      <Image
+        src="https://gallery.scaneats.app/images/ScanPage%20SE.gif"
+        alt="Scanning background"
+        layout="fill"
+        objectFit="cover"
+        className="z-0"
+        unoptimized
+      />
+      <div className="relative z-10 h-full w-full">
         {renderContent()}
+      </div>
     </div>
   );
 }
