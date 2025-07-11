@@ -412,8 +412,8 @@ const MealPlanView = () => {
   return (
     <>
       <BackgroundImage
-        src="https://placehold.co/1920x1080.png"
-        data-ai-hint="food pattern"
+        src="https://gallery.scaneats.app/images/Meal%20planner%20LP.gif"
+        unoptimized
         className="blur-sm"
       />
       <div className="flex h-full w-full flex-col items-center overflow-y-auto bg-black/60 p-5 pb-28 backdrop-blur-sm">
