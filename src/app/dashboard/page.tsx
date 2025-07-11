@@ -1491,44 +1491,71 @@ const ScanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
   const [isSending, setIsSending] = useState(false);
 
   const startCamera = useCallback(async () => {
-    if (typeof window === 'undefined') return;
-    setIsLoading(true);
-    setHasCameraPermission(null);
-
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    if (typeof window === 'undefined' || !navigator.mediaDevices?.getUserMedia) {
       toast({
         variant: 'destructive',
         title: 'Camera Not Supported',
         description: 'Your browser does not support camera access.',
       });
       setHasCameraPermission(false);
-      setIsLoading(false);
       return;
     }
 
+    setIsLoading(true);
+    setHasCameraPermission(null);
+
+    const commonConstraints = {
+      width: { ideal: 1080 },
+      height: { ideal: 1920 },
+    };
+
     try {
+      // 1. Try for exact rear camera
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: { ideal: 'environment' },
-          width: { ideal: 1080 },
-          height: { ideal: 1920 },
-        },
+        video: { facingMode: { exact: 'environment' }, ...commonConstraints },
       });
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
-        await videoRef.current.play(); // Explicitly play the video
+        await videoRef.current.play();
       }
       setHasCameraPermission(true);
       setIsCameraStarted(true);
-    } catch (error) {
-      console.error('Error accessing camera:', error);
-      setHasCameraPermission(false);
-      toast({
-        variant: 'destructive',
-        title: 'Camera Access Denied',
-        description:
-          'Please enable camera permissions in your browser settings.',
-      });
+    } catch (err) {
+      console.error('Exact environment camera failed, trying ideal:', err);
+      try {
+        // 2. Fallback to ideal rear camera
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'environment', ...commonConstraints },
+        });
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          await videoRef.current.play();
+        }
+        setHasCameraPermission(true);
+        setIsCameraStarted(true);
+      } catch (fallbackErr) {
+        console.error('Ideal environment camera failed, trying any camera:', fallbackErr);
+        try {
+           // 3. Fallback to any available camera
+           const stream = await navigator.mediaDevices.getUserMedia({
+            video: commonConstraints
+           });
+           if (videoRef.current) {
+             videoRef.current.srcObject = stream;
+             await videoRef.current.play();
+           }
+           setHasCameraPermission(true);
+           setIsCameraStarted(true);
+        } catch (finalErr) {
+            console.error('All camera attempts failed:', finalErr);
+            setHasCameraPermission(false);
+            toast({
+              variant: 'destructive',
+              title: 'Camera Access Failed',
+              description: 'Could not access any camera. Please check permissions and try again.',
+            });
+        }
+      }
     } finally {
       setIsLoading(false);
     }
@@ -1543,7 +1570,7 @@ const ScanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
       }
     };
   }, []);
-
+  
   const handleCapture = useCallback(() => {
     if (!videoRef.current || !canvasRef.current) return;
 
@@ -1797,11 +1824,6 @@ const ScanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
     );
   };
   
-  useEffect(() => {
-    // Automatically start the camera when the view becomes active
-    startCamera();
-  }, [startCamera]);
-
 
   return (
     <div className="h-screen w-screen relative">
