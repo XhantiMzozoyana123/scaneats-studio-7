@@ -119,8 +119,8 @@ export default function SignUpPage() {
   return (
     <div className="relative flex min-h-screen items-center justify-center p-4">
       <BackgroundImage
-        src="https://placehold.co/1200x800.png"
-        data-ai-hint="abstract purple"
+        src="https://gallery.scaneats.app/images/Landing%20page%20LP.gif"
+        unoptimized={true}
         className="blur-md"
       />
       <div className="relative z-10 mx-auto w-full max-w-md rounded-3xl bg-black/60 p-8 backdrop-blur-lg">

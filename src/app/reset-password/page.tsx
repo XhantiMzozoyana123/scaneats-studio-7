@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -154,7 +155,7 @@ function ResetPasswordForm() {
 export default function ResetPasswordPage() {
     return (
         <div className="relative flex min-h-screen items-center justify-center p-4">
-            <BackgroundImage src="https://placehold.co/1200x800.png" data-ai-hint="abstract purple" className="blur-md" />
+            <BackgroundImage src="https://gallery.scaneats.app/images/Landing%20page%20LP.gif" unoptimized={true} className="blur-md" />
             <Suspense fallback={<Loader2 className="h-10 w-10 animate-spin text-white" />}>
                 <ResetPasswordForm />
             </Suspense>

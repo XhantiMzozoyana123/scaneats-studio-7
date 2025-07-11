@@ -10,7 +10,7 @@ export default function Home() {
     <div className="relative flex h-screen w-full flex-col items-center justify-center overflow-hidden">
       {/* Background Image */}
       <Image
-        src="https://gallery.scaneats.app/images/Landing%20Page%20SE..gif"
+        src="https://gallery.scaneats.app/images/Landing%20page%20LP.gif"
         alt="A delicious meal on a plate"
         layout="fill"
         objectFit="cover"
