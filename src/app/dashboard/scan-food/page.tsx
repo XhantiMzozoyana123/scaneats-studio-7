@@ -16,7 +16,7 @@ import {
   AlertTriangle,
   Upload,
 } from 'lucide-react';
-import { useUserData } from '@/context/user-data-context';
+import { useUserData, UserDataProvider } from '@/context/user-data-context';
 import { foodScanNutrition } from '@/ai/flows/food-scan-nutrition';
 import { API_BASE_URL } from '@/lib/api';
 
@@ -201,7 +201,7 @@ function ScanFoodContent() {
         description: `Identified: ${responseData.name}.`,
       });
 
-      router.push('/dashboard');
+      router.push('/dashboard/meal-plan');
       handleRetake();
     } catch (error: any) {
       toast({
@@ -218,12 +218,11 @@ function ScanFoodContent() {
     if (capturedImage) {
       return (
         <div className="flex flex-col items-center justify-center h-full w-full p-4">
-          <div className="w-full max-w-sm aspect-[9/16] bg-black rounded-lg overflow-hidden shadow-2xl mb-4 border-2 border-primary/50">
+          <div className="relative w-full max-w-sm aspect-[9/16] bg-black rounded-lg overflow-hidden shadow-2xl mb-4 border-2 border-primary/50">
             <Image
               src={capturedImage}
               alt="Captured food"
-              layout="fill"
-              objectFit="contain"
+              fill
               className="object-contain"
             />
           </div>
