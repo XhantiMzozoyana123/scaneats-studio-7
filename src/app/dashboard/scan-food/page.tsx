@@ -46,12 +46,13 @@ function ScanFoodContent() {
         const stream = await navigator.mediaDevices.getUserMedia({
           video: { 
             facingMode: 'environment',
-            width: { ideal: 1920 },
-            height: { ideal: 1080 }
+            width: { ideal: 1080 },
+            height: { ideal: 1920 }
           },
         });
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
+          videoRef.current.play().catch(e => console.error("Video play failed:", e));
         }
         setHasCameraPermission(true);
       } catch (error) {
@@ -206,20 +207,20 @@ function ScanFoodContent() {
 
     return (
       <div className="flex flex-col items-center justify-center h-full w-full p-4">
-        <div className="w-full max-w-2xl aspect-video bg-black rounded-lg overflow-hidden shadow-2xl mb-4 border-2 border-primary/50">
+        <div className="w-full max-w-sm aspect-[9/16] bg-black rounded-lg overflow-hidden shadow-2xl mb-4 border-2 border-primary/50">
           {capturedImage ? (
             <Image
               src={capturedImage}
               alt="Captured food"
               layout="responsive"
-              width={1920}
-              height={1080}
+              width={1080}
+              height={1920}
               className="object-contain"
             />
           ) : (
             <video
               ref={videoRef}
-              className="w-full h-full"
+              className="w-full h-full object-cover"
               autoPlay
               muted
               playsInline
