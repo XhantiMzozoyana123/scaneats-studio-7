@@ -1,6 +1,7 @@
+
 'use client';
 
-import { Home, UtensilsCrossed, Mic, User, Settings } from 'lucide-react';
+import { Home, UtensilsCrossed, Mic, User, Settings, Camera } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navItems = [
@@ -11,7 +12,7 @@ const navItems = [
   { view: 'settings', icon: Settings, label: 'Settings' },
 ];
 
-type View = 'home' | 'meal-plan' | 'sally' | 'profile' | 'settings';
+type View = 'home' | 'meal-plan' | 'sally' | 'profile' | 'settings' | 'scan';
 
 interface BottomNavProps {
   activeView: View;
