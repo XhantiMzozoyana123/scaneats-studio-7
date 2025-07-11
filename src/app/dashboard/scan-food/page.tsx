@@ -218,7 +218,7 @@ function ScanFoodContent() {
           ) : (
             <video
               ref={videoRef}
-              className="h-full w-full object-cover"
+              className="h-full w-full object-contain"
               autoPlay
               muted
               playsInline
@@ -268,7 +268,7 @@ function ScanFoodContent() {
 
   return (
     <div className="h-screen w-screen relative">
-      <Image
+      <BackgroundImage
         src="https://gallery.scaneats.app/images/Home%20Page%20Lp.gif"
         alt="Scanning background"
         layout="fill"
