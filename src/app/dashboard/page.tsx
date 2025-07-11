@@ -91,6 +91,8 @@ import { API_BASE_URL } from '@/lib/api';
 import { getMealInsights } from '@/ai/flows/meal-insights';
 import { foodScanNutrition } from '@/ai/flows/food-scan-nutrition';
 
+type View = 'home' | 'meal-plan' | 'sally' | 'profile' | 'settings' | 'scan';
+
 // --- Views (previously separate pages) ---
 
 const HomeView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
@@ -1819,7 +1821,6 @@ const ScanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
 
 
 export default function DashboardPage() {
-  type View = 'home' | 'meal-plan' | 'sally' | 'profile' | 'settings' | 'scan';
   const [activeView, setActiveView] = useState<View>('home');
 
   const handleNavigate = (view: View) => {
@@ -1854,4 +1855,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-type View = 'home' | 'meal-plan' | 'sally' | 'profile' | 'settings' | 'scan';
