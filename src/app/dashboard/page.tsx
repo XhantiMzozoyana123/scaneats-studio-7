@@ -314,7 +314,6 @@ const MealPlanView = () => {
     
     let currentFoods = foods;
     if (!currentFoods || currentFoods.length === 0) {
-      // Fix for race condition: if state hasn't updated, read directly from storage.
       currentFoods = loadFoodFromStorage();
     }
 
@@ -1068,8 +1067,9 @@ const SettingsView = ({
   const handleCancelSubscription = async () => {
     setIsCancelling(true);
     const token = localStorage.getItem('authToken');
+    const email = localStorage.getItem('userEmail');
 
-    if (!token) {
+    if (!token || !email) {
       toast({
         variant: 'destructive',
         title: 'Authentication Error',
@@ -1082,7 +1082,11 @@ const SettingsView = ({
     try {
       const response = await fetch(`${API_BASE_URL}/api/subscription/cancel`, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}` 
+        },
+        body: JSON.stringify({ email: email }),
       });
 
       if (response.ok) {
