@@ -96,7 +96,7 @@ const HomeView = () => {
     <>
       <div className="fixed inset-0 -z-10">
         <Image
-          src="https://gallery.scaneats.app/images/ScanPage%20SE.gif"
+          src="https://gallery.scaneats.app/images/Home%20Page%20Lp.gif"
           alt="Animated background"
           fill
           className="object-cover"
