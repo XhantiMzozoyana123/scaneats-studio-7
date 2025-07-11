@@ -52,6 +52,7 @@ function ScanFoodContent() {
         });
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
+          videoRef.current.play();
         }
         setHasCameraPermission(true);
       } catch (error) {
@@ -268,7 +269,7 @@ function ScanFoodContent() {
   return (
     <div className="h-screen w-screen relative">
       <Image
-        src="https://gallery.scaneats.app/images/ScanPage%20SE.gif"
+        src="https://gallery.scaneats.app/images/Home%20Page%20Lp.gif"
         alt="Scanning background"
         layout="fill"
         objectFit="cover"
