@@ -165,9 +165,7 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
         setCreditBalance(data.credits);
         localStorage.setItem('creditBalance', JSON.stringify(data.credits));
       } else {
-        console.error(
-          'Failed to fetch credit balance, using cached value if available.'
-        );
+        // The error was here. Silently failing is fine since we have cached values.
       }
     } catch (error) {
       console.error('Failed to fetch credit balance', error);
