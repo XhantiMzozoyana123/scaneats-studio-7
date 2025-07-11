@@ -52,7 +52,6 @@ function ScanFoodContent() {
         });
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
-          videoRef.current.play();
         }
         setHasCameraPermission(true);
       } catch (error) {
@@ -176,7 +175,7 @@ function ScanFoodContent() {
   
   const handleCanPlay = () => {
     if (videoRef.current) {
-      videoRef.current.play();
+      videoRef.current.play().catch(e => console.error("Video play failed:", e));
     }
   };
 
@@ -207,7 +206,7 @@ function ScanFoodContent() {
 
     return (
       <div className="relative h-full w-full">
-        <div className="absolute inset-0 bg-black">
+        <div className="absolute inset-0 flex items-center justify-center bg-black">
           {capturedImage ? (
             <Image
               src={capturedImage}
@@ -218,7 +217,7 @@ function ScanFoodContent() {
           ) : (
             <video
               ref={videoRef}
-              className="h-full w-full object-contain"
+              className="max-h-full max-w-full"
               autoPlay
               muted
               playsInline
@@ -271,8 +270,6 @@ function ScanFoodContent() {
       <BackgroundImage
         src="https://gallery.scaneats.app/images/Home%20Page%20Lp.gif"
         alt="Scanning background"
-        layout="fill"
-        objectFit="cover"
         className="z-0"
         unoptimized
       />
