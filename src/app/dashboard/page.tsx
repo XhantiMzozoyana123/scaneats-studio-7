@@ -92,37 +92,17 @@ import { getMealInsights } from '@/ai/flows/meal-insights';
 // --- Views (previously separate pages) ---
 
 const HomeView = () => {
-  const [background, setBackground] = useState({
-    src: 'https://placehold.co/1920x1080.png',
-    hint: 'food abstract day',
-  });
-
-  useEffect(() => {
-    const currentHour = new Date().getHours();
-    if (currentHour >= 19 || currentHour < 8) {
-      setBackground({
-        src: 'https://placehold.co/1920x1080.png',
-        hint: 'food abstract dark',
-      });
-    } else {
-      setBackground({
-        src: 'https://placehold.co/1920x1080.png',
-        hint: 'food abstract day',
-      });
-    }
-  }, []);
-
   return (
     <>
       <div className="fixed inset-0 -z-10">
         <Image
-          src={background.src}
+          src="https://gallery.scaneats.app/images/ScanPage%20SE.gif"
           alt="Animated background"
           fill
-          className="object-cover blur-[2.5px]"
+          className="object-cover"
           quality={90}
           priority
-          data-ai-hint={background.hint}
+          unoptimized
         />
         <div className="absolute inset-0 bg-black/60" />
       </div>
@@ -753,14 +733,14 @@ const SallyView = () => {
           </button>
         </div>
 
-        <div className="w-full min-h-[4rem] flex flex-col justify-center rounded-2xl border border-white/40 bg-white/80 p-3 text-left shadow-[inset_0_1px_2px_rgba(255,255,255,0.6),0_10px_30px_3px_rgba(100,90,140,0.45)] backdrop-blur-sm backdrop-saturate-150">
+        <div className="flex h-auto min-h-[4rem] w-full flex-col justify-center rounded-2xl border border-white/40 bg-white/80 p-3 text-left shadow-[inset_0_1px_2px_rgba(255,255,255,0.6),0_10px_30px_3px_rgba(100,90,140,0.45)] backdrop-blur-sm backdrop-saturate-150">
            {isLoading ? (
               <div className="space-y-2 text-center">
                 <Progress value={loadingProgress} className="w-full" />
                 <p className="text-[13px] text-gray-600">Sally is thinking...</p>
               </div>
            ) : (
-            <div className="text-[13px] leading-tight text-black flex-grow">
+            <div className="flex-grow text-[13px] leading-tight text-black">
               <strong>Sally</strong>
               <span className="text-gray-600"> - {sallyResponse}</span>
             </div>
