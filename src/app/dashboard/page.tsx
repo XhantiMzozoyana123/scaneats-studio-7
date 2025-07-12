@@ -99,7 +99,6 @@ type View = 'home' | 'meal-plan' | 'sally' | 'profile' | 'settings' | 'scan';
 // --- Views (previously separate pages) ---
 
 const HomeView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
-  const router = useRouter();
   return (
     <>
       <div className="fixed inset-0 -z-10">
@@ -158,7 +157,6 @@ const HomeView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
 
 
 const ScanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
-  const router = useRouter();
   const { toast } = useToast();
   const { setSubscriptionModalOpen, updateCreditBalance } = useUserData();
   const videoRef = useRef<HTMLVideoElement>(null);
