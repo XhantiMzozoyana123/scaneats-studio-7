@@ -12,7 +12,7 @@ const navItems = [
   { view: 'settings', icon: Settings, label: 'Settings' },
 ];
 
-type View = 'home' | 'meal-plan' | 'sally' | 'profile' | 'settings' | 'scan';
+type View = 'home' | 'meal-plan' | 'sally' | 'profile' | 'settings';
 
 interface BottomNavProps {
   activeView: View;
