@@ -41,6 +41,10 @@ export default function RootLayout({
 
   return (
     <html lang="en" className="dark">
+      <head>
+        <link rel="manifest" href="/manifest.json" />
+        <meta name="theme-color" content="#6A00C9" />
+      </head>
       <body
         className={`${ptSans.variable} ${playfairDisplay.variable} font-body antialiased`}
       >
