@@ -55,14 +55,19 @@ const getNutritionPrompt = ai.definePrompt({
       mealName: z.string(),
     }),
   },
+  // We only ask the model for the macros, we will calculate calories ourselves.
   output: {
-    schema: FoodScanNutritionOutputSchema,
+    schema: z.object({
+        name: z.string().describe('The name of the food item.'),
+        protein: z.number().describe('The amount of protein in grams.'),
+        fat: z.number().describe('The amount of fat in grams.'),
+        carbohydrates: z.number().describe('The amount of carbohydrates in grams.'),
+      }),
   },
   prompt: `You are a nutritional expert. Examine the image very carefully.
 The food has been identified as: {{{mealName}}}.
 
 Based on this, estimate the approximate food macronutrients in grams.
-The total calories should be calculated as: (protein * 4) + (carbohydrates * 4) + (fat * 9).
 
 Provide your response in a valid JSON object only, following the specified schema.
 - No extra explanation, comments, or text outside the JSON.
@@ -90,13 +95,18 @@ const foodScanNutritionFlow = ai.defineFlow(
     });
     
     // The model output should be a clean JSON object based on the prompt's output schema
-    const nutritionOutput = nutritionResponse.output;
+    const nutritionMacros = nutritionResponse.output;
 
-    if (!nutritionOutput) {
+    if (!nutritionMacros) {
         throw new Error("Failed to get nutritional information from the model.");
     }
     
-    return nutritionOutput;
+    // Step 3: Calculate calories in code for accuracy
+    const calories = (nutritionMacros.protein * 4) + (nutritionMacros.carbohydrates * 4) + (nutritionMacros.fat * 9);
+    
+    return {
+        ...nutritionMacros,
+        calories: Math.round(calories),
+    };
   }
 );
-
