@@ -79,6 +79,7 @@ import {
   Calendar as CalendarIcon,
   XCircle,
   Upload,
+  Smartphone,
 } from 'lucide-react';
 
 import { useToast } from '@/hooks/use-toast';
@@ -90,6 +91,7 @@ import { textToSpeech } from '@/ai/flows/text-to-speech';
 import { API_BASE_URL } from '@/lib/api';
 import { getMealInsights } from '@/ai/flows/meal-insights';
 import { foodScanNutrition } from '@/ai/flows/food-scan-nutrition';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 type View = 'home' | 'meal-plan' | 'sally' | 'profile' | 'settings' | 'scan';
 
@@ -1478,12 +1480,12 @@ const SettingsView = ({
 
 const ScanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
   const { toast } = useToast();
-  const router = useRouter();
   const { setSubscriptionModalOpen, updateCreditBalance } = useUserData();
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
+  const isMobile = useIsMobile();
+  
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
   const [isCameraStarted, setIsCameraStarted] = useState(false);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
@@ -1503,6 +1505,7 @@ const ScanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
 
     setIsLoading(true);
     setHasCameraPermission(null);
+    setIsCameraStarted(true);
 
     const commonConstraints = {
       width: { ideal: 1080 },
@@ -1519,7 +1522,6 @@ const ScanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
         await videoRef.current.play();
       }
       setHasCameraPermission(true);
-      setIsCameraStarted(true);
     } catch (err) {
       console.error('Exact environment camera failed, trying ideal:', err);
       try {
@@ -1532,7 +1534,6 @@ const ScanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
           await videoRef.current.play();
         }
         setHasCameraPermission(true);
-        setIsCameraStarted(true);
       } catch (fallbackErr) {
         console.error('Ideal environment camera failed, trying any camera:', fallbackErr);
         try {
@@ -1545,7 +1546,6 @@ const ScanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
              await videoRef.current.play();
            }
            setHasCameraPermission(true);
-           setIsCameraStarted(true);
         } catch (finalErr) {
             console.error('All camera attempts failed:', finalErr);
             setHasCameraPermission(false);
@@ -1696,6 +1696,21 @@ const ScanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
   };
 
   const renderContent = () => {
+    if (!isMobile) {
+      return (
+         <div className="flex h-full flex-col items-center justify-center gap-4 text-white p-4">
+          <Smartphone className="h-16 w-16" />
+          <h1 className="text-2xl font-bold text-center">Mobile Only Feature</h1>
+          <p className="text-center text-lg max-w-sm text-muted-foreground">
+            Food scanning is best on a mobile device. Please open this app on your phone to use the camera.
+          </p>
+           <Button onClick={() => onNavigate('home')} variant="outline" className="mt-4">
+            <ArrowLeft className="mr-2" /> Back to Home
+          </Button>
+        </div>
+      )
+    }
+
     if (capturedImage) {
       return (
         <div className="flex flex-col items-center justify-center h-full w-full p-4">
