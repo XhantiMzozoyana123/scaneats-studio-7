@@ -12,7 +12,7 @@ const navItems = [
   { view: 'settings', icon: Settings, label: 'Settings' },
 ];
 
-type View = 'home' | 'meal-plan' | 'sally' | 'profile' | 'settings';
+type View = 'home' | 'meal-plan' | 'sally' | 'profile' | 'settings' | 'scan';
 
 interface BottomNavProps {
   activeView: View;
@@ -20,6 +20,11 @@ interface BottomNavProps {
 }
 
 export function BottomNav({ activeView, onNavigate }: BottomNavProps) {
+  // The 'scan' view doesn't have a button, but this keeps the UI consistent
+  if (activeView === 'scan') {
+    return null;
+  }
+  
   return (
     <div className="fixed bottom-5 left-1/2 z-50 w-[90%] max-w-md -translate-x-1/2 sm:bottom-7">
       <div className="mb-2 text-center text-xs text-[#999] sm:mb-2.5 sm:text-[0.85em]">
