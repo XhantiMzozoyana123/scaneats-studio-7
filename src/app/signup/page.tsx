@@ -178,7 +178,7 @@ export default function SignUpPage() {
             <Label htmlFor="terms" className="text-sm text-white/70">
               I agree to the{' '}
               <Link
-                href="#"
+                href="/privacy-policy"
                 className="font-semibold text-white underline hover:no-underline"
               >
                 Terms & Conditions

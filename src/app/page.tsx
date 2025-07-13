@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { useState, useEffect } from 'react';
+import { useToast } from '@/hooks/use-toast';
 
 // Define the interface for the BeforeInstallPromptEvent
 interface BeforeInstallPromptEvent extends Event {
@@ -18,6 +19,7 @@ interface BeforeInstallPromptEvent extends Event {
 
 
 export default function Home() {
+  const { toast } = useToast();
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
 
   useEffect(() => {
@@ -37,8 +39,12 @@ export default function Home() {
 
   const handleInstallClick = async () => {
     if (!installPrompt) {
-      // If the install prompt isn't available, redirect to signup as a fallback.
-      window.location.href = '/signup';
+      // If the install prompt isn't available, do nothing.
+      // This can happen if the app is already installed or on an unsupported browser.
+      toast({
+        title: "App can't be installed",
+        description: "Your browser doesn't support PWA installation, or the app is already installed.",
+      });
       return;
     }
     // Show the install prompt
