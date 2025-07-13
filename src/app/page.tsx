@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import { useRouter } from 'next/navigation';
 
 // Define the interface for the BeforeInstallPromptEvent
 interface BeforeInstallPromptEvent extends Event {
@@ -20,6 +21,7 @@ interface BeforeInstallPromptEvent extends Event {
 
 export default function Home() {
   const { toast } = useToast();
+  const router = useRouter();
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
 
   useEffect(() => {
@@ -38,21 +40,18 @@ export default function Home() {
   }, []);
 
   const handleInstallClick = async () => {
-    if (!installPrompt) {
-      // This case should ideally not be hit if the button is only shown when installPrompt is set.
-      toast({
-        title: "App can't be installed",
-        description: "Your browser doesn't support PWA installation, or the app is already installed.",
-      });
-      return;
+    // If the PWA install prompt is available, show it
+    if (installPrompt) {
+      await installPrompt.prompt();
+      // Wait for the user to respond to the prompt
+      const { outcome } = await installPrompt.userChoice;
+      // We've used the prompt, and can't use it again, so clear it
+      setInstallPrompt(null);
+      console.log(`User response to the install prompt: ${outcome}`);
+    } else {
+      // If the prompt is not available, navigate to the login page
+      router.push('/login');
     }
-    // Show the install prompt
-    await installPrompt.prompt();
-    // Wait for the user to respond to the prompt
-    const { outcome } = await installPrompt.userChoice;
-    // We've used the prompt, and can't use it again, so clear it
-    setInstallPrompt(null);
-    console.log(`User response to the install prompt: ${outcome}`);
   };
 
 
@@ -84,14 +83,12 @@ export default function Home() {
           conversation with you about what you have been eating and if its
           working for you or not.
         </p>
-        {installPrompt && (
-          <Button
-            onClick={handleInstallClick}
-            className="w-full rounded-xl bg-primary py-6 text-lg font-bold text-white shadow-[0_0_20px_4px_hsl(var(--primary)/0.6)] transition-all hover:bg-primary/90 hover:shadow-[0_0_25px_8px_hsl(var(--primary)/0.7)]"
-          >
-            Download ScanEats.App
-          </Button>
-        )}
+        <Button
+          onClick={handleInstallClick}
+          className="w-full rounded-xl bg-primary py-6 text-lg font-bold text-white shadow-[0_0_20px_4px_hsl(var(--primary)/0.6)] transition-all hover:bg-primary/90 hover:shadow-[0_0_25px_8px_hsl(var(--primary)/0.7)]"
+        >
+          Download ScanEats.App
+        </Button>
       </main>
     </div>
   );
