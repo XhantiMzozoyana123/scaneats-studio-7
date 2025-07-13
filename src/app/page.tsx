@@ -34,7 +34,7 @@ function BrowserView() {
     <div className="relative flex h-screen w-full flex-col items-center justify-center overflow-hidden">
       {/* Background Image */}
       <Image
-        src="https://gallery.scaneats.app/images/Landing%20page%20LP.gif"
+        src="https://placehold.co/1920x1080.png"
         alt="A delicious meal being prepared in a pan"
         data-ai-hint="food cooking"
         layout="fill"

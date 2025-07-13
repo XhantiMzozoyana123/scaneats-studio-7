@@ -103,8 +103,9 @@ const HomeView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
     <>
       <div className="fixed inset-0 -z-10">
         <Image
-          src="https://gallery.scaneats.app/images/Home%20Page%20Lp.gif"
+          src="https://placehold.co/1920x1080.png"
           alt="Animated background"
+          data-ai-hint="food preparation"
           fill
           className="object-cover"
           quality={90}
@@ -690,7 +691,8 @@ const MealPlanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
   return (
     <>
       <BackgroundImage
-        src="https://gallery.scaneats.app/images/Meal%20planner%20LP.gif"
+        src="https://placehold.co/1920x1080.png"
+        data-ai-hint="healthy meal"
         unoptimized
         className="blur-sm"
       />

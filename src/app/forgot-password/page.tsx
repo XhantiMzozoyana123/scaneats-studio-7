@@ -52,7 +52,7 @@ export default function ForgotPasswordPage() {
 
   return (
     <div className="relative flex min-h-screen items-center justify-center p-4">
-      <BackgroundImage src="https://gallery.scaneats.app/images/Landing%20page%20LP.gif" unoptimized={true} className="blur-md" />
+      <BackgroundImage src="https://placehold.co/1920x1080.png" data-ai-hint="abstract dark" unoptimized={true} className="blur-md" />
       <div className="relative z-10 mx-auto w-full max-w-md rounded-3xl bg-black/60 p-8 backdrop-blur-lg">
         <div className="mb-8 text-left">
           <h2 className="font-headline text-4xl font-bold leading-tight">
