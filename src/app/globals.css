@@ -119,8 +119,8 @@
 
   .cta-button {
       display: block;
-      background-color: #ffffff;
-      color: #000000;
+      background-color: hsl(var(--primary));
+      color: hsl(var(--primary-foreground));
       padding: 14px 20px;
       border: none;
       border-radius: 10px;
@@ -135,7 +135,7 @@
   }
 
   .cta-button:hover {
-      background-color: #f0f0f0;
+      background-color: hsl(var(--primary) / 0.9);
       transform: scale(1.03);
       box-shadow: 0 4px 20px rgba(0,0,0,0.1);
   }
