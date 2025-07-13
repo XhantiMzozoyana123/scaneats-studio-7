@@ -695,8 +695,8 @@ const MealPlanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
         className="blur-sm"
       />
       <div className="flex h-full w-full flex-col items-center overflow-y-auto bg-black/60 p-5 pb-28 backdrop-blur-sm">
-        <header className="mb-5 flex w-full max-w-2xl shrink-0 items-center justify-start px-4">
-          <div className="h-[75px] w-[150px] shrink-0 text-left">
+        <header className="mb-5 flex w-full max-w-2xl shrink-0 items-center justify-start">
+          <div className="h-[75px] w-[150px] shrink-0 text-left -ml-4">
             <Image
               src="https://gallery.scaneats.app/images/ScanEatsLogo.png"
               alt="ScanEats Logo"
