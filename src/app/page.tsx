@@ -39,7 +39,6 @@ export default function Home() {
 
   const handleInstallClick = async () => {
     if (!installPrompt) {
-      // If the install prompt isn't available, do nothing.
       // This can happen if the app is already installed or on an unsupported browser.
       toast({
         title: "App can't be installed",
