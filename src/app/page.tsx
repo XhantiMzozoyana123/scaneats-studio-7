@@ -1,17 +1,42 @@
 
 'use client';
 
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { InstallButton } from '@/components/install-button';
 import Link from 'next/link';
+import { Loader2 } from 'lucide-react';
 
-export default function Home() {
+import { InstallButton } from '@/components/install-button';
+
+function StandaloneView() {
+  const router = useRouter();
+
+  useEffect(() => {
+    const token = localStorage.getItem('authToken');
+    if (token) {
+      router.replace('/dashboard');
+    } else {
+      router.replace('/login');
+    }
+  }, [router]);
+
+  return (
+    <div className="flex h-screen w-full flex-col items-center justify-center bg-background">
+      <Loader2 className="h-16 w-16 animate-spin text-primary" />
+    </div>
+  );
+}
+
+
+function BrowserView() {
   return (
     <div className="relative flex h-screen w-full flex-col items-center justify-center overflow-hidden">
       {/* Background Image */}
       <Image
         src="https://gallery.scaneats.app/images/Landing%20page%20LP.gif"
-        alt="A delicious meal on a plate"
+        alt="A delicious meal being prepared in a pan"
+        data-ai-hint="food cooking"
         layout="fill"
         objectFit="cover"
         className="z-0"
@@ -49,4 +74,31 @@ export default function Home() {
       </footer>
     </div>
   );
+}
+
+export default function HomePage() {
+  const [view, setView] = useState<'loading' | 'browser' | 'standalone'>('loading');
+
+  useEffect(() => {
+    // Check if the app is running in standalone (PWA) mode
+    if (window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone === true) {
+      setView('standalone');
+    } else {
+      setView('browser');
+    }
+  }, []);
+
+  if (view === 'loading') {
+    return (
+      <div className="flex h-screen w-full flex-col items-center justify-center bg-background">
+        <Loader2 className="h-16 w-16 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (view === 'standalone') {
+    return <StandaloneView />;
+  }
+
+  return <BrowserView />;
 }
