@@ -103,7 +103,7 @@ export function InstallButton() {
     <>
       <Button
         onClick={handleButtonClick}
-        className="cta-button mt-4 w-full"
+        className="cta-button mt-4 w-full animate-breathe-glow"
       >
         Download ScanEats.App
       </Button>
