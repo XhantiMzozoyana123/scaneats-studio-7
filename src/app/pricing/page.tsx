@@ -37,7 +37,7 @@ type GeoData = {
   flagUrl: string;
 };
 
-const ZAR_BASE_PRICE = 210;
+const ZAR_BASE_PRICE = 200;
 
 export default function PricingPage() {
   const router = useRouter();
