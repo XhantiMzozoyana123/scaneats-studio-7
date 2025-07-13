@@ -261,7 +261,7 @@ export default function PricingPage() {
               <AlertDialogTrigger asChild>
                 <button
                   disabled={isSubscribing}
-                   className="cta-button mt-4 animate-breathe-glow-white"
+                   className="cta-button mt-4 animate-breathe-glow"
                 >
                   {isSubscribing ? (
                     <Loader2 className="mx-auto animate-spin" />
