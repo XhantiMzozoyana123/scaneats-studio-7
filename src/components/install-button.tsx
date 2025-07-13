@@ -10,7 +10,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog';
-import { Share, MoreVertical, PlusSquare, Smartphone, ArrowDown } from 'lucide-react';
+import { Share, MoreVertical, PlusSquare, Smartphone, ArrowDown, CornerUpRight } from 'lucide-react';
 
 type DeviceType = 'apple' | 'android' | null;
 
@@ -28,6 +28,12 @@ const AppleInstructions = () => (
         <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">2</span>
         <p>Scroll down and tap <strong>'Add to Home Screen'</strong>.</p>
         <PlusSquare className="ml-auto h-8 w-8 text-primary" />
+      </div>
+       <ArrowDown className="h-5 w-5 animate-pulse text-muted-foreground" />
+      <div className="flex w-full animate-fade-in-2 items-center gap-3 text-left" style={{animationDelay: '0.4s'}}>
+        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">3</span>
+        <p>Finally, tap <strong>'Add'</strong> in the top-right corner.</p>
+        <CornerUpRight className="ml-auto h-8 w-8 text-primary" />
       </div>
     </div>
   </div>
@@ -83,13 +89,13 @@ export function InstallButton() {
   };
 
   const handleButtonClick = () => {
-    // If the native prompt is ready, just show it immediately.
+    // If the native prompt is ready on a supported browser (Android), just show it immediately.
     if (deferredPrompt) {
         handleInstallClick();
     } else {
-        // Otherwise, open the selection dialog.
+        // Otherwise, open the selection dialog for manual instructions.
         setIsOpen(true);
-        setInstructionDevice(null);
+        setInstructionDevice(null); // Reset to selection screen
     }
   };
 
@@ -97,7 +103,7 @@ export function InstallButton() {
     <>
       <Button
         onClick={handleButtonClick}
-        className="w-full rounded-xl bg-primary py-6 text-lg font-bold text-white shadow-[0_0_20px_4px_hsl(var(--primary)/0.6)] transition-all hover:bg-primary/90 hover:shadow-[0_0_25px_8px_hsl(var(--primary)/0.7)]"
+        className="cta-button mt-4 w-full animate-breathe-glow-white"
       >
         Download ScanEats.App
       </Button>
