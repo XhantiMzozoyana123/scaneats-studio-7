@@ -1,5 +1,5 @@
 
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
@@ -23,7 +23,18 @@ export const metadata: Metadata = {
   title: 'ScanEats: Your AI Nutritionist',
   description:
     'Scan your food and get personalized nutrition advice with our AI-powered app.',
+  manifest: "/manifest.json?v=3",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "ScanEats",
+  },
 };
+
+export const viewport: Viewport = {
+  themeColor: "#1D122F",
+};
+
 
 export default function RootLayout({
   children,
@@ -42,8 +53,6 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <head>
-         <meta name="theme-color" content="#1D122F" />
-         <link rel="manifest" href="/manifest.json?v=2" />
          <link rel="icon" href="https://gallery.scaneats.app/images/ScanEatsLogo.png" type="image/png" />
          <link rel="apple-touch-icon" href="https://gallery.scaneats.app/images/ScanEatsLogo_192.png"></link>
       </head>
