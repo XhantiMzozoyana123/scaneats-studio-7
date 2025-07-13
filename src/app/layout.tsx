@@ -43,6 +43,7 @@ export default function RootLayout({
     <html lang="en" className="dark">
       <head>
          <meta name="theme-color" content="#6A00C9" />
+         <link rel="apple-touch-icon" href="/icon-192x192.png"></link>
       </head>
       <body
         className={`${ptSans.variable} ${playfairDisplay.variable} font-body antialiased`}

@@ -1,60 +1,10 @@
 
 'use client';
 
-import Link from 'next/link';
 import Image from 'next/image';
-import { Button } from '@/components/ui/button';
-import { useState, useEffect } from 'react';
-import { useToast } from '@/hooks/use-toast';
-import { useRouter } from 'next/navigation';
-
-// Define the interface for the BeforeInstallPromptEvent
-interface BeforeInstallPromptEvent extends Event {
-  readonly platforms: Array<string>;
-  readonly userChoice: Promise<{
-    outcome: 'accepted' | 'dismissed';
-    platform: string;
-  }>;
-  prompt(): Promise<void>;
-}
-
+import { InstallButton } from '@/components/install-button';
 
 export default function Home() {
-  const { toast } = useToast();
-  const router = useRouter();
-  const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
-
-  useEffect(() => {
-    const handleBeforeInstallPrompt = (e: Event) => {
-      // Prevent the mini-infobar from appearing on mobile
-      e.preventDefault();
-      // Stash the event so it can be triggered later.
-      setInstallPrompt(e as BeforeInstallPromptEvent);
-    };
-
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-
-    return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    };
-  }, []);
-
-  const handleInstallClick = async () => {
-    // If the PWA install prompt is available, show it
-    if (installPrompt) {
-      await installPrompt.prompt();
-      // Wait for the user to respond to the prompt
-      const { outcome } = await installPrompt.userChoice;
-      // We've used the prompt, and can't use it again, so clear it
-      setInstallPrompt(null);
-      console.log(`User response to the install prompt: ${outcome}`);
-    } else {
-      // If the prompt is not available, navigate to the login page
-      router.push('/login');
-    }
-  };
-
-
   return (
     <div className="relative flex h-screen w-full flex-col items-center justify-center overflow-hidden">
       {/* Background Image */}
@@ -83,12 +33,10 @@ export default function Home() {
           conversation with you about what you have been eating and if its
           working for you or not.
         </p>
-        <Button
-          onClick={handleInstallClick}
-          className="w-full rounded-xl bg-primary py-6 text-lg font-bold text-white shadow-[0_0_20px_4px_hsl(var(--primary)/0.6)] transition-all hover:bg-primary/90 hover:shadow-[0_0_25px_8px_hsl(var(--primary)/0.7)]"
-        >
-          Download ScanEats.App
-        </Button>
+        
+        {/* The InstallButton component will handle its own visibility */}
+        <InstallButton />
+
       </main>
     </div>
   );
