@@ -23,7 +23,6 @@ export const metadata: Metadata = {
   title: 'ScanEats: Your AI Nutritionist',
   description:
     'Scan your food and get personalized nutrition advice with our AI-powered app.',
-  // manifest is now manually added in the <head> below to allow for versioning
 };
 
 export const viewport: Viewport = {
@@ -39,9 +38,6 @@ export default function RootLayout({
   const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
 
   if (!googleClientId) {
-    // Throw an error during the build process if the Google Client ID is missing.
-    // This will cause the Vercel build to fail with a clear message,
-    // which is better than deploying a broken app that returns 404s.
     throw new Error("FATAL: NEXT_PUBLIC_GOOGLE_CLIENT_ID is not defined in environment variables. Build failed.");
   }
 
@@ -49,11 +45,11 @@ export default function RootLayout({
     <html lang="en" className="dark">
       <head>
          {/* PWA and Universal Icons */}
-         <link rel="manifest" href="/manifest.json?v=5" />
-         <link rel="icon" href="/ScanEatsLogo.png" type="image/png" />
+         <link rel="manifest" href="/manifest.json?v=6" />
+         <link rel="icon" href="https://gallery.scaneats.app/images/ScanEatsLogo.png" type="image/png" />
 
          {/* Apple Touch Icon (iOS Homescreen) */}
-         <link rel="apple-touch-icon" href="/ScanEatsLogo_192.png" />
+         <link rel="apple-touch-icon" href="https://gallery.scaneats.app/images/ScanEatsLogo_192.png" />
          <meta name="apple-mobile-web-app-capable" content="yes" />
          <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
          <meta name="apple-mobile-web-app-title" content="ScanEats" />
