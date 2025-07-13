@@ -6,7 +6,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { BackgroundImage } from '@/components/background-image';
+import { AuthBackgroundImage } from '@/components/auth-background-image';
 import { KeyRound, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { API_BASE_URL } from '@/lib/api';
@@ -155,7 +155,7 @@ function ResetPasswordForm() {
 export default function ResetPasswordPage() {
     return (
         <div className="relative flex min-h-screen items-center justify-center p-4">
-            <BackgroundImage src="https://placehold.co/1920x1080.png" data-ai-hint="abstract dark" unoptimized={true} className="blur-md" />
+            <AuthBackgroundImage />
             <Suspense fallback={<Loader2 className="h-10 w-10 animate-spin text-white" />}>
                 <ResetPasswordForm />
             </Suspense>

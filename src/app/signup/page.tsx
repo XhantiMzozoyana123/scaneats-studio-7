@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { BackgroundImage } from '@/components/background-image';
+import { AuthBackgroundImage } from '@/components/auth-background-image';
 import { User, Mail, KeyRound, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { API_BASE_URL } from '@/lib/api';
@@ -118,12 +118,7 @@ export default function SignUpPage() {
 
   return (
     <div className="relative flex min-h-screen items-center justify-center p-4">
-      <BackgroundImage
-        src="https://placehold.co/1920x1080.png"
-        data-ai-hint="abstract dark"
-        unoptimized={true}
-        className="blur-md"
-      />
+      <AuthBackgroundImage />
       <div className="relative z-10 mx-auto w-full max-w-md rounded-3xl bg-black/60 p-8 backdrop-blur-lg">
         <div className="mb-8 text-left">
           <h1 className="font-headline text-4xl font-bold leading-tight">

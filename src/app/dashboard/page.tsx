@@ -317,7 +317,7 @@ const ScanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
       <div className="flex h-full flex-col items-center justify-center p-4 text-center">
          <div className="fixed inset-0 -z-10">
             <video
-              src="https://gallery.scaneats.app/images/SCanHomePage.webm"
+              src="https://gallery.scaneats.app/images/ScanHomePage.webm"
               className="h-full w-full object-cover"
               autoPlay
               loop
@@ -343,7 +343,7 @@ const ScanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
     <>
       <div className="fixed inset-0 -z-10">
         <video
-          src="https://gallery.scaneats.app/images/SCanHomePage.webm"
+          src="https://gallery.scaneats.app/images/ScanHomePage.webm"
           className="h-full w-full object-cover"
           autoPlay
           loop
@@ -702,12 +702,18 @@ const MealPlanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
 
   return (
     <>
-      <BackgroundImage
-        src="https://placehold.co/1920x1080.png"
-        data-ai-hint="healthy meal"
-        unoptimized
-        className="blur-sm"
-      />
+      <div className="fixed inset-0 -z-10">
+        <video
+          src="https://gallery.scaneats.app/images/MealPlannerPage.webm"
+          className="h-full w-full object-cover blur-sm"
+          autoPlay
+          loop
+          muted
+          playsInline
+        />
+        <div className="absolute inset-0 bg-black/60" />
+      </div>
+
       <div className="relative flex h-full w-full flex-col items-center overflow-y-auto bg-black/60 p-5 pb-28 backdrop-blur-sm">
         <header className="absolute top-0 left-0 z-20 h-24 w-24 p-2">
             <Image
