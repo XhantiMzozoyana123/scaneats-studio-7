@@ -23,7 +23,6 @@ export const metadata: Metadata = {
   title: 'ScanEats: Your AI Nutritionist',
   description:
     'Scan your food and get personalized nutrition advice with our AI-powered app.',
-  manifest: "/manifest.json?v=3",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
@@ -53,8 +52,9 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <head>
-         <link rel="icon" href="https://gallery.scaneats.app/images/ScanEatsLogo.png" type="image/png" />
-         <link rel="apple-touch-icon" href="https://gallery.scaneats.app/images/ScanEatsLogo_192.png"></link>
+         <link rel="manifest" href="/manifest.json?v=4" />
+         <link rel="icon" href="/ScanEatsLogo.png" type="image/png" />
+         <link rel="apple-touch-icon" href="/ScanEatsLogo_192.png"></link>
       </head>
       <body
         className={`${ptSans.variable} ${playfairDisplay.variable} font-body antialiased`}
