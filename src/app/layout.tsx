@@ -43,7 +43,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <head>
-         <meta name="theme-color" content="#6A00C9" />
+         <meta name="theme-color" content="#1D122F" />
          <link rel="icon" href="https://gallery.scaneats.app/images/ScanEatsLogo.png" type="image/png" />
          <link rel="apple-touch-icon" href="https://gallery.scaneats.app/images/ScanEatsLogo_192.png"></link>
       </head>
