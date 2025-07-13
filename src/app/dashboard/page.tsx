@@ -102,15 +102,13 @@ const HomeView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
   return (
     <>
       <div className="fixed inset-0 -z-10">
-        <Image
-          src="https://placehold.co/1920x1080.png"
-          alt="Animated background"
-          data-ai-hint="food preparation"
-          fill
-          className="object-cover"
-          quality={90}
-          priority
-          unoptimized
+        <video
+          src="https://gallery.scaneats.app/images/ScanHomePage.webm"
+          className="h-full w-full object-cover"
+          autoPlay
+          loop
+          muted
+          playsInline
         />
         <div className="absolute inset-0 bg-black/60" />
       </div>
