@@ -23,7 +23,6 @@ export const metadata: Metadata = {
   title: 'ScanEats: Your AI Nutritionist',
   description:
     'Scan your food and get personalized nutrition advice with our AI-powered app.',
-  manifest: "/manifest.json",
 };
 
 export default function RootLayout({
@@ -44,6 +43,7 @@ export default function RootLayout({
     <html lang="en" className="dark">
       <head>
          <meta name="theme-color" content="#1D122F" />
+         <link rel="manifest" href="/manifest.json?v=2" />
          <link rel="icon" href="https://gallery.scaneats.app/images/ScanEatsLogo.png" type="image/png" />
          <link rel="apple-touch-icon" href="https://gallery.scaneats.app/images/ScanEatsLogo_192.png"></link>
       </head>
