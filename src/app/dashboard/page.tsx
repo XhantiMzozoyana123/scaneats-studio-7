@@ -694,17 +694,15 @@ const MealPlanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
         unoptimized
         className="blur-sm"
       />
-      <div className="flex h-full w-full flex-col items-center overflow-y-auto bg-black/60 p-5 pb-28 backdrop-blur-sm">
-        <header className="mb-5 flex w-full max-w-2xl shrink-0 items-center justify-start">
-          <div className="h-[75px] w-[150px] shrink-0 text-left -ml-4">
+      <div className="relative flex h-full w-full flex-col items-center overflow-y-auto bg-black/60 p-5 pb-28 backdrop-blur-sm">
+        <header className="absolute top-0 left-0 z-20 h-24 w-24 p-2">
             <Image
               src="https://gallery.scaneats.app/images/ScanEatsLogo.png"
               alt="ScanEats Logo"
-              width={150}
-              height={75}
+              width={80}
+              height={80}
               className="block h-full w-full object-contain"
             />
-          </div>
         </header>
 
         {foods === null ? (
@@ -713,7 +711,7 @@ const MealPlanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
             <p className="mt-4 text-white">Loading your meal plan...</p>
           </div>
         ) : (
-          <>
+          <div className="flex w-full flex-1 flex-col items-center justify-center">
             {foods.length > 0 ? (
               <>
                 <div className="mb-6 flex shrink-0 flex-col items-center">
@@ -753,7 +751,7 @@ const MealPlanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
                 </div>
               </>
             ) : (
-              <div className="flex flex-1 flex-col items-center justify-center">
+              <div className="flex flex-1 flex-col items-center justify-center text-center">
                 <p className="text-white">
                   No food scanned yet. Scan an item to get started!
                 </p>
@@ -783,7 +781,7 @@ const MealPlanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
                 sallyResponse
               )}
             </div>
-          </>
+          </div>
         )}
       </div>
       {audioUrl && <audio ref={audioRef} src={audioUrl} hidden />}
