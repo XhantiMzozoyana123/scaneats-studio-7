@@ -130,12 +130,13 @@
       text-decoration: none;
       cursor: pointer;
       margin-top: 15px;
-      transition: background-color 0.3s ease, transform 0.2s ease;
+      transition: all 0.3s ease;
       position: relative;
   }
 
   .cta-button:hover {
       background-color: #f0f0f0;
       transform: scale(1.03);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
   }
 }

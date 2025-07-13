@@ -19,7 +19,7 @@ export function InstallButton() {
     } else {
       toast({
         title: "App Installation",
-        description: "To install the app, use your browser's 'Add to Home Screen' feature.",
+        description: "To install the app, tap the Share button and then 'Add to Home Screen'.",
         duration: 5000,
       });
     }
