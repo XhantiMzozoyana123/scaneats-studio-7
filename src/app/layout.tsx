@@ -23,11 +23,7 @@ export const metadata: Metadata = {
   title: 'ScanEats: Your AI Nutritionist',
   description:
     'Scan your food and get personalized nutrition advice with our AI-powered app.',
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: "black-translucent",
-    title: "ScanEats",
-  },
+  // manifest is now manually added in the <head> below to allow for versioning
 };
 
 export const viewport: Viewport = {
@@ -52,9 +48,18 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <head>
-         <link rel="manifest" href="/manifest.json?v=4" />
+         {/* PWA and Universal Icons */}
+         <link rel="manifest" href="/manifest.json?v=5" />
          <link rel="icon" href="/ScanEatsLogo.png" type="image/png" />
-         <link rel="apple-touch-icon" href="/ScanEatsLogo_192.png"></link>
+
+         {/* Apple Touch Icon (iOS Homescreen) */}
+         <link rel="apple-touch-icon" href="/ScanEatsLogo_192.png" />
+         <meta name="apple-mobile-web-app-capable" content="yes" />
+         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+         <meta name="apple-mobile-web-app-title" content="ScanEats" />
+
+         {/* Theme Color for Browser UI */}
+         <meta name="theme-color" content="#1D122F" />
       </head>
       <body
         className={`${ptSans.variable} ${playfairDisplay.variable} font-body antialiased`}

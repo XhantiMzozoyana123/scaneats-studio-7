@@ -9,13 +9,13 @@
   "theme_color": "#1D122F",
   "icons": [
     {
-      "src": "https://gallery.scaneats.app/images/ScanEatsLogo_192.png",
+      "src": "/ScanEatsLogo.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "https://gallery.scaneats.app/images/ScanEatsLogo_512.png",
+      "src": "/ScanEatsLogo_192.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
