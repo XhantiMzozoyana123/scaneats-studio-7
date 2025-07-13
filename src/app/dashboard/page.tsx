@@ -315,11 +315,17 @@ const ScanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
   if (!isMobile) {
     return (
       <div className="flex h-full flex-col items-center justify-center p-4 text-center">
-         <BackgroundImage
-          src="https://placehold.co/1920x1080.png"
-          data-ai-hint="abstract technology"
-          className="blur-md"
-        />
+         <div className="fixed inset-0 -z-10">
+            <video
+              src="https://gallery.scaneats.app/images/SCanHomePage.webm"
+              className="h-full w-full object-cover"
+              autoPlay
+              loop
+              muted
+              playsInline
+            />
+            <div className="absolute inset-0 bg-black/60" />
+          </div>
         <main className="z-10 rounded-lg bg-background/80 p-8 shadow-lg">
            <Smartphone className="mx-auto h-16 w-16 text-primary" />
           <h2 className="mt-4 text-2xl font-bold">Mobile-Only Feature</h2>
@@ -335,11 +341,17 @@ const ScanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
   
   return (
     <>
-      <BackgroundImage
-        src="https://placehold.co/1920x1080.png"
-        data-ai-hint="abstract technology"
-        className="blur-md"
-      />
+      <div className="fixed inset-0 -z-10">
+        <video
+          src="https://gallery.scaneats.app/images/SCanHomePage.webm"
+          className="h-full w-full object-cover"
+          autoPlay
+          loop
+          muted
+          playsInline
+        />
+        <div className="absolute inset-0 bg-black/60" />
+      </div>
       <main className="container z-10 mx-auto flex h-full flex-col items-center justify-center overflow-y-auto p-4 pb-28">
         <div className="w-full max-w-sm space-y-4">
           <div className="relative w-full overflow-hidden rounded-2xl border-4 border-primary/50 shadow-lg bg-black aspect-[9/16]">
