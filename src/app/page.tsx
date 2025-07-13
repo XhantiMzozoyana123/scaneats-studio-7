@@ -4,8 +4,53 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
+import { useState, useEffect } from 'react';
+
+// Define the interface for the BeforeInstallPromptEvent
+interface BeforeInstallPromptEvent extends Event {
+  readonly platforms: Array<string>;
+  readonly userChoice: Promise<{
+    outcome: 'accepted' | 'dismissed';
+    platform: string;
+  }>;
+  prompt(): Promise<void>;
+}
+
 
 export default function Home() {
+  const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: Event) => {
+      // Prevent the mini-infobar from appearing on mobile
+      e.preventDefault();
+      // Stash the event so it can be triggered later.
+      setInstallPrompt(e as BeforeInstallPromptEvent);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (!installPrompt) {
+      // If the install prompt isn't available, redirect to signup as a fallback.
+      window.location.href = '/signup';
+      return;
+    }
+    // Show the install prompt
+    await installPrompt.prompt();
+    // Wait for the user to respond to the prompt
+    const { outcome } = await installPrompt.userChoice;
+    // We've used the prompt, and can't use it again, so clear it
+    setInstallPrompt(null);
+    console.log(`User response to the install prompt: ${outcome}`);
+  };
+
+
   return (
     <div className="relative flex h-screen w-full flex-col items-center justify-center overflow-hidden">
       {/* Background Image */}
@@ -44,17 +89,11 @@ export default function Home() {
           working for you or not.
         </p>
         <Button
-          asChild
+          onClick={handleInstallClick}
           className="w-full rounded-xl bg-primary py-6 text-lg font-bold text-white shadow-[0_0_20px_4px_hsl(var(--primary)/0.6)] transition-all hover:bg-primary/90 hover:shadow-[0_0_25px_8px_hsl(var(--primary)/0.7)]"
         >
-          <Link href="/signup">Download ScanEats.App</Link>
+          Download ScanEats.App
         </Button>
-        <p className="mt-4 text-sm">
-          Already have an account?{' '}
-          <Link href="/login" className="font-semibold text-white hover:underline">
-            Log In
-          </Link>
-        </p>
       </main>
     </div>
   );
