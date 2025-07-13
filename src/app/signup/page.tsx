@@ -218,7 +218,6 @@ export default function SignUpPage() {
             />
         </div>
 
-
         <p className="mt-8 text-center text-sm text-white/70">
           Already have an account?{' '}
           <Link
