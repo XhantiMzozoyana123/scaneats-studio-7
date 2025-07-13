@@ -33,22 +33,25 @@ export function InstallButton() {
   }, []);
 
   const handleClick = async () => {
-    if (!deferredPrompt) {
-      toast({
-        title: "App Can't Be Installed",
-        description: "Your browser doesn't support PWA installation, or the app may already be installed.",
-        variant: 'default'
-      });
+    // If we have the deferred prompt, use it
+    if (deferredPrompt) {
+      deferredPrompt.prompt(); // Show the install prompt
+      const { outcome } = await deferredPrompt.userChoice;
+
+      console.log(`User response to the install prompt: ${outcome}`);
+      
+      // We can only use the prompt once, so clear it.
+      setDeferredPrompt(null);
       return;
     }
-
-    deferredPrompt.prompt(); // Show the install prompt
-    const { outcome } = await deferredPrompt.userChoice;
-
-    console.log(`User response to the install prompt: ${outcome}`);
     
-    // We can only use the prompt once, so clear it.
-    setDeferredPrompt(null);
+    // If there's no deferred prompt, it could be an iOS device or the app is already installed.
+    // We can provide a hint to the user.
+    toast({
+      title: "Installation",
+      description: "To install the app, tap the 'Share' button in your browser and then 'Add to Home Screen'.",
+      duration: 5000, // Show the toast for 5 seconds
+    });
   };
 
   return (

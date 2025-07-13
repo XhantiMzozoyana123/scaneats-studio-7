@@ -34,7 +34,7 @@ export default function Home() {
           working for you or not.
         </p>
         
-        {/* The InstallButton component will handle its own visibility */}
+        {/* The InstallButton component will handle its own visibility and logic */}
         <InstallButton />
 
       </main>
