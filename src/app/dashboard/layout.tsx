@@ -7,6 +7,13 @@ import { Loader2 } from 'lucide-react';
 
 import { UserDataProvider } from '@/context/user-data-context';
 
+declare global {
+    interface Window {
+        deferredPrompt: any;
+    }
+}
+
+
 export default function DashboardLayout({
   children,
 }: {
@@ -23,6 +30,20 @@ export default function DashboardLayout({
       setIsVerifying(false);
     }
   }, [router]);
+  
+  useEffect(() => {
+    const handler = (e: Event) => {
+      e.preventDefault();
+      window.deferredPrompt = e;
+    };
+
+    window.addEventListener('beforeinstallprompt', handler);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handler);
+    };
+  }, []);
+
 
   if (isVerifying) {
     return (
