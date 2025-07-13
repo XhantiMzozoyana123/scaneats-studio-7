@@ -3,6 +3,7 @@
 
 import Image from 'next/image';
 import { InstallButton } from '@/components/install-button';
+import Link from 'next/link';
 
 export default function Home() {
   return (
@@ -34,10 +35,18 @@ export default function Home() {
           working for you or not.
         </p>
         
-        {/* The InstallButton component will handle its own visibility and logic */}
         <InstallButton />
 
       </main>
+
+      <footer className="absolute bottom-6 z-20 text-center text-sm text-white/80">
+        <p>
+          Already have an account?{' '}
+          <Link href="/login" className="font-semibold underline hover:no-underline">
+            Log In
+          </Link>
+        </p>
+      </footer>
     </div>
   );
 }
