@@ -3,6 +3,7 @@
 
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
 
 // Define the interface for the BeforeInstallPromptEvent
 interface BeforeInstallPromptEvent extends Event {
@@ -16,13 +17,12 @@ interface BeforeInstallPromptEvent extends Event {
 
 export function InstallButton() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
-  const [showButton, setShowButton] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     const handler = (e: Event) => {
       e.preventDefault(); // Stop the automatic prompt
       setDeferredPrompt(e as BeforeInstallPromptEvent); // Save the event
-      setShowButton(true); // Show our custom install button
     };
 
     window.addEventListener('beforeinstallprompt', handler);
@@ -33,7 +33,14 @@ export function InstallButton() {
   }, []);
 
   const handleClick = async () => {
-    if (!deferredPrompt) return;
+    if (!deferredPrompt) {
+      toast({
+        title: "App Can't Be Installed",
+        description: "Your browser doesn't support PWA installation, or the app may already be installed.",
+        variant: 'default'
+      });
+      return;
+    }
 
     deferredPrompt.prompt(); // Show the install prompt
     const { outcome } = await deferredPrompt.userChoice;
@@ -42,12 +49,7 @@ export function InstallButton() {
     
     // We can only use the prompt once, so clear it.
     setDeferredPrompt(null);
-    setShowButton(false);
   };
-
-  if (!showButton) {
-    return null;
-  }
 
   return (
     <Button
