@@ -139,4 +139,11 @@
       transform: scale(1.03);
       box-shadow: 0 4px 20px rgba(0,0,0,0.1);
   }
+
+  .fade-in-1 {
+    animation: fade-in 0.5s ease-out forwards;
+  }
+  .fade-in-2 {
+    animation: fade-in 0.5s 0.2s ease-out forwards;
+  }
 }
