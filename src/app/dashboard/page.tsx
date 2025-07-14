@@ -86,10 +86,12 @@ import { useToast } from '@/hooks/use-toast';
 import { useUserData } from '@/context/user-data-context';
 import { cn } from '@/lib/utils';
 import { BottomNav } from '@/components/bottom-nav';
-import { AuthBackgroundImage } from '@/components/auth-background-image';
 import { API_BASE_URL } from '@/lib/api';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { runProtectedAction } from '@/services/checkpointService';
+import { foodScanNutrition } from '@/ai/flows/food-scan-nutrition';
+import { getMealInsights } from '@/ai/flows/meal-insights';
+import { textToSpeech } from '@/ai/flows/text-to-speech';
 
 type View = 'home' | 'meal-plan' | 'sally' | 'profile' | 'settings' | 'scan';
 
@@ -160,6 +162,7 @@ const ScanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isMobile = useIsMobile();
+  const router = useRouter();
 
   const [cameraState, setCameraState] = useState<
     'idle' | 'starting' | 'running' | 'denied' | 'error' | 'nocamera'
@@ -266,21 +269,11 @@ const ScanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
     setIsSending(true);
 
     try {
-      const scanAction = async () => {
-        const response = await fetch('/api/ai/foodScanNutrition', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ photoDataUri: capturedImage }),
-        });
-        if (!response.ok) {
-          throw new Error('Could not analyze the image. Please try again.');
-        }
-        return await response.json();
-      };
-
-      const scanResult = await runProtectedAction(scanAction);
+      const scanAction = () => foodScanNutrition({ photoDataUri: capturedImage });
       
-      await updateCreditBalance(true); // Force a refresh of credits from backend
+      const scanResult = await runProtectedAction(scanAction, 1);
+      
+      await updateCreditBalance(true); 
       localStorage.setItem('scannedFood', JSON.stringify(scanResult));
       toast({
           title: 'Success!',
@@ -310,7 +303,6 @@ const ScanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
     }
   };
 
-  const router = useRouter();
   if (!isMobile) {
     return (
       <div className="flex h-full flex-col items-center justify-center p-4 text-center">
@@ -342,7 +334,7 @@ const ScanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
     <>
       <div className="fixed inset-0 -z-10">
         <video
-          src="https://gallery.scaneats.app/images/ScanHomePage.webm"
+          src="https://gallery.scaneats.app/images/ScanFoodNEW.webm"
           className="h-full w-full object-cover"
           autoPlay
           loop
@@ -471,7 +463,6 @@ const MealPlanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   
   useEffect(() => {
-    // Create the audio element once and keep a reference to it.
     if (!audioRef.current) {
       audioRef.current = new Audio();
     }
@@ -536,10 +527,10 @@ const MealPlanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
         const formattedData: ScannedFood = {
           id: parsedFood.id,
           name: parsedFood.name || 'Unknown Food',
-          calories: parsedFood.total || parsedFood.calories || 0,
-          protein: parsedFood.protien || parsedFood.protein || 0,
+          calories: parsedFood.calories || 0,
+          protein: parsedFood.protein || 0,
           fat: parsedFood.fat || 0,
-          carbs: parsedFood.carbs || parsedFood.carbohydrates || 0,
+          carbs: parsedFood.carbohydrates || 0,
         };
         setFoods([formattedData]);
         return [formattedData];
@@ -627,47 +618,30 @@ const MealPlanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
       };
 
       const mealInsightAction = async () => {
-        const insightsResponse = await fetch('/api/ai/meal-insights', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
+        const insightsResult = await getMealInsights({
             foodItemName: lastFood.name || 'your meal',
             nutritionalInformation: JSON.stringify(nutritionalInfo),
             userQuery: userInput,
-          }),
         });
-        if (!insightsResponse.ok) throw new Error('Failed to get insights.');
-        return await insightsResponse.json();
+
+        const ttsResult = await textToSpeech({ text: insightsResult.response });
+        
+        return { ...insightsResult, audio: ttsResult.media };
       };
       
-      const insightsResult = await runProtectedAction(mealInsightAction);
+      const insightsResult = await runProtectedAction(mealInsightAction, 1);
 
       setSallyResponse(insightsResult.response);
-
-      // Fetch TTS separately, not protected by credit deduction again
-      if (insightsResult.response) {
-         try {
-            const ttsResponse = await fetch('/api/ai/text-to-speech', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ text: insightsResult.response }),
-            });
-            if (ttsResponse.ok) {
-                const ttsResult = await ttsResponse.json();
-                if (ttsResult.media && audioRef.current) {
-                    audioRef.current.src = ttsResult.media;
-                    audioRef.current.play().catch(e => console.error("Audio play failed", e));
-                }
-            } else {
-                throw new Error("Failed to generate audio.");
-            }
-         } catch (ttsError: any) {
-            console.error('Error during TTS call:', ttsError.message);
-            toast({ variant: 'destructive', title: 'Audio Error', description: 'Could not generate audio for the response.' });
-         }
+      
+      if (insightsResult.audio && audioRef.current) {
+          audioRef.current.src = insightsResult.audio;
+          audioRef.current.play().catch(e => {
+            console.error("Audio play failed", e);
+            toast({ variant: 'destructive', title: 'Audio Error', description: 'Could not play audio. Please ensure your device is not in silent mode.' });
+          });
       }
 
-      await updateCreditBalance(true); // Force refresh credits
+      await updateCreditBalance(true);
 
     } catch (error: any) {
       if (error.message === 'SUBSCRIPTION_REQUIRED') {
@@ -817,7 +791,6 @@ const SallyView = () => {
   const { profile, setSubscriptionModalOpen, updateCreditBalance } = useUserData();
   
   useEffect(() => {
-    // Create the audio element once and keep a reference to it.
     if (!audioRef.current) {
       audioRef.current = new Audio();
     }
@@ -897,47 +870,30 @@ const SallyView = () => {
     
     try {
         const bodyAssessmentAction = async () => {
-            const insightsResponse = await fetch('/api/ai/meal-insights', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    foodItemName: "your body and health",
-                    nutritionalInformation: JSON.stringify(profile),
-                    userQuery: userInput,
-                }),
+            const insightsResult = await getMealInsights({
+                foodItemName: "your body and health",
+                nutritionalInformation: JSON.stringify(profile),
+                userQuery: userInput,
             });
-            if (!insightsResponse.ok) throw new Error('Failed to get a response from Sally.');
-            return await insightsResponse.json();
+
+            const ttsResult = await textToSpeech({ text: insightsResult.response });
+
+            return { ...insightsResult, audio: ttsResult.media };
         };
 
-        const insightsResult = await runProtectedAction(bodyAssessmentAction);
+        const insightsResult = await runProtectedAction(bodyAssessmentAction, 1);
         
         setSallyResponse(insightsResult.response);
 
-        // Fetch TTS separately, not protected by credit deduction again
-        if (insightsResult.response) {
-            try {
-                const ttsResponse = await fetch('/api/ai/text-to-speech', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ text: insightsResult.response }),
-                });
-                if (ttsResponse.ok) {
-                    const ttsResult = await ttsResponse.json();
-                    if (ttsResult.media && audioRef.current) {
-                        audioRef.current.src = ttsResult.media;
-                        audioRef.current.play().catch(e => console.error("Audio play failed", e));
-                    }
-                } else {
-                    throw new Error("Failed to generate audio.");
-                }
-            } catch (ttsError: any) {
-                console.error('Error during TTS call:', ttsError.message);
-                toast({ variant: 'destructive', title: 'Audio Error', description: 'Could not generate audio for the response.' });
-            }
+        if (insightsResult.audio && audioRef.current) {
+          audioRef.current.src = insightsResult.audio;
+          audioRef.current.play().catch(e => {
+            console.error("Audio play failed", e);
+            toast({ variant: 'destructive', title: 'Audio Error', description: 'Could not play audio. Please ensure your device is not in silent mode.' });
+          });
         }
         
-        await updateCreditBalance(true); // Force refresh credits
+        await updateCreditBalance(true);
 
     } catch (error: any) {
       if (error.message === 'SUBSCRIPTION_REQUIRED') {
@@ -1028,8 +984,7 @@ const SallyView = () => {
 };
 
 const ProfileView = () => {
-  const { toast } = useToast();
-  const { profile, setProfile, isLoading, saveProfile } = useUserData();
+  const { profile, isLoading, saveProfile, isProfileComplete, setProfileCompleted } = useUserData();
   const [isSaving, setIsSaving] = useState(false);
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
 
@@ -1038,19 +993,19 @@ const ProfileView = () => {
   ) => {
     const { id, value } = e.target;
     if (profile) {
-      setProfile({ ...profile, [id]: value });
+      saveProfile({ ...profile, [id]: value }, false); // Save locally without marking complete
     }
   };
 
   const handleSelectChange = (value: string) => {
     if (profile) {
-      setProfile({ ...profile, gender: value });
+      saveProfile({ ...profile, gender: value }, false);
     }
   };
 
   const handleDateChange = (date: Date | undefined) => {
     if (date && profile) {
-      setProfile({ ...profile, birthDate: date });
+      saveProfile({ ...profile, birthDate: date }, false);
     }
     setIsDatePickerOpen(false);
   };
@@ -1058,8 +1013,24 @@ const ProfileView = () => {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!profile) return;
+
+    // Validation check
+    if (!profile.name || !profile.weight || !profile.goals || !profile.birthDate) {
+        toast({
+            variant: 'destructive',
+            title: 'Incomplete Profile',
+            description: 'Please fill out all fields before saving.',
+        });
+        return;
+    }
+    
     setIsSaving(true);
-    await saveProfile(profile);
+    await saveProfile(profile, true); // Mark as complete on final save
+    setProfileCompleted(true); // Ensure context and app state updates
+    toast({
+        title: 'Profile Complete!',
+        description: 'Thank you! You can now access all app features.',
+    });
     setIsSaving(false);
   };
 
@@ -1100,12 +1071,21 @@ const ProfileView = () => {
     );
   }
 
+  const { toast } = useToast();
   return (
     <div className="flex min-h-screen flex-col items-center bg-black pb-40 pt-5">
       <div className="w-[90%] max-w-[600px] rounded-lg bg-[rgba(14,1,15,0.32)] p-5">
+         {!isProfileComplete && (
+            <Alert className="mb-6 border-primary/50 bg-primary/20 text-white">
+                <AlertTitle className="font-bold">Welcome to ScanEats!</AlertTitle>
+                <AlertDescription>
+                    Please complete your profile below. Sally needs this information to give you the best personalized advice on your health and goals.
+                </AlertDescription>
+            </Alert>
+          )}
         <div className="mb-8 flex justify-center">
           <Image
-            src="https://gallery.scaneats.app/images/Profile%20logo%20SE.png"
+            src="https://gallery.scaneats.app/images/Personal%20Pic.png"
             alt="Profile & Personal Goals"
             width={140}
             height={140}
@@ -1191,7 +1171,7 @@ const ProfileView = () => {
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
                   {profile.birthDate ? (
-                    format(profile.birthDate, 'PPP')
+                    format(new Date(profile.birthDate), 'PPP')
                   ) : (
                     <span>Pick a date</span>
                   )}
@@ -1200,7 +1180,7 @@ const ProfileView = () => {
               <PopoverContent className="w-auto p-0">
                 <Calendar
                   mode="single"
-                  selected={profile.birthDate ?? undefined}
+                  selected={profile.birthDate ? new Date(profile.birthDate) : undefined}
                   onSelect={handleDateChange}
                   disabled={(date) =>
                     date > new Date() || date < new Date('1900-01-01')
@@ -1310,7 +1290,7 @@ const SettingsView = ({
 }) => {
   const router = useRouter();
   const { toast } = useToast();
-  const { profile, creditBalance, isLoading, setSubscriptionModalOpen } =
+  const { profile, creditBalance, isLoading, setSubscriptionModalOpen, fetchProfile } =
     useUserData();
 
   const [isDeleting, setIsDeleting] = useState(false);
@@ -1322,10 +1302,7 @@ const SettingsView = ({
   const [isCancelling, setIsCancelling] = useState(false);
 
   const handleLogout = () => {
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('userId');
-    localStorage.removeItem('userEmail');
-    localStorage.removeItem('creditBalance');
+    localStorage.clear();
     toast({
       title: 'Logged Out',
       description: 'You have been successfully logged out.',
@@ -1363,7 +1340,7 @@ const SettingsView = ({
           title: 'Subscription Cancelled',
           description: 'Your subscription has been successfully cancelled.',
         });
-        // Optionally, refresh user data to reflect the change
+        fetchProfile(); // Refresh user data
       } else {
         if (response.status === 401 || response.status === 403) {
           setSubscriptionModalOpen(true);
@@ -1551,6 +1528,8 @@ const SettingsView = ({
     );
   }
 
+  const isSubscribed = profile?.isSubscribed ?? false;
+
   return (
     <div className="h-full overflow-y-auto bg-zinc-950 text-gray-200">
       <header className="sticky top-0 z-10 w-full bg-zinc-900/50 p-4 shadow-md backdrop-blur-sm">
@@ -1649,11 +1628,44 @@ const SettingsView = ({
                 )}
               </span>
             </div>
-            <SettingsItem
-              icon={Repeat}
-              label="Manage Subscription"
-              href="/pricing"
-            />
+            {isSubscribed ? (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                      <button className="w-full">
+                        <DestructiveSettingsItem
+                          icon={XCircle}
+                          label="Cancel Subscription"
+                          onClick={() => {}}
+                        />
+                      </button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Are you sure you want to cancel?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This will cancel your subscription at the end of the current billing period. You will lose access to premium features, but your data will be saved.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Keep Subscription</AlertDialogCancel>
+                      <AlertDialogAction
+                        className={buttonVariants({ variant: 'destructive' })}
+                        onClick={handleCancelSubscription}
+                        disabled={isCancelling}
+                      >
+                        {isCancelling && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Yes, Cancel
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+            ) : (
+                <SettingsItem
+                  icon={Repeat}
+                  label="Manage Subscription"
+                  href="/pricing"
+                />
+            )}
             <SettingsItem
               icon={CreditCard}
               label="Buy Credits"
@@ -1668,42 +1680,6 @@ const SettingsView = ({
               <AlertDialogTrigger asChild>
                 <button className="w-full">
                   <DestructiveSettingsItem
-                    icon={XCircle}
-                    label="Cancel Subscription"
-                    onClick={() => {}}
-                  />
-                </button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>
-                    Are you sure you want to cancel?
-                  </AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This will cancel your subscription at the end of the
-                    current billing period. You will lose access to premium
-                    features, but your data will be saved.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Keep Subscription</AlertDialogCancel>
-                  <AlertDialogAction
-                    className={buttonVariants({ variant: 'destructive' })}
-                    onClick={handleCancelSubscription}
-                    disabled={isCancelling}
-                  >
-                    {isCancelling && (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    )}
-                    Yes, Cancel Subscription
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <button className="w-full">
-                  <DestructiveSettingsItem
                     icon={Trash2}
                     label="Delete Account"
                     onClick={() => {}}
@@ -1714,8 +1690,7 @@ const SettingsView = ({
                 <AlertDialogHeader>
                   <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    This action cannot be undone. This will permanently delete
-                    your account and remove your data from our servers.
+                    This action cannot be undone. This will permanently delete your account and remove your data from our servers.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
@@ -1742,9 +1717,24 @@ const SettingsView = ({
 
 
 export default function DashboardPage() {
+  const { isProfileComplete } = useUserData();
   const [activeView, setActiveView] = useState<View>('home');
+  const [forceProfileView, setForceProfileView] = useState(false);
 
+  useEffect(() => {
+    if (isProfileComplete === false) { // Explicitly check for false, not null
+      setActiveView('profile');
+      setForceProfileView(true);
+    } else if (isProfileComplete === true) {
+      setForceProfileView(false);
+    }
+  }, [isProfileComplete]);
+  
   const handleNavigate = (view: View) => {
+    if (forceProfileView) {
+      setActiveView('profile');
+      return;
+    }
     setActiveView(view);
   };
 
@@ -1772,7 +1762,7 @@ export default function DashboardPage() {
   return (
     <div className="relative h-screen">
       {renderView()}
-      <BottomNav activeView={activeView} onNavigate={handleNavigate} />
+      {!forceProfileView && <BottomNav activeView={activeView} onNavigate={handleNavigate} />}
     </div>
   );
 }
