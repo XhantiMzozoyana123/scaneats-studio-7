@@ -11,7 +11,7 @@ import { InstallButton } from '@/components/install-button';
 function LandingContent() {
   return (
     <>
-      <AuthBackgroundImage className="blur-sm" />
+      <AuthBackgroundImage />
       <div className="relative z-10 flex min-h-screen flex-col justify-center p-4">
         <div className="frosted-card mx-auto flex w-full max-w-sm flex-col items-center gap-6 p-8">
             <Image
