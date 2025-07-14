@@ -89,6 +89,7 @@ import { BottomNav } from '@/components/bottom-nav';
 import { AuthBackgroundImage } from '@/components/auth-background-image';
 import { API_BASE_URL } from '@/lib/api';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { runProtectedAction } from '@/services/checkpointService';
 
 type View = 'home' | 'meal-plan' | 'sally' | 'profile' | 'settings' | 'scan';
 
@@ -263,64 +264,53 @@ const ScanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
     if (!capturedImage) return;
 
     setIsSending(true);
-    const token = localStorage.getItem('authToken');
 
-    if (!token) {
-      toast({
-        variant: 'destructive',
-        title: 'Authentication Error',
-        description: 'You must be logged in to perform a scan.',
-      });
-      setIsSending(false);
-      return;
-    }
-    
-     try {
-      const response = await fetch('/api/ai/foodScanNutrition', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({ photoDataUri: capturedImage }),
-      });
-
-      if (!response.ok) {
-        if (response.status === 401 || response.status === 403) {
-          setSubscriptionModalOpen(true);
-        } else if (response.status === 429) {
-          toast({
-            variant: 'destructive',
-            title: 'No Credits Left',
-            description: 'Please purchase more credits to continue using this feature.',
-          });
-        } else {
+    try {
+      const scanAction = async () => {
+        const response = await fetch('/api/ai/foodScanNutrition', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ photoDataUri: capturedImage }),
+        });
+        if (!response.ok) {
           throw new Error('Could not analyze the image. Please try again.');
         }
-        return; // Stop execution if there was an error
-      }
+        return await response.json();
+      };
 
-      const scanResult = await response.json();
+      const scanResult = await runProtectedAction(scanAction);
       
-      await updateCreditBalance(true);
+      await updateCreditBalance(true); // Force a refresh of credits from backend
       localStorage.setItem('scannedFood', JSON.stringify(scanResult));
       toast({
           title: 'Success!',
           description: `Identified: ${scanResult.name}.`,
       });
       onNavigate('meal-plan');
+
     } catch (error: any) {
-       toast({
-         variant: 'destructive',
-         title: 'Scan Failed',
-         description: error.message || 'An unexpected error occurred.',
-       });
+      if (error.message === 'SUBSCRIPTION_REQUIRED') {
+        setSubscriptionModalOpen(true);
+      } else if (error.message === 'INSUFFICIENT_CREDITS') {
+        toast({
+          variant: 'destructive',
+          title: 'No Credits Left',
+          description: 'Please purchase more credits to continue scanning.',
+          action: <Button onClick={() => router.push('/credits')}>Buy Credits</Button>
+        });
+      } else {
+        toast({
+          variant: 'destructive',
+          title: 'Scan Failed',
+          description: error.message || 'An unexpected error occurred.',
+        });
+      }
     } finally {
       setIsSending(false);
     }
   };
 
-
+  const router = useRouter();
   if (!isMobile) {
     return (
       <div className="flex h-full flex-col items-center justify-center p-4 text-center">
@@ -467,6 +457,7 @@ declare global {
 }
 
 const MealPlanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
+  const router = useRouter();
   const [foods, setFoods] = useState<ScannedFood[] | null>(null);
   const { toast } = useToast();
   const { setSubscriptionModalOpen, updateCreditBalance } = useUserData();
@@ -609,13 +600,6 @@ const MealPlanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
     setIsSallyLoading(true);
     setSallyProgress(10);
     setSallyResponse(`Thinking about: "${userInput}"`);
-    const token = localStorage.getItem('authToken');
-
-    if (!token) {
-      toast({ variant: 'destructive', title: 'Authentication Error' });
-      setIsSallyLoading(false);
-      return;
-    }
 
     let currentFoods = foods;
     if (!currentFoods || currentFoods.length === 0) {
@@ -635,63 +619,75 @@ const MealPlanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
 
     try {
       const lastFood = currentFoods[0];
-      const nutritionalInfo = JSON.stringify({
+      const nutritionalInfo = {
         calories: lastFood.calories,
         protein: lastFood.protein,
         fat: lastFood.fat,
         carbs: lastFood.carbs,
-      });
+      };
 
-      // Combined API call for insights and TTS
-      const response = await fetch('/api/ai/getMealInsightsAndSpeech', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          foodItemName: lastFood.name || 'your meal',
-          nutritionalInformation: nutritionalInfo,
-          userQuery: userInput,
-        }),
-      });
-
-      if (!response.ok) {
-        if (response.status === 401 || response.status === 403) {
-          setSubscriptionModalOpen(true);
-        } else if (response.status === 429) {
-          toast({
-            variant: 'destructive',
-            title: 'No Credits Left',
-            description: 'Please purchase more credits to continue using this feature.',
-          });
-        } else {
-          throw new Error('Failed to get a response from Sally.');
-        }
-        setSallyResponse('Sorry, I had trouble with that. Please try again.');
-        return;
-      }
-
-      const { insights, tts } = await response.json();
+      const mealInsightAction = async () => {
+        const insightsResponse = await fetch('/api/ai/meal-insights', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            foodItemName: lastFood.name || 'your meal',
+            nutritionalInformation: JSON.stringify(nutritionalInfo),
+            userQuery: userInput,
+          }),
+        });
+        if (!insightsResponse.ok) throw new Error('Failed to get insights.');
+        return await insightsResponse.json();
+      };
       
-      setSallyResponse(insights.response);
-      await updateCreditBalance(false);
+      const insightsResult = await runProtectedAction(mealInsightAction);
 
-      if (tts?.media && audioRef.current) {
-        audioRef.current.src = tts.media;
-        audioRef.current.play().catch(e => console.error("Audio play failed", e));
-      } else if (tts?.error) {
-         console.error('Error during TTS call:', tts.error);
-         toast({ variant: 'destructive', title: 'Audio Error', description: 'Could not generate audio for the response.' });
+      setSallyResponse(insightsResult.response);
+
+      // Fetch TTS separately, not protected by credit deduction again
+      if (insightsResult.response) {
+         try {
+            const ttsResponse = await fetch('/api/ai/text-to-speech', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text: insightsResult.response }),
+            });
+            if (ttsResponse.ok) {
+                const ttsResult = await ttsResponse.json();
+                if (ttsResult.media && audioRef.current) {
+                    audioRef.current.src = ttsResult.media;
+                    audioRef.current.play().catch(e => console.error("Audio play failed", e));
+                }
+            } else {
+                throw new Error("Failed to generate audio.");
+            }
+         } catch (ttsError: any) {
+            console.error('Error during TTS call:', ttsError.message);
+            toast({ variant: 'destructive', title: 'Audio Error', description: 'Could not generate audio for the response.' });
+         }
       }
+
+      await updateCreditBalance(true); // Force refresh credits
 
     } catch (error: any) {
-      setSallyResponse('Sorry, I had trouble with that. Please try again.');
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: error.message || 'An error occurred while talking to Sally.',
-      });
+      if (error.message === 'SUBSCRIPTION_REQUIRED') {
+        setSubscriptionModalOpen(true);
+      } else if (error.message === 'INSUFFICIENT_CREDITS') {
+        toast({
+          variant: 'destructive',
+          title: 'No Credits Left',
+          description: 'Please purchase more credits to talk to Sally.',
+          action: <Button onClick={() => router.push('/credits')}>Buy Credits</Button>
+        });
+        setSallyResponse("I'd love to chat, but it looks like you're out of credits.");
+      } else {
+        setSallyResponse('Sorry, I had trouble with that. Please try again.');
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: error.message || 'An error occurred while talking to Sally.',
+        });
+      }
     } finally {
       setSallyProgress(100);
       setTimeout(() => setIsSallyLoading(false), 500);
@@ -808,6 +804,7 @@ const MealPlanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
 };
 
 const SallyView = () => {
+  const router = useRouter();
   const [sallyResponse, setSallyResponse] = useState<string>(
     "I'm your personal assistant, ask me anything about your body."
   );
@@ -897,65 +894,70 @@ const SallyView = () => {
     setIsLoading(true);
     setLoadingProgress(10);
     setSallyResponse(`Thinking about: "${userInput}"`);
-    const token = localStorage.getItem('authToken');
-
-    if (!token) {
-      toast({ variant: 'destructive', title: 'Authentication Error' });
-      setIsLoading(false);
-      return;
-    }
-
+    
     try {
-      // Combined API call for insights and TTS
-      const response = await fetch('/api/ai/getMealInsightsAndSpeech', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          foodItemName: "your body and health",
-          nutritionalInformation: JSON.stringify(profile),
-          userQuery: userInput,
-        }),
-      });
+        const bodyAssessmentAction = async () => {
+            const insightsResponse = await fetch('/api/ai/meal-insights', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    foodItemName: "your body and health",
+                    nutritionalInformation: JSON.stringify(profile),
+                    userQuery: userInput,
+                }),
+            });
+            if (!insightsResponse.ok) throw new Error('Failed to get a response from Sally.');
+            return await insightsResponse.json();
+        };
 
-      if (!response.ok) {
-        if (response.status === 401 || response.status === 403) {
-          setSubscriptionModalOpen(true);
-        } else if (response.status === 429) {
-          toast({
-            variant: 'destructive',
-            title: 'No Credits Left',
-            description: 'Please purchase more credits to continue using this feature.',
-          });
-        } else {
-          throw new Error('Failed to get a response from Sally.');
+        const insightsResult = await runProtectedAction(bodyAssessmentAction);
+        
+        setSallyResponse(insightsResult.response);
+
+        // Fetch TTS separately, not protected by credit deduction again
+        if (insightsResult.response) {
+            try {
+                const ttsResponse = await fetch('/api/ai/text-to-speech', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text: insightsResult.response }),
+                });
+                if (ttsResponse.ok) {
+                    const ttsResult = await ttsResponse.json();
+                    if (ttsResult.media && audioRef.current) {
+                        audioRef.current.src = ttsResult.media;
+                        audioRef.current.play().catch(e => console.error("Audio play failed", e));
+                    }
+                } else {
+                    throw new Error("Failed to generate audio.");
+                }
+            } catch (ttsError: any) {
+                console.error('Error during TTS call:', ttsError.message);
+                toast({ variant: 'destructive', title: 'Audio Error', description: 'Could not generate audio for the response.' });
+            }
         }
-        setSallyResponse('Sorry, I had trouble with that. Please try again.');
-        return;
-      }
-      
-      const { insights, tts } = await response.json();
-
-      setSallyResponse(insights.response);
-      await updateCreditBalance(false);
-
-      if (tts?.media && audioRef.current) {
-        audioRef.current.src = tts.media;
-        audioRef.current.play().catch(e => console.error("Audio play failed", e));
-      } else if (tts?.error) {
-         console.error('Error during TTS call:', tts.error);
-         toast({ variant: 'destructive', title: 'Audio Error', description: 'Could not generate audio for the response.' });
-      }
+        
+        await updateCreditBalance(true); // Force refresh credits
 
     } catch (error: any) {
-      setSallyResponse('Sorry, I had trouble with that. Please try again.');
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: error.message || 'An error occurred while talking to Sally.',
-      });
+      if (error.message === 'SUBSCRIPTION_REQUIRED') {
+        setSubscriptionModalOpen(true);
+      } else if (error.message === 'INSUFFICIENT_CREDITS') {
+        toast({
+          variant: 'destructive',
+          title: 'No Credits Left',
+          description: 'Please purchase more credits to talk to Sally.',
+           action: <Button onClick={() => router.push('/credits')}>Buy Credits</Button>
+        });
+        setSallyResponse("I'd love to chat, but it looks like you're out of credits.");
+      } else {
+        setSallyResponse('Sorry, I had trouble with that. Please try again.');
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: error.message || 'An error occurred while talking to Sally.',
+        });
+      }
     } finally {
       setLoadingProgress(100);
       setTimeout(() => setIsLoading(false), 500);
