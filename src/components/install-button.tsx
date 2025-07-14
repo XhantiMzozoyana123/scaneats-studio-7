@@ -66,6 +66,8 @@ export function InstallButton() {
   const [instructionDevice, setInstructionDevice] = useState<DeviceType>(null);
   
   useEffect(() => {
+    // The 'beforeinstallprompt' event is fired by the browser when a PWA is installable.
+    // We prevent the default mini-infobar from appearing and save the event for later.
     const handler = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e);
@@ -80,8 +82,11 @@ export function InstallButton() {
 
   const handleInstallClick = () => {
     if (deferredPrompt) {
+      // Show the browser's native installation prompt.
       deferredPrompt.prompt();
+      // We can listen for the user's choice.
       deferredPrompt.userChoice.then(() => {
+        // The prompt can only be used once. Clear it.
         setDeferredPrompt(null);
         setIsOpen(false);
       });
@@ -89,11 +94,11 @@ export function InstallButton() {
   };
 
   const handleButtonClick = () => {
-    // If the native prompt is ready on a supported browser (Android), just show it immediately.
+    // If we have a deferred prompt (on Android Chrome), we can trigger the install directly.
     if (deferredPrompt) {
         handleInstallClick();
     } else {
-        // Otherwise, open the selection dialog for manual instructions.
+        // For other browsers (like Safari on iOS), we need to show manual instructions.
         setIsOpen(true);
         setInstructionDevice(null); // Reset to selection screen
     }
@@ -103,7 +108,7 @@ export function InstallButton() {
     <>
       <Button
         onClick={handleButtonClick}
-        className="cta-button mt-4 w-full animate-breathe-glow"
+        className="w-full rounded-lg bg-primary py-3 text-lg font-bold text-white transition-all hover:bg-primary/90 hover:shadow-[0_0_12px_6px_rgba(127,0,255,0.8)] disabled:opacity-50 animate-breathe-glow"
       >
         Download ScanEats.App
       </Button>
