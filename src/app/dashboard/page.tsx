@@ -278,8 +278,32 @@ const ScanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
       return;
     }
     
-    try {
-      const scanResult = await foodScanNutrition({ photoDataUri: capturedImage });
+     try {
+      const response = await fetch('/api/ai/foodScanNutrition', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ photoDataUri: capturedImage }),
+      });
+
+      if (!response.ok) {
+        if (response.status === 401 || response.status === 403) {
+          setSubscriptionModalOpen(true);
+        } else if (response.status === 429) {
+          toast({
+            variant: 'destructive',
+            title: 'No Credits Left',
+            description: 'Please purchase more credits to continue using this feature.',
+          });
+        } else {
+          throw new Error('Could not analyze the image. Please try again.');
+        }
+        return; // Stop execution if there was an error
+      }
+
+      const scanResult = await response.json();
       
       await updateCreditBalance(true);
       localStorage.setItem('scannedFood', JSON.stringify(scanResult));
@@ -289,21 +313,11 @@ const ScanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
       });
       onNavigate('meal-plan');
     } catch (error: any) {
-       if (error.message.includes("401") || error.message.includes("403")) {
-          setSubscriptionModalOpen(true);
-       } else if (error.message.includes("429")) {
-          toast({
-            variant: 'destructive',
-            title: 'No Credits Left',
-            description: 'Please purchase more credits to continue using this feature.'
-          });
-       } else {
-         toast({
-           variant: 'destructive',
-           title: 'Scan Failed',
-           description: 'Could not analyze the image. Please try again.',
-         });
-       }
+       toast({
+         variant: 'destructive',
+         title: 'Scan Failed',
+         description: error.message || 'An unexpected error occurred.',
+       });
     } finally {
       setIsSending(false);
     }
@@ -601,11 +615,11 @@ const MealPlanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
     const token = localStorage.getItem('authToken');
 
     if (!token) {
-        toast({ variant: 'destructive', title: 'Authentication Error' });
-        setIsSallyLoading(false);
-        return;
+      toast({ variant: 'destructive', title: 'Authentication Error' });
+      setIsSallyLoading(false);
+      return;
     }
-    
+
     let currentFoods = foods;
     if (!currentFoods || currentFoods.length === 0) {
       currentFoods = loadFoodFromStorage();
@@ -617,63 +631,76 @@ const MealPlanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
         title: 'No Meal Data',
         description: 'Please scan a food item before asking Sally.',
       });
-      setSallyResponse("Scan a meal first, then we can talk!");
+      setSallyResponse('Scan a meal first, then we can talk!');
       setIsSallyLoading(false);
       return;
     }
 
     try {
-        const lastFood = currentFoods[0];
-        const nutritionalInfo = JSON.stringify({
-            calories: lastFood.calories,
-            protein: lastFood.protein,
-            fat: lastFood.fat,
-            carbs: lastFood.carbs,
-        });
+      const lastFood = currentFoods[0];
+      const nutritionalInfo = JSON.stringify({
+        calories: lastFood.calories,
+        protein: lastFood.protein,
+        fat: lastFood.fat,
+        carbs: lastFood.carbs,
+      });
 
-        const insights = await getMealInsights({
-            foodItemName: lastFood.name || 'your meal',
-            nutritionalInformation: nutritionalInfo,
-            userQuery: userInput,
-        });
-        
-        setSallyResponse(insights.response);
-        await updateCreditBalance(false);
+      // Combined API call for insights and TTS
+      const response = await fetch('/api/ai/getMealInsightsAndSpeech', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          foodItemName: lastFood.name || 'your meal',
+          nutritionalInformation: nutritionalInfo,
+          userQuery: userInput,
+        }),
+      });
 
-        if (insights.response) {
-            try {
-                const { media } = await textToSpeech({ text: insights.response });
-                if (media && audioRef.current) {
-                  audioRef.current.src = media;
-                  await audioRef.current.play();
-                }
-            } catch (ttsError) {
-                console.error('Error during TTS call:', ttsError);
-                toast({ variant: 'destructive', title: 'Audio Error', description: 'Could not generate audio for the response.' });
-            }
-        }
-    } catch (error: any) {
-        if (error.message.includes("401") || error.message.includes("403")) {
-           setSubscriptionModalOpen(true);
-        } else if (error.message.includes("429")) {
-           toast({
-             variant: 'destructive',
-             title: 'No Credits Left',
-             description: 'Please purchase more credits to continue using this feature.'
-           });
-        } else {
+      if (!response.ok) {
+        if (response.status === 401 || response.status === 403) {
+          setSubscriptionModalOpen(true);
+        } else if (response.status === 429) {
           toast({
             variant: 'destructive',
-            title: 'Error',
-            description: error.message || 'An error occurred while talking to Sally.',
+            title: 'No Credits Left',
+            description: 'Please purchase more credits to continue using this feature.',
           });
+        } else {
+          throw new Error('Failed to get a response from Sally.');
         }
         setSallyResponse('Sorry, I had trouble with that. Please try again.');
+        return;
+      }
+
+      const { insights, tts } = await response.json();
+      
+      setSallyResponse(insights.response);
+      await updateCreditBalance(false);
+
+      if (tts?.media && audioRef.current) {
+        audioRef.current.src = tts.media;
+        await audioRef.current.play();
+      } else if (tts?.error) {
+         console.error('Error during TTS call:', tts.error);
+         toast({ variant: 'destructive', title: 'Audio Error', description: 'Could not generate audio for the response.' });
+      }
+
+    } catch (error: any) {
+      setSallyResponse('Sorry, I had trouble with that. Please try again.');
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: error.message || 'An error occurred while talking to Sally.',
+      });
     } finally {
-        setSallyProgress(100);
-        setTimeout(() => setIsSallyLoading(false), 500);
+      setSallyProgress(100);
+      setTimeout(() => setIsSallyLoading(false), 500);
     }
   };
+
 
   return (
     <>
@@ -867,7 +894,7 @@ const SallyView = () => {
     }
   };
 
-  const handleApiCall = async (userInput: string) => {
+ const handleApiCall = async (userInput: string) => {
     if (!userInput.trim()) return;
 
     setIsLoading(true);
@@ -876,61 +903,68 @@ const SallyView = () => {
     const token = localStorage.getItem('authToken');
 
     if (!token) {
-        toast({ variant: 'destructive', title: 'Authentication Error' });
-        setIsLoading(false);
-        return;
+      toast({ variant: 'destructive', title: 'Authentication Error' });
+      setIsLoading(false);
+      return;
     }
 
     try {
-      const insights = await getMealInsights({
-        foodItemName: "your body and health",
-        nutritionalInformation: JSON.stringify(profile),
-        userQuery: userInput,
+      // Combined API call for insights and TTS
+      const response = await fetch('/api/ai/getMealInsightsAndSpeech', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          foodItemName: "your body and health",
+          nutritionalInformation: JSON.stringify(profile),
+          userQuery: userInput,
+        }),
       });
-      const aiResponse = insights.response;
-      setSallyResponse(aiResponse);
-      
-      await updateCreditBalance(false);
 
-      if (aiResponse) {
-        try {
-          const audioData = await textToSpeech({ text: aiResponse });
-          if (audioData.media && audioRef.current) {
-            audioRef.current.src = audioData.media;
-            await audioRef.current.play();
-          }
-        } catch (ttsError) {
-          console.error('Error during TTS call:', ttsError);
-          toast({
-            variant: 'destructive',
-            title: 'Audio Error',
-            description: 'Could not generate audio for the response.',
-          });
-        }
-      }
-
-    } catch (error: any) {
-      if (error.message.includes("401") || error.message.includes("403")) {
+      if (!response.ok) {
+        if (response.status === 401 || response.status === 403) {
           setSubscriptionModalOpen(true);
-       } else if (error.message.includes("429")) {
+        } else if (response.status === 429) {
           toast({
             variant: 'destructive',
             title: 'No Credits Left',
-            description: 'Please purchase more credits to continue using this feature.'
+            description: 'Please purchase more credits to continue using this feature.',
           });
-       } else {
-        toast({
-          variant: 'destructive',
-          title: 'Error',
-          description: error.message,
-        });
+        } else {
+          throw new Error('Failed to get a response from Sally.');
+        }
+        setSallyResponse('Sorry, I had trouble with that. Please try again.');
+        return;
       }
+      
+      const { insights, tts } = await response.json();
+
+      setSallyResponse(insights.response);
+      await updateCreditBalance(false);
+
+      if (tts?.media && audioRef.current) {
+        audioRef.current.src = tts.media;
+        await audioRef.current.play();
+      } else if (tts?.error) {
+         console.error('Error during TTS call:', tts.error);
+         toast({ variant: 'destructive', title: 'Audio Error', description: 'Could not generate audio for the response.' });
+      }
+
+    } catch (error: any) {
       setSallyResponse('Sorry, I had trouble with that. Please try again.');
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: error.message || 'An error occurred while talking to Sally.',
+      });
     } finally {
       setLoadingProgress(100);
       setTimeout(() => setIsLoading(false), 500);
     }
   };
+
 
   return (
     <div className="flex min-h-screen w-full items-center justify-center overflow-hidden bg-gradient-to-br from-purple-50 via-indigo-100 to-blue-50 p-4">
