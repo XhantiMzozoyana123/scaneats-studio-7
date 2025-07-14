@@ -54,3 +54,4 @@ export default function DashboardLayout({
   }
 
   return <UserDataProvider>{children}</UserDataProvider>;
+}
