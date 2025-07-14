@@ -12,7 +12,7 @@ function LandingContent() {
   return (
     <>
       <AuthBackgroundImage />
-      <div className="relative z-10 flex min-h-screen flex-col justify-center p-4">
+      <div className="relative z-10 flex min-h-screen flex-col items-center justify-center p-4">
         <div className="frosted-card mx-auto flex w-full max-w-sm flex-col items-center gap-6 p-8">
             <Image
                 src="https://gallery.scaneats.app/images/ScanEatsLogo.png"
