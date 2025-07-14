@@ -80,6 +80,7 @@ import {
   XCircle,
   Upload,
   Smartphone,
+  Info,
 } from 'lucide-react';
 
 import { useToast } from '@/hooks/use-toast';
@@ -996,7 +997,13 @@ const SallyView = () => {
   );
 };
 
-const ProfileView = () => {
+const ProfileView = ({
+  onProfileComplete,
+  forceProfileCompletion,
+}: {
+  onProfileComplete: () => void;
+  forceProfileCompletion: boolean;
+}) => {
   const { toast } = useToast();
   const { profile, setProfile, isLoading, saveProfile } = useUserData();
   const [isSaving, setIsSaving] = useState(false);
@@ -1027,11 +1034,13 @@ const ProfileView = () => {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!profile) return;
-    if (!profile.birthDate) {
+    
+    // Validation check
+    if (!profile.name || !profile.weight || !profile.birthDate || !profile.goals) {
       toast({
         variant: 'destructive',
-        title: 'Validation Error',
-        description: 'Please select your birth date before saving.',
+        title: 'Incomplete Profile',
+        description: 'Please fill out all fields before saving.',
       });
       return;
     }
@@ -1039,6 +1048,11 @@ const ProfileView = () => {
     setIsSaving(true);
     await saveProfile(profile);
     setIsSaving(false);
+
+    if (forceProfileCompletion) {
+      localStorage.setItem('profileCompleted', 'true');
+      onProfileComplete();
+    }
   };
 
   if (isLoading || !profile) {
@@ -1081,6 +1095,17 @@ const ProfileView = () => {
   return (
     <div className="flex min-h-screen flex-col items-center bg-black pb-40 pt-5">
       <div className="w-[90%] max-w-[600px] rounded-lg bg-[rgba(14,1,15,0.32)] p-5">
+        
+        {forceProfileCompletion && (
+            <Alert className="mb-6 border-primary/50 bg-primary/10 text-primary-foreground">
+              <Info className="h-4 w-4" />
+              <AlertTitle className="font-bold">Welcome to ScanEats!</AlertTitle>
+              <AlertDescription>
+                Please complete your profile below. This information helps Sally provide you with personalized and accurate health advice.
+              </AlertDescription>
+            </Alert>
+        )}
+        
         <div className="mb-8 flex justify-center">
           <Image
             src="https://gallery.scaneats.app/images/Profile%20logo%20SE.png"
@@ -1104,6 +1129,7 @@ const ProfileView = () => {
               onChange={handleInputChange}
               placeholder="Your Name"
               className="w-full rounded-full border-2 border-[#555] bg-black px-4 py-3 text-base"
+              required
             />
           </div>
 
@@ -1143,6 +1169,7 @@ const ProfileView = () => {
               onChange={handleInputChange}
               placeholder="e.g., 70"
               className="w-full rounded-full border-2 border-[#555] bg-black px-4 py-3 text-base"
+              required
             />
           </div>
 
@@ -1164,6 +1191,7 @@ const ProfileView = () => {
                     'w-full justify-start rounded-full border-2 border-[#555] bg-black px-4 py-3 text-left text-base font-normal hover:bg-black/80',
                     !profile.birthDate && 'text-gray-400'
                   )}
+                  required
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
                   {profile.birthDate ? (
@@ -1203,6 +1231,7 @@ const ProfileView = () => {
               onChange={handleInputChange}
               placeholder="e.g., Lose 5kg, build muscle, improve cardiovascular health..."
               className="min-h-[100px] w-full rounded-3xl border-2 border-[#555] bg-black px-4 py-3 text-base"
+              required
             />
           </div>
 
@@ -1301,6 +1330,7 @@ const SettingsView = ({
     localStorage.removeItem('userId');
     localStorage.removeItem('userEmail');
     localStorage.removeItem('creditBalance');
+    localStorage.removeItem('profileCompleted'); // Also clear the profile flag on logout
     toast({
       title: 'Logged Out',
       description: 'You have been successfully logged out.',
@@ -1717,10 +1747,28 @@ const SettingsView = ({
 
 
 export default function DashboardPage() {
+  const { profile } = useUserData();
   const [activeView, setActiveView] = useState<View>('home');
+  const [forceProfileCompletion, setForceProfileCompletion] = useState(false);
+
+  useEffect(() => {
+    if (profile === null) return; // Wait for profile to load
+
+    const profileCompleted = localStorage.getItem('profileCompleted') === 'true';
+    if (!profileCompleted) {
+      setForceProfileCompletion(true);
+      setActiveView('profile');
+    }
+  }, [profile]);
 
   const handleNavigate = (view: View) => {
+    if (forceProfileCompletion) return; // Block navigation if profile is incomplete
     setActiveView(view);
+  };
+
+  const handleProfileComplete = () => {
+    setForceProfileCompletion(false);
+    setActiveView('home'); // Navigate to home after profile is completed
   };
 
   const renderView = () => {
@@ -1734,7 +1782,7 @@ export default function DashboardPage() {
       case 'sally':
         return <SallyView />;
       case 'profile':
-        return <ProfileView />;
+        return <ProfileView onProfileComplete={handleProfileComplete} forceProfileCompletion={forceProfileCompletion} />;
       case 'settings':
         return (
           <SettingsView onNavigateToProfile={() => setActiveView('profile')} />
@@ -1747,7 +1795,9 @@ export default function DashboardPage() {
   return (
     <div className="relative h-screen">
       {renderView()}
-      <BottomNav activeView={activeView} onNavigate={handleNavigate} />
+      {!forceProfileCompletion && (
+         <BottomNav activeView={activeView} onNavigate={handleNavigate} />
+      )}
     </div>
   );
 }
