@@ -87,7 +87,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useUserData } from '@/context/user-data-context';
 import { cn } from '@/lib/utils';
 import { BottomNav } from '@/components/bottom-nav';
-import { BackgroundImage } from '@/components/background-image';
+import { AuthBackgroundImage } from '@/components/auth-background-image';
 import { textToSpeech } from '@/ai/flows/text-to-speech';
 import { API_BASE_URL } from '@/lib/api';
 import { getMealInsights } from '@/ai/flows/meal-insights';
@@ -466,7 +466,6 @@ const MealPlanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
   const [isRecording, setIsRecording] = useState(false);
   const [isSallyLoading, setIsSallyLoading] = useState(false);
   const [sallyProgress, setSallyProgress] = useState(0);
-  const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const recognitionRef = useRef<any>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   
@@ -584,7 +583,6 @@ const MealPlanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
     if (isRecording) {
       recognitionRef.current?.stop();
     } else {
-      setAudioUrl(null);
       if (audioRef.current) {
         audioRef.current.pause();
         audioRef.current.currentTime = 0;
@@ -1795,9 +1793,7 @@ export default function DashboardPage() {
   return (
     <div className="relative h-screen">
       {renderView()}
-      {!forceProfileCompletion && (
-         <BottomNav activeView={activeView} onNavigate={handleNavigate} />
-      )}
+      <BottomNav activeView={activeView} onNavigate={handleNavigate} />
     </div>
   );
 }
