@@ -87,10 +87,7 @@ import { useUserData } from '@/context/user-data-context';
 import { cn } from '@/lib/utils';
 import { BottomNav } from '@/components/bottom-nav';
 import { AuthBackgroundImage } from '@/components/auth-background-image';
-import { textToSpeech } from '@/ai/flows/text-to-speech';
 import { API_BASE_URL } from '@/lib/api';
-import { getMealInsights } from '@/ai/flows/meal-insights';
-import { foodScanNutrition } from '@/ai/flows/food-scan-nutrition';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 type View = 'home' | 'meal-plan' | 'sally' | 'profile' | 'settings' | 'scan';
@@ -682,7 +679,7 @@ const MealPlanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
 
       if (tts?.media && audioRef.current) {
         audioRef.current.src = tts.media;
-        await audioRef.current.play();
+        audioRef.current.play().catch(e => console.error("Audio play failed", e));
       } else if (tts?.error) {
          console.error('Error during TTS call:', tts.error);
          toast({ variant: 'destructive', title: 'Audio Error', description: 'Could not generate audio for the response.' });
@@ -946,7 +943,7 @@ const SallyView = () => {
 
       if (tts?.media && audioRef.current) {
         audioRef.current.src = tts.media;
-        await audioRef.current.play();
+        audioRef.current.play().catch(e => console.error("Audio play failed", e));
       } else if (tts?.error) {
          console.error('Error during TTS call:', tts.error);
          toast({ variant: 'destructive', title: 'Audio Error', description: 'Could not generate audio for the response.' });

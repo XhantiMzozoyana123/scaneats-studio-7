@@ -70,29 +70,20 @@ export async function POST(
       const {textToSpeech} = await import('@/ai/flows/text-to-speech');
       const validatedInput = GetMealInsightsAndSpeechInputSchema.parse(input);
 
-      // Run insights and TTS in parallel for better performance.
-      const [insightsResult, ttsResult] = await Promise.allSettled([
-        getMealInsights(validatedInput),
-        textToSpeech({text: ''}), // Initial call to warm up, will be replaced
-      ]);
+      const insightsResult = await getMealInsights(validatedInput);
 
-      if (insightsResult.status === 'rejected') {
-         throw new Error('Failed to get meal insights');
-      }
-      
-      const insights = insightsResult.value;
-      let tts = null;
-
-      // Now run TTS with the actual response text.
+      let ttsResult = null;
       try {
-        const ttsResponse = await textToSpeech({ text: insights.response });
-        tts = ttsResponse;
-      } catch (ttsError: any) {
-        console.error("TTS failed:", ttsError.message);
-        tts = { error: ttsError.message }; // Send TTS error back to client
+        if (insightsResult.response) {
+            ttsResult = await textToSpeech({ text: insightsResult.response });
+        }
+      } catch (ttsError) {
+        console.error("TTS generation failed:", ttsError);
+        // Do not throw; we can still return the text insight.
+        ttsResult = { error: "Failed to generate audio." };
       }
       
-      return NextResponse.json({insights, tts});
+      return NextResponse.json({insights: insightsResult, tts: ttsResult});
     }
 
 
