@@ -5,16 +5,13 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { Loader2 } from 'lucide-react';
-import { BackgroundImage } from '@/components/background-image';
+import { AuthBackgroundImage } from '@/components/auth-background-image';
 import { InstallButton } from '@/components/install-button';
 
 function LandingContent() {
   return (
     <>
-      <BackgroundImage
-        src="https://gallery.scaneats.app/images/LandingPageSignup&SigninPage.webm"
-        className="blur-sm"
-      />
+      <AuthBackgroundImage className="blur-sm" />
       <div className="relative z-10 flex h-full flex-col items-center justify-center p-4">
         <div className="frosted-card flex w-full max-w-sm flex-col items-center gap-6 p-8">
             <Image
@@ -29,9 +26,9 @@ function LandingContent() {
                 conversation with you about what you have been eating and if its
                 working for you or not.
             </p>
-        </div>
-        <div className="mt-8 w-full max-w-xs">
-           <InstallButton />
+            <div className="w-full max-w-xs">
+              <InstallButton />
+            </div>
         </div>
       </div>
     </>
@@ -43,18 +40,21 @@ export default function HomePage() {
   const [view, setView] = useState<'loading' | 'pwa' | 'browser'>('loading');
 
   useEffect(() => {
-    const isPwa = window.matchMedia('(display-mode: standalone)').matches;
+    // This check needs to be client-side only
+    if (typeof window !== 'undefined') {
+        const isPwa = window.matchMedia('(display-mode: standalone)').matches;
 
-    if (isPwa) {
-      setView('pwa');
-      const token = localStorage.getItem('authToken');
-      if (token) {
-        router.replace('/dashboard');
-      } else {
-        router.replace('/login');
-      }
-    } else {
-      setView('browser');
+        if (isPwa) {
+            setView('pwa');
+            const token = localStorage.getItem('authToken');
+            if (token) {
+                router.replace('/dashboard');
+            } else {
+                router.replace('/login');
+            }
+        } else {
+            setView('browser');
+        }
     }
   }, [router]);
 

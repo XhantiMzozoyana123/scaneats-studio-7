@@ -12,7 +12,7 @@ export function AuthBackgroundImage({
     <div className="fixed inset-0 -z-10">
       <video
         src="https://gallery.scaneats.app/images/LandingPageSignup&SigninPage.webm"
-        className={cn('h-full w-full object-cover blur-md', className)}
+        className={cn('h-full w-full object-cover', className)}
         autoPlay
         loop
         muted
