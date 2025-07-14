@@ -368,6 +368,8 @@ const ScanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
                      'hidden': cameraState !== 'running'
                   })}
                   playsInline
+                  muted
+                  autoPlay
                 />
                 {cameraState !== 'running' && (
                   <div className="absolute inset-0 flex flex-col items-center justify-center p-4 text-center text-white bg-black/50">
@@ -465,13 +467,14 @@ const MealPlanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
   const [sallyProgress, setSallyProgress] = useState(0);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const recognitionRef = useRef<any>(null);
-  const audioRef = useRef<HTMLAudioElement>(null);
-
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  
   useEffect(() => {
-    if (audioUrl && audioRef.current) {
-      audioRef.current.play().catch((e) => console.error('Audio play failed', e));
+    // Create the audio element once and keep a reference to it.
+    if (!audioRef.current) {
+      audioRef.current = new Audio();
     }
-  }, [audioUrl]);
+  }, []);
 
   useEffect(() => {
     if (isSallyLoading) {
@@ -581,6 +584,10 @@ const MealPlanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
       recognitionRef.current?.stop();
     } else {
       setAudioUrl(null);
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+      }
       setIsRecording(true);
       setSallyResponse('Listening...');
       recognitionRef.current?.start();
@@ -618,39 +625,6 @@ const MealPlanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
     }
 
     try {
-        // CHECKPOINT 1: Subscription Status
-        const subResponse = await fetch(`${API_BASE_URL}/api/event/subscription/status`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (!subResponse.ok) {
-            if (subResponse.status === 401 || subResponse.status === 403) {
-                setSubscriptionModalOpen(true);
-                return;
-            }
-            throw new Error('Failed to check subscription status.');
-        }
-        const subData = await subResponse.json();
-        if (!subData.isSubscribed) {
-            setSubscriptionModalOpen(true);
-            return;
-        }
-
-        // CHECKPOINT 2: Remaining Credits
-        const creditsResponse = await fetch(`${API_BASE_URL}/api/event/credits/remaining`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (!creditsResponse.ok) throw new Error('Failed to check credits.');
-        const creditsData = await creditsResponse.json();
-        if (creditsData.remainingCredits <= 0) {
-            toast({
-                variant: 'destructive',
-                title: 'No Credits Left',
-                description: 'Please purchase more credits to continue using this feature.'
-            });
-            return;
-        }
-
-        // CHECKPOINT 4: Core Logic (Frontend AI)
         const lastFood = currentFoods[0];
         const nutritionalInfo = JSON.stringify({
             calories: lastFood.calories,
@@ -666,31 +640,36 @@ const MealPlanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
         });
         
         setSallyResponse(insights.response);
-
-        // CHECKPOINT 3: Deduct Credit
-        const deductResponse = await fetch(`${API_BASE_URL}/api/event/deduct-credits`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify(1)
-        });
-        if (!deductResponse.ok) throw new Error('Failed to deduct credit.');
-        updateCreditBalance(true); // Force update balance
+        await updateCreditBalance(false);
 
         if (insights.response) {
             try {
                 const { media } = await textToSpeech({ text: insights.response });
-                if (media) setAudioUrl(media);
+                if (media && audioRef.current) {
+                  audioRef.current.src = media;
+                  await audioRef.current.play();
+                }
             } catch (ttsError) {
                 console.error('Error during TTS call:', ttsError);
                 toast({ variant: 'destructive', title: 'Audio Error', description: 'Could not generate audio for the response.' });
             }
         }
     } catch (error: any) {
-        toast({
+        if (error.message.includes("401") || error.message.includes("403")) {
+           setSubscriptionModalOpen(true);
+        } else if (error.message.includes("429")) {
+           toast({
+             variant: 'destructive',
+             title: 'No Credits Left',
+             description: 'Please purchase more credits to continue using this feature.'
+           });
+        } else {
+          toast({
             variant: 'destructive',
             title: 'Error',
             description: error.message || 'An error occurred while talking to Sally.',
-        });
+          });
+        }
         setSallyResponse('Sorry, I had trouble with that. Please try again.');
     } finally {
         setSallyProgress(100);
@@ -802,7 +781,6 @@ const MealPlanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
           </div>
         )}
       </div>
-      {audioUrl && <audio ref={audioRef} src={audioUrl} hidden />}
     </>
   );
 };
@@ -814,17 +792,17 @@ const SallyView = () => {
   const [isRecording, setIsRecording] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [loadingProgress, setLoadingProgress] = useState(0);
-  const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const recognitionRef = useRef<any>(null);
-  const audioRef = useRef<HTMLAudioElement>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const { toast } = useToast();
   const { profile, setSubscriptionModalOpen, updateCreditBalance } = useUserData();
-
+  
   useEffect(() => {
-    if (audioUrl && audioRef.current) {
-      audioRef.current.play().catch((e) => console.error('Audio play failed', e));
+    // Create the audio element once and keep a reference to it.
+    if (!audioRef.current) {
+      audioRef.current = new Audio();
     }
-  }, [audioUrl]);
+  }, []);
 
   useEffect(() => {
     if (isLoading) {
@@ -882,7 +860,10 @@ const SallyView = () => {
     if (isRecording || isLoading) {
       recognitionRef.current?.stop();
     } else {
-      setAudioUrl(null);
+       if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+      }
       setIsRecording(true);
       recognitionRef.current?.start();
     }
@@ -903,39 +884,6 @@ const SallyView = () => {
     }
 
     try {
-        // CHECKPOINT 1: Subscription Status
-        const subResponse = await fetch(`${API_BASE_URL}/api/event/subscription/status`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (!subResponse.ok) {
-            if (subResponse.status === 401 || subResponse.status === 403) {
-                setSubscriptionModalOpen(true);
-                return;
-            }
-            throw new Error('Failed to check subscription status.');
-        }
-        const subData = await subResponse.json();
-        if (!subData.isSubscribed) {
-            setSubscriptionModalOpen(true);
-            return;
-        }
-
-        // CHECKPOINT 2: Remaining Credits
-        const creditsResponse = await fetch(`${API_BASE_URL}/api/event/credits/remaining`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (!creditsResponse.ok) throw new Error('Failed to check credits.');
-        const creditsData = await creditsResponse.json();
-        if (creditsData.remainingCredits <= 0) {
-            toast({
-                variant: 'destructive',
-                title: 'No Credits Left',
-                description: 'Please purchase more credits to continue using this feature.'
-            });
-            return;
-        }
-
-      // CHECKPOINT 4: Core Logic (Frontend AI)
       const insights = await getMealInsights({
         foodItemName: "your body and health",
         nutritionalInformation: JSON.stringify(profile),
@@ -944,20 +892,14 @@ const SallyView = () => {
       const aiResponse = insights.response;
       setSallyResponse(aiResponse);
       
-      // CHECKPOINT 3: Deduct Credit
-      const deductResponse = await fetch(`${API_BASE_URL}/api/event/deduct-credits`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify(1)
-        });
-      if (!deductResponse.ok) throw new Error('Failed to deduct credit.');
-      updateCreditBalance(true); // Force update balance
+      await updateCreditBalance(false);
 
       if (aiResponse) {
         try {
           const audioData = await textToSpeech({ text: aiResponse });
-          if (audioData.media) {
-            setAudioUrl(audioData.media);
+          if (audioData.media && audioRef.current) {
+            audioRef.current.src = audioData.media;
+            await audioRef.current.play();
           }
         } catch (ttsError) {
           console.error('Error during TTS call:', ttsError);
@@ -970,11 +912,21 @@ const SallyView = () => {
       }
 
     } catch (error: any) {
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: error.message,
-      });
+      if (error.message.includes("401") || error.message.includes("403")) {
+          setSubscriptionModalOpen(true);
+       } else if (error.message.includes("429")) {
+          toast({
+            variant: 'destructive',
+            title: 'No Credits Left',
+            description: 'Please purchase more credits to continue using this feature.'
+          });
+       } else {
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: error.message,
+        });
+      }
       setSallyResponse('Sorry, I had trouble with that. Please try again.');
     } finally {
       setLoadingProgress(100);
@@ -1040,8 +992,6 @@ const SallyView = () => {
            )}
         </div>
       </div>
-
-      {audioUrl && <audio ref={audioRef} src={audioUrl} hidden />}
     </div>
   );
 };
