@@ -13,13 +13,31 @@ import { textToSpeech } from '@/ai/flows/text-to-speech';
 import { personalizedDietarySuggestions } from '@/ai/flows/personalized-dietary-suggestions';
 import { API_BASE_URL } from '@/lib/api';
 
+
+// Server-side function to delete the account by calling the main backend
+async function deleteUserAccount(token: string): Promise<{ success: boolean; message?: string }> {
+    const response = await fetch(`${API_BASE_URL}/api/Auth/delete-account`, {
+        method: 'DELETE',
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
+    });
+
+    if (response.ok) {
+        return { success: true };
+    } else {
+        const errorData = await response.json().catch(() => ({ error: 'Failed to delete account.' }));
+        return { success: false, message: errorData.error || 'An unexpected error occurred during account deletion.' };
+    }
+}
+
 // Map flow names to their functions and credit costs
 const availableFlows: Record<string, { func: Function; cost: number; bypassSubCheck?: boolean }> = {
   'food-scan-nutrition': { func: foodScanNutrition, cost: 1 },
   'meal-insights': { func: getMealInsights, cost: 1 },
   'text-to-speech': { func: textToSpeech, cost: 1 },
   'personalized-dietary-suggestions': { func: personalizedDietarySuggestions, cost: 1 },
-  'delete-account': { func: async () => ({}), cost: 0, bypassSubCheck: true }, // Placeholder for deletion logic if needed server-side
+  'delete-account': { func: deleteUserAccount, cost: 0, bypassSubCheck: true },
 };
 
 async function checkSubscriptionStatus(token: string): Promise<boolean> {
@@ -58,7 +76,7 @@ export async function POST(
   req: NextRequest,
   context: { params: { slug: string[] } }
 ) {
-  const flowName = context.params.slug.join('/');
+  const flowName = context.params.slug[0];
   const flowConfig = availableFlows[flowName];
   
   if (!flowConfig) {
@@ -72,9 +90,7 @@ export async function POST(
 
   try {
     // --- Server-side Checkpoint Logic ---
-    if (flowName === 'delete-account') {
-        // Special case: Bypass checks for account deletion
-    } else if (!flowConfig.bypassSubCheck) {
+    if (!flowConfig.bypassSubCheck) {
         const isSubscribed = await checkSubscriptionStatus(token);
         if (!isSubscribed) {
             return NextResponse.json({ error: 'Subscription required' }, { status: 403 });
@@ -87,11 +103,21 @@ export async function POST(
     }
     // --- End Checkpoint ---
     
-    const input = await req.json();
+    // For delete-account, the function expects the token. For others, it expects the request body.
+    const input = flowName === 'delete-account' ? token : await req.json();
     const result = await flowConfig.func(input);
 
+    // If account deletion fails, result will contain { success: false, message: '...' }
+     if (flowName === 'delete-account') {
+        const deleteResult = result as { success: boolean; message?: string };
+        if (!deleteResult.success) {
+            return NextResponse.json({ error: deleteResult.message }, { status: 400 });
+        }
+    }
+
+
     // Deduct credits after successful action
-    if (flowName !== 'delete-account' && !flowConfig.bypassSubCheck) {
+    if (!flowConfig.bypassSubCheck) {
         await deductCredits(token, flowConfig.cost);
     }
     
