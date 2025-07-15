@@ -206,7 +206,7 @@ export default function PricingPage() {
       </Link>
 
       <h1 className="main-title relative z-[1]">
-        Pricing
+        ScanEats.App
       </h1>
 
       <div className="relative z-[2] mt-5 w-full max-w-sm rounded-2xl border border-white/15 bg-[#2d2d2d]/45 p-10 text-left shadow-2xl backdrop-blur-[8px]">
