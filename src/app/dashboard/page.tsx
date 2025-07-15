@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import {
@@ -1342,12 +1343,10 @@ const SettingsView = ({
         });
         fetchProfile(); // Refresh user data
       } else {
-        if (response.status === 401 || response.status === 403) {
-          setSubscriptionModalOpen(true);
-          return;
-        }
         let errorMessage = 'Failed to cancel subscription.';
-        if (response.status === 400) {
+        if (response.status === 401) {
+            errorMessage = 'Authentication error. Please log in again.';
+        } else if (response.status === 400) {
           errorMessage = 'No active subscription found to cancel.';
         } else if (response.status >= 500) {
           errorMessage =
@@ -1393,12 +1392,10 @@ const SettingsView = ({
         });
         handleLogout();
       } else {
-        if (response.status === 401 || response.status === 403) {
-          setSubscriptionModalOpen(true);
-          return;
-        }
         let errorMessage = 'Failed to delete account.';
-        if (response.status >= 500) {
+        if (response.status === 401 || response.status === 403) {
+            errorMessage = 'Authentication error. Please log in again.';
+        } else if (response.status >= 500) {
           errorMessage =
             'Our servers are experiencing issues. Please try again later.';
         }
@@ -1427,10 +1424,7 @@ const SettingsView = ({
     setIsChangingPassword(true);
 
     const token = localStorage.getItem('authToken');
-    const userId = localStorage.getItem('userId');
-    const email = localStorage.getItem('userEmail');
-
-    if (!token || !userId || !email || !profile?.name) {
+    if (!token) {
       toast({
         variant: 'destructive',
         title: 'Authentication Error',
@@ -1441,15 +1435,12 @@ const SettingsView = ({
     }
 
     const payload = {
-      Id: userId,
-      UserName: profile.name,
-      NewEmail: email,
-      CurrentPassword: currentPassword,
-      NewPassword: newPassword,
+      currentPassword: currentPassword,
+      newPassword: newPassword,
     };
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/Auth/update`, {
+      const response = await fetch(`${API_BASE_URL}/api/Auth/update-password`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -1468,12 +1459,10 @@ const SettingsView = ({
         setNewPassword('');
         setConfirmPassword('');
       } else {
-        if (response.status === 401 || response.status === 403) {
-          setSubscriptionModalOpen(true);
-          return;
-        }
         let errorMessage = 'Failed to change password.';
-        if (response.status === 400) {
+        if (response.status === 401 || response.status === 403) {
+           errorMessage = 'Authentication error. Please log in again.';
+        } else if (response.status === 400) {
           errorMessage = 'The current password you entered is incorrect.';
         } else if (response.status >= 500) {
           errorMessage =
@@ -1727,16 +1716,33 @@ export default function DashboardPage() {
       setForceProfileView(true);
     } else if (isProfileComplete === true) {
       setForceProfileView(false);
+      // If profile is complete, but we are on the profile view (e.g. after saving),
+      // navigate to home.
+      if (activeView === 'profile') {
+        setActiveView('home');
+      }
     }
-  }, [isProfileComplete]);
+  }, [isProfileComplete, activeView]);
   
   const handleNavigate = (view: View) => {
     if (forceProfileView) {
       setActiveView('profile');
+      toast({
+          variant: 'destructive',
+          title: 'Complete Your Profile',
+          description: 'Please save your profile before exploring the app.',
+      });
       return;
     }
     setActiveView(view);
   };
+  
+  // This effect handles the navigation after profile completion.
+  useEffect(() => {
+     if (!forceProfileView && isProfileComplete && activeView === 'profile') {
+        setActiveView('home');
+     }
+  },[forceProfileView, isProfileComplete, activeView])
 
   const renderView = () => {
     switch (activeView) {
@@ -1766,3 +1772,4 @@ export default function DashboardPage() {
     </div>
   );
 }
+
