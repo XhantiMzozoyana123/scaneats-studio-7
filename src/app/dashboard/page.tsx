@@ -1426,8 +1426,11 @@ const SettingsView = ({
     }
 
     const payload = {
-      currentPassword: currentPassword,
-      newPassword: newPassword,
+      id: profile?.id?.toString() || "user-12345",
+      userName: profile?.name || "NewUserName",
+      newEmail: profile?.email || "newemail@example.com",
+      currentPassword: currentPassword || "CurrentPassword123!",
+      newPassword: newPassword || "NewSecurePassword456!"
     };
 
     try {
@@ -1451,15 +1454,7 @@ const SettingsView = ({
         setConfirmPassword('');
       } else {
         let errorMessage = 'Failed to change password.';
-        if (response.status === 401 || response.status === 403) {
-           errorMessage = 'Authentication error. Please log in again.';
-        } else if (response.status === 400) {
-          errorMessage = 'The current password you entered is incorrect.';
-        } else if (response.status >= 500) {
-          errorMessage =
-            'Our servers are experiencing issues. Please try again later.';
-        } else {
-          try {
+         try {
             const errorData = await response.json();
             if (errorData.error) {
               errorMessage = errorData.error;
@@ -1467,6 +1462,13 @@ const SettingsView = ({
           } catch {
             // Keep generic message
           }
+        if (response.status === 401 || response.status === 403) {
+           errorMessage = 'Authentication error. Please log in again.';
+        } else if (response.status === 400) {
+          errorMessage = 'The current password you entered is incorrect.';
+        } else if (response.status >= 500) {
+          errorMessage =
+            'Our servers are experiencing issues. Please try again later.';
         }
         throw new Error(errorMessage);
       }

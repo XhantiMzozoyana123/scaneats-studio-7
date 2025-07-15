@@ -33,6 +33,7 @@ type Profile = {
   birthDate: Date | null;
   age?: number;
   isSubscribed?: boolean;
+  email?: string;
 };
 
 type UserDataContextType = {
