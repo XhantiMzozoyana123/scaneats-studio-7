@@ -72,7 +72,9 @@ export async function POST(
 
   try {
     // --- Server-side Checkpoint Logic ---
-    if (!flowConfig.bypassSubCheck) {
+    if (flowName === 'delete-account') {
+        // Special case: Bypass checks for account deletion
+    } else if (!flowConfig.bypassSubCheck) {
         const isSubscribed = await checkSubscriptionStatus(token);
         if (!isSubscribed) {
             return NextResponse.json({ error: 'Subscription required' }, { status: 403 });
@@ -89,7 +91,7 @@ export async function POST(
     const result = await flowConfig.func(input);
 
     // Deduct credits after successful action
-    if (!flowConfig.bypassSubCheck) {
+    if (flowName !== 'delete-account' && !flowConfig.bypassSubCheck) {
         await deductCredits(token, flowConfig.cost);
     }
     
