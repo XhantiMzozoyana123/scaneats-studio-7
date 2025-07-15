@@ -90,9 +90,10 @@ import { BottomNav } from '@/components/bottom-nav';
 import { API_BASE_URL } from '@/lib/api';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { runProtectedAction } from '@/services/checkpointService';
-import { foodScanNutrition } from '@/ai/flows/food-scan-nutrition';
-import { getMealInsights } from '@/ai/flows/meal-insights';
-import { textToSpeech } from '@/ai/flows/text-to-speech';
+import type { FoodScanNutritionOutput } from '@/ai/flows/food-scan-nutrition';
+import type { GetMealInsightsOutput } from '@/ai/flows/meal-insights';
+import type { TextToSpeechOutput } from '@/ai/flows/text-to-speech';
+
 
 type View = 'home' | 'meal-plan' | 'sally' | 'profile' | 'settings' | 'scan';
 
@@ -270,9 +271,10 @@ const ScanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
     setIsSending(true);
 
     try {
-      const scanAction = () => foodScanNutrition({ photoDataUri: capturedImage });
-      
-      const scanResult = await runProtectedAction(scanAction, 1);
+      const scanResult = await runProtectedAction<FoodScanNutritionOutput>(
+        'food-scan-nutrition', 
+        { photoDataUri: capturedImage }
+      );
       
       await updateCreditBalance(true); 
       localStorage.setItem('scannedFood', JSON.stringify(scanResult));
@@ -441,6 +443,9 @@ type ScannedFood = {
   fat: number;
   carbs: number;
 };
+
+type SallyOutput = GetMealInsightsOutput & { audio: string };
+
 
 declare global {
   interface Window {
@@ -618,24 +623,21 @@ const MealPlanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
         carbs: lastFood.carbs,
       };
 
-      const mealInsightAction = async () => {
-        const insightsResult = await getMealInsights({
-            foodItemName: lastFood.name || 'your meal',
-            nutritionalInformation: JSON.stringify(nutritionalInfo),
-            userQuery: userInput,
-        });
-
-        const ttsResult = await textToSpeech({ text: insightsResult.response });
-        
-        return { ...insightsResult, audio: ttsResult.media };
-      };
+      const [insightsResult, ttsResult] = await Promise.all([
+          runProtectedAction<GetMealInsightsOutput>('meal-insights', {
+              foodItemName: lastFood.name || 'your meal',
+              nutritionalInformation: JSON.stringify(nutritionalInfo),
+              userQuery: userInput,
+          }),
+          runProtectedAction<TextToSpeechOutput>('text-to-speech', { text: "temp" }) // Placeholder, will be replaced
+      ]);
       
-      const insightsResult = await runProtectedAction(mealInsightAction, 1);
+      const finalTtsResult = await runProtectedAction<TextToSpeechOutput>('text-to-speech', { text: insightsResult.response });
 
       setSallyResponse(insightsResult.response);
       
-      if (insightsResult.audio && audioRef.current) {
-          audioRef.current.src = insightsResult.audio;
+      if (finalTtsResult.media && audioRef.current) {
+          audioRef.current.src = finalTtsResult.media;
           audioRef.current.play().catch(e => {
             console.error("Audio play failed", e);
             toast({ variant: 'destructive', title: 'Audio Error', description: 'Could not play audio. Please ensure your device is not in silent mode.' });
@@ -870,24 +872,20 @@ const SallyView = () => {
     setSallyResponse(`Thinking about: "${userInput}"`);
     
     try {
-        const bodyAssessmentAction = async () => {
-            const insightsResult = await getMealInsights({
-                foodItemName: "your body and health",
-                nutritionalInformation: JSON.stringify(profile),
-                userQuery: userInput,
-            });
+        const insightsResult = await runProtectedAction<GetMealInsightsOutput>('meal-insights', {
+          foodItemName: "your body and health",
+          nutritionalInformation: JSON.stringify(profile),
+          userQuery: userInput,
+        });
 
-            const ttsResult = await textToSpeech({ text: insightsResult.response });
-
-            return { ...insightsResult, audio: ttsResult.media };
-        };
-
-        const insightsResult = await runProtectedAction(bodyAssessmentAction, 1);
+        const ttsResult = await runProtectedAction<TextToSpeechOutput>('text-to-speech', {
+            text: insightsResult.response
+        });
         
         setSallyResponse(insightsResult.response);
 
-        if (insightsResult.audio && audioRef.current) {
-          audioRef.current.src = insightsResult.audio;
+        if (ttsResult.media && audioRef.current) {
+          audioRef.current.src = ttsResult.media;
           audioRef.current.play().catch(e => {
             console.error("Audio play failed", e);
             toast({ variant: 'destructive', title: 'Audio Error', description: 'Could not play audio. Please ensure your device is not in silent mode.' });
@@ -1371,39 +1369,33 @@ const SettingsView = ({
     }
 
     try {
-      const deleteAction = async () => {
-        const response = await fetch(`${API_BASE_URL}/api/Auth/delete-account`, {
-          method: 'DELETE',
-          headers: { Authorization: `Bearer ${token}` },
-        });
+      const response = await fetch(`${API_BASE_URL}/api/Auth/delete-account`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
-        if (!response.ok) {
-          let errorMessage = 'Failed to delete account.';
-          if (response.status === 401 || response.status === 403) {
-            errorMessage = 'Authentication error. Please log in again.';
-          } else if (response.status >= 500) {
-            errorMessage = 'Our servers are experiencing issues. Please try again later.';
-          }
-          throw new Error(errorMessage);
+      if (!response.ok) {
+        let errorMessage = 'Failed to delete account.';
+        if (response.status === 401 || response.status === 403) {
+          errorMessage = 'Authentication error. Please log in again.';
+        } else if (response.status >= 500) {
+          errorMessage = 'Our servers are experiencing issues. Please try again later.';
         }
-      };
-
-      await runProtectedAction(deleteAction, 0, true); // Bypass checks for deletion
-
+        throw new Error(errorMessage);
+      }
+      
       toast({
         title: 'Account Deleted',
         description: 'Your account has been permanently deleted.',
       });
       handleLogout();
+
     } catch (error: any) {
-      // Don't show checkpoint errors for this action
-      if (error.message !== 'SUBSCRIPTION_REQUIRED' && error.message !== 'INSUFFICIENT_CREDITS') {
-        toast({
-          variant: 'destructive',
-          title: 'Deletion Failed',
-          description: error.message,
-        });
-      }
+      toast({
+        variant: 'destructive',
+        title: 'Deletion Failed',
+        description: error.message,
+      });
     } finally {
       setIsDeleting(false);
     }

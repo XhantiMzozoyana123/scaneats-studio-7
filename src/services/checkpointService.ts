@@ -1,55 +1,18 @@
 
 import { API_BASE_URL } from '@/lib/api';
 
-async function checkSubscriptionStatus(token: string): Promise<boolean> {
-  const response = await fetch(`${API_BASE_URL}/api/event/subscription/status`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  if (!response.ok) {
-    // If status check fails, assume not subscribed to be safe
-    console.error('Subscription check failed:', response.status);
-    return false;
-  }
-  const data = await response.json();
-  return data.isSubscribed === true;
-}
-
-async function getRemainingCredits(token: string): Promise<number> {
-  const response = await fetch(`${API_BASE_URL}/api/credit/balance`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  if (!response.ok) {
-    // If credit check fails, assume 0 credits to be safe
-    console.error('Credit check failed:', response.status);
-    return 0;
-  }
-  const data = await response.json();
-  return data.credits || 0;
-}
-
-async function deductCredits(token: string, amount: number): Promise<boolean> {
-  const response = await fetch(`${API_BASE_URL}/api/event/deduct-credits`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify(amount),
-  });
-  return response.ok;
-}
-
 /**
- * Executes a protected action after verifying subscription and credit status.
+ * Executes a protected action after verifying subscription and credit status on the client-side.
+ * This is a wrapper around a fetch call to our own API gateway, which then performs secure server-side checks.
  * Throws specific errors for the UI to handle.
- * @param action - The async function to execute if checks pass.
- * @param creditsToDeduct - The number of credits to deduct upon success.
- * @param bypassSubscriptionCheck - If true, skips the subscription check.
+ * @param flowName - The name of the AI flow to run (e.g., 'food-scan-nutrition').
+ * @param payload - The data to send to the AI flow.
+ * @param bypassSubscriptionCheck - If true, calls an endpoint that skips the check (e.g., account deletion).
  * @returns The result of the action function.
  */
 export async function runProtectedAction<T>(
-  action: () => Promise<T>,
-  creditsToDeduct: number = 1,
+  flowName: string,
+  payload: any,
   bypassSubscriptionCheck: boolean = false
 ): Promise<T> {
   const token = localStorage.getItem('authToken');
@@ -57,32 +20,33 @@ export async function runProtectedAction<T>(
     throw new Error('AUTH_TOKEN_MISSING');
   }
 
-  if (!bypassSubscriptionCheck) {
-      // 1. Check subscription status
-      const isSubscribed = await checkSubscriptionStatus(token);
-      if (!isSubscribed) {
-        throw new Error('SUBSCRIPTION_REQUIRED');
-      }
+  // The client-side `runProtectedAction` now acts as a gateway.
+  // It calls our own API, which then performs the secure checks on the server.
+  const response = await fetch(`/api/ai/${flowName}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(payload),
+  });
 
-      // 2. Check remaining credits
-      const remainingCredits = await getRemainingCredits(token);
-      if (remainingCredits < creditsToDeduct) {
-        throw new Error('INSUFFICIENT_CREDITS');
-      }
+  if (response.ok) {
+    return await response.json();
   }
 
-  // 3. Execute the core function
-  const result = await action();
-
-  // 4. Deduct credits *after* the action is successful (if applicable)
-  if (!bypassSubscriptionCheck) {
-      const deductionSuccess = await deductCredits(token, creditsToDeduct);
-      if (!deductionSuccess) {
-        // This is a non-critical error for the user, but should be logged.
-        // The user got the service, but credit deduction failed on the backend.
-        console.warn('Credit deduction failed post-action. Please check backend logs.');
-      }
+  // Handle specific errors thrown by our API gateway for the UI
+  const errorData = await response.json();
+  if (response.status === 403) {
+    throw new Error('SUBSCRIPTION_REQUIRED');
+  }
+  if (response.status === 429) {
+    throw new Error('INSUFFICIENT_CREDITS');
+  }
+  if (response.status === 401) {
+    throw new Error('AUTH_TOKEN_MISSING');
   }
 
-  return result;
+  // Handle other generic errors
+  throw new Error(errorData.error || 'An unexpected error occurred.');
 }

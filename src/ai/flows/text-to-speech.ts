@@ -66,7 +66,7 @@ const textToSpeechFlow = ai.defineFlow(
         media: 'data:audio/wav;base64,' + wavData,
       };
     } catch (error: any) {
-      console.error('Error during ai.generate call:', error);
+      console.error('Error during TTS ai.generate call:', error);
       throw new Error(`Text-to-speech generation failed: ${error.message}`);
     }
   }
@@ -87,7 +87,10 @@ async function toWav(
     });
 
     let bufs: any[] = [];
-    writer.on('error', reject);
+    writer.on('error', (err) => {
+        console.error('WAV conversion error:', err);
+        reject(err);
+    });
     writer.on('data', function (d) {
       bufs.push(d);
     });
