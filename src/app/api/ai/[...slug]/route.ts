@@ -26,17 +26,18 @@ export async function POST(
   { params }: { params: { slug: string[] } }
 ) {
   const flowName = params.slug.join('/');
+  const flowFunction = availableFlows[flowName];
 
+  if (typeof flowFunction !== 'function') {
+    return NextResponse.json({ error: `Flow not found: ${flowName}` }, { status: 404 });
+  }
+  
   try {
     const input = await req.json();
 
     // The 'runProtectedAction' service now encapsulates the business logic
     // for credit checks and subscription status before executing the AI flow.
     const result = await runProtectedAction(async () => {
-      const flowFunction = availableFlows[flowName];
-      if (typeof flowFunction !== 'function') {
-        throw new Error(`Flow ${flowName} is not an available function.`);
-      }
       return await flowFunction(input);
     });
 
