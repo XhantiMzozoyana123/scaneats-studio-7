@@ -2,8 +2,9 @@
 import { API_BASE_URL } from '@/lib/api';
 
 /**
- * Executes a protected action by making a secure call to our internal API gateway.
- * This gateway then performs server-side checks for subscription and credit status.
+ * Executes a protected AI flow by making a secure call to our internal Next.js API gateway.
+ * This gateway then performs server-side checks for subscription and credit status before
+ * running the actual Genkit flow.
  * Throws specific errors for the UI to handle based on the API response.
  * @param flowName - The name of the AI flow to run (e.g., 'food-scan-nutrition').
  * @param payload - The data to send to the AI flow.

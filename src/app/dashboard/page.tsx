@@ -1369,19 +1369,14 @@ const SettingsView = ({
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/Auth/delete-account`, {
-        method: 'DELETE',
+      const response = await fetch('/api/ai/delete-account', {
+        method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
       });
 
       if (!response.ok) {
-        let errorMessage = 'Failed to delete account.';
-        if (response.status === 401 || response.status === 403) {
-          errorMessage = 'Authentication error. Please log in again.';
-        } else if (response.status >= 500) {
-          errorMessage = 'Our servers are experiencing issues. Please try again later.';
-        }
-        throw new Error(errorMessage);
+        const errorData = await response.json().catch(() => ({error: 'An unknown error occurred.'}));
+        throw new Error(errorData.error);
       }
       
       toast({
