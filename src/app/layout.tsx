@@ -23,7 +23,7 @@ export const metadata: Metadata = {
   title: 'ScanEats: Your AI Nutritionist',
   description:
     'Scan your food and get personalized nutrition advice with our AI-powered app.',
-  manifest: '/manifest.json?v=6',
+  manifest: '/manifest.json',
 };
 
 export const viewport: Viewport = {
