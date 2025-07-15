@@ -31,14 +31,6 @@ const nextConfig = {
       },
     ],
   },
-  async rewrites() {
-    return [
-      {
-        source: '/api/:path*',
-        destination: 'https://api.scaneats.app/api/:path*',
-      },
-    ];
-  },
 };
 
 module.exports = withPWA(nextConfig);
