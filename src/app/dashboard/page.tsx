@@ -271,9 +271,11 @@ const ScanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
     setIsSending(true);
 
     try {
+      const token = localStorage.getItem('authToken');
       const scanResult = await runProtectedAction<FoodScanNutritionOutput>(
         'food-scan-nutrition', 
-        { photoDataUri: capturedImage }
+        { photoDataUri: capturedImage },
+        token
       );
       
       await updateCreditBalance(true); 
@@ -615,6 +617,7 @@ const MealPlanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
     }
 
     try {
+      const token = localStorage.getItem('authToken');
       const lastFood = currentFoods[0];
       const nutritionalInfo = {
         calories: lastFood.calories,
@@ -622,22 +625,22 @@ const MealPlanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
         fat: lastFood.fat,
         carbs: lastFood.carbs,
       };
-
-      const [insightsResult, ttsResult] = await Promise.all([
-          runProtectedAction<GetMealInsightsOutput>('meal-insights', {
-              foodItemName: lastFood.name || 'your meal',
-              nutritionalInformation: JSON.stringify(nutritionalInfo),
-              userQuery: userInput,
-          }),
-          runProtectedAction<TextToSpeechOutput>('text-to-speech', { text: "temp" }) // Placeholder, will be replaced
-      ]);
       
-      const finalTtsResult = await runProtectedAction<TextToSpeechOutput>('text-to-speech', { text: insightsResult.response });
+      const insightsPayload = {
+        foodItemName: lastFood.name || 'your meal',
+        nutritionalInformation: JSON.stringify(nutritionalInfo),
+        userQuery: userInput,
+      };
+
+      const insightsResult = await runProtectedAction<GetMealInsightsOutput>('meal-insights', insightsPayload, token);
+      
+      const ttsPayload = { text: insightsResult.response };
+      const ttsResult = await runProtectedAction<TextToSpeechOutput>('text-to-speech', ttsPayload, token);
 
       setSallyResponse(insightsResult.response);
       
-      if (finalTtsResult.media && audioRef.current) {
-          audioRef.current.src = finalTtsResult.media;
+      if (ttsResult.media && audioRef.current) {
+          audioRef.current.src = ttsResult.media;
           audioRef.current.play().catch(e => {
             console.error("Audio play failed", e);
             toast({ variant: 'destructive', title: 'Audio Error', description: 'Could not play audio. Please ensure your device is not in silent mode.' });
@@ -872,15 +875,16 @@ const SallyView = () => {
     setSallyResponse(`Thinking about: "${userInput}"`);
     
     try {
-        const insightsResult = await runProtectedAction<GetMealInsightsOutput>('meal-insights', {
+        const token = localStorage.getItem('authToken');
+        const insightsPayload = {
           foodItemName: "your body and health",
           nutritionalInformation: JSON.stringify(profile),
           userQuery: userInput,
-        });
+        };
+        const insightsResult = await runProtectedAction<GetMealInsightsOutput>('meal-insights', insightsPayload, token);
 
-        const ttsResult = await runProtectedAction<TextToSpeechOutput>('text-to-speech', {
-            text: insightsResult.response
-        });
+        const ttsPayload = { text: insightsResult.response };
+        const ttsResult = await runProtectedAction<TextToSpeechOutput>('text-to-speech', ttsPayload, token);
         
         setSallyResponse(insightsResult.response);
 
@@ -1369,8 +1373,8 @@ const SettingsView = ({
     }
 
     try {
-      const response = await fetch('/api/ai/delete-account', {
-        method: 'POST',
+      const response = await fetch(`${API_BASE_URL}/api/Auth/delete-account`, {
+        method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });
 
