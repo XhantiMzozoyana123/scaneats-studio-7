@@ -1371,33 +1371,39 @@ const SettingsView = ({
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/Auth/delete-account`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (response.ok) {
-        toast({
-          title: 'Account Deleted',
-          description: 'Your account has been permanently deleted.',
+      const deleteAction = async () => {
+        const response = await fetch(`${API_BASE_URL}/api/Auth/delete-account`, {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${token}` },
         });
-        handleLogout();
-      } else {
-        let errorMessage = 'Failed to delete account.';
-        if (response.status === 401 || response.status === 403) {
+
+        if (!response.ok) {
+          let errorMessage = 'Failed to delete account.';
+          if (response.status === 401 || response.status === 403) {
             errorMessage = 'Authentication error. Please log in again.';
-        } else if (response.status >= 500) {
-          errorMessage =
-            'Our servers are experiencing issues. Please try again later.';
+          } else if (response.status >= 500) {
+            errorMessage = 'Our servers are experiencing issues. Please try again later.';
+          }
+          throw new Error(errorMessage);
         }
-        throw new Error(errorMessage);
-      }
-    } catch (error: any) {
+      };
+
+      await runProtectedAction(deleteAction, 0, true); // Bypass checks for deletion
+
       toast({
-        variant: 'destructive',
-        title: 'Deletion Failed',
-        description: error.message,
+        title: 'Account Deleted',
+        description: 'Your account has been permanently deleted.',
       });
+      handleLogout();
+    } catch (error: any) {
+      // Don't show checkpoint errors for this action
+      if (error.message !== 'SUBSCRIPTION_REQUIRED' && error.message !== 'INSUFFICIENT_CREDITS') {
+        toast({
+          variant: 'destructive',
+          title: 'Deletion Failed',
+          description: error.message,
+        });
+      }
     } finally {
       setIsDeleting(false);
     }
@@ -1426,11 +1432,8 @@ const SettingsView = ({
     }
 
     const payload = {
-      id: profile?.id?.toString() || "user-12345",
-      userName: profile?.name || "NewUserName",
-      newEmail: profile?.email || "newemail@example.com",
-      currentPassword: currentPassword || "CurrentPassword123!",
-      newPassword: newPassword || "NewSecurePassword456!"
+        currentPassword: currentPassword,
+        newPassword: newPassword,
     };
 
     try {
