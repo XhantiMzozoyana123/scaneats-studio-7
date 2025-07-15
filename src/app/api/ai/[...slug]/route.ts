@@ -23,9 +23,9 @@ const availableFlows: Record<string, Function> = {
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { slug: string[] } }
+  context: { params: { slug: string[] } }
 ) {
-  const flowName = params.slug.join('/');
+  const flowName = context.params.slug.join('/');
   const flowFunction = availableFlows[flowName];
 
   if (typeof flowFunction !== 'function') {
