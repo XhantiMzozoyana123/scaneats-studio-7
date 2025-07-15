@@ -1,3 +1,4 @@
+
 {
   "name": "nextn",
   "version": "0.1.0",
@@ -59,6 +60,7 @@
     "zod": "^3.24.2"
   },
   "devDependencies": {
+    "@opentelemetry/exporter-jaeger": "^1.28.0",
     "@types/google-one-tap": "^1.2.6",
     "@types/node": "^20",
     "@types/react": "^18",

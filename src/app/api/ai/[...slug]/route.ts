@@ -6,33 +6,36 @@
  */
 
 import {NextRequest, NextResponse} from 'next/server';
-import {run} from '@genkit-ai/next';
-import {z} from 'zod';
+import { z } from 'zod';
+import { runProtectedAction } from '@/services/checkpointService';
+import { foodScanNutrition } from '@/ai/flows/food-scan-nutrition';
+import { getMealInsights } from '@/ai/flows/meal-insights';
+import { textToSpeech } from '@/ai/flows/text-to-speech';
+import { personalizedDietarySuggestions } from '@/ai/flows/personalized-dietary-suggestions';
 
-// Dynamically import all flows from the specified directory.
-// This ensures that all defined flows are available to the handler.
-import '@/ai/flows/food-scan-nutrition';
-import '@/ai/flows/meal-insights';
-import '@/ai/flows/personalized-dietary-suggestions';
-import '@/ai/flows/text-to-speech';
+// Map flow names to their functions
+const availableFlows: Record<string, Function> = {
+  'food-scan-nutrition': foodScanNutrition,
+  'meal-insights': getMealInsights,
+  'text-to-speech': textToSpeech,
+  'personalized-dietary-suggestions': personalizedDietarySuggestions,
+};
 
 export async function POST(
   req: NextRequest,
-  {params}: {params: {slug: string[]}}
+  { params }: { params: { slug: string[] } }
 ) {
   const flowName = params.slug.join('/');
-  
+
   try {
     const input = await req.json();
 
-    // This is a simplified endpoint that directly runs the Genkit flow.
-    // The business logic for credit checks and subscription status
-    // is now handled on the client-side before this endpoint is called.
-    const result = await run(flowName, async () => {
-      const flowModule = await import(`@/ai/flows/${flowName}.ts`);
-      const flowFunction = flowModule[flowName];
+    // The 'runProtectedAction' service now encapsulates the business logic
+    // for credit checks and subscription status before executing the AI flow.
+    const result = await runProtectedAction(async () => {
+      const flowFunction = availableFlows[flowName];
       if (typeof flowFunction !== 'function') {
-        throw new Error(`Flow ${flowName} is not an exported function.`);
+        throw new Error(`Flow ${flowName} is not an available function.`);
       }
       return await flowFunction(input);
     });
@@ -40,9 +43,22 @@ export async function POST(
     return NextResponse.json(result);
   } catch (err: any) {
     console.error(`Error processing flow ${flowName}:`, err);
+
     if (err instanceof z.ZodError) {
-      return NextResponse.json({error: 'Invalid input', details: err.errors}, {status: 400});
+      return NextResponse.json({ error: 'Invalid input', details: err.errors }, { status: 400 });
     }
-    return NextResponse.json({error: err.message || 'An internal error occurred'}, {status: 500});
+    
+    // Handle specific errors from checkpointService
+    if (err.message === 'SUBSCRIPTION_REQUIRED') {
+        return NextResponse.json({ error: 'Subscription required' }, { status: 403 });
+    }
+    if (err.message === 'INSUFFICIENT_CREDITS') {
+        return NextResponse.json({ error: 'Insufficient credits' }, { status: 429 });
+    }
+    if (err.message === 'AUTH_TOKEN_MISSING') {
+        return NextResponse.json({ error: 'Authentication token missing' }, { status: 401 });
+    }
+
+    return NextResponse.json({ error: err.message || 'An internal error occurred' }, { status: 500 });
   }
 }
