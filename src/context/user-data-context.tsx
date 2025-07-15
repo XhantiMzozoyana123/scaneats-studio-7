@@ -39,9 +39,7 @@ type UserDataContextType = {
   profile: Profile | null;
   creditBalance: number | null;
   isLoading: boolean;
-  isProfileComplete: boolean | null;
-  setProfileCompleted: (status: boolean) => void;
-  saveProfile: (profile: Profile, isFinal: boolean) => Promise<void>;
+  saveProfile: (profile: Profile) => Promise<void>;
   fetchProfile: () => void;
   updateCreditBalance: (force?: boolean) => Promise<void>;
   isSubscriptionModalOpen: boolean;
@@ -78,12 +76,6 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
   );
   const [isLoading, setIsLoading] = useState(true);
   const [isSubscriptionModalOpen, setSubscriptionModalOpen] = useState(false);
-  const [isProfileComplete, setIsProfileComplete] = useState<boolean | null>(null);
-
-  const setProfileCompleted = (status: boolean) => {
-    localStorage.setItem('profileCompleted', JSON.stringify(status));
-    setIsProfileComplete(status);
-  };
 
   const fetchProfile = useCallback(async () => {
     setIsLoading(true);
@@ -113,27 +105,16 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
         // Combine and set
         setProfile({ ...localProfile, isSubscribed: subData.isSubscribed });
 
-        // Check completion status
-        const storedCompletion = localStorage.getItem('profileCompleted');
-        const isComplete = storedCompletion ? JSON.parse(storedCompletion) : false;
-        
-        if (subData.isSubscribed && !isComplete) {
-            setIsProfileComplete(false); // Force completion if subscribed but not complete
-        } else {
-            setIsProfileComplete(isComplete);
-        }
-
     } catch (error) {
       console.error('Failed to load profile/subscription status', error);
       setProfile(initialProfileState);
-      setIsProfileComplete(false);
     } finally {
       setIsLoading(false);
     }
   }, []);
 
   const saveProfile = useCallback(
-    async (profileData: Profile, isFinal: boolean) => {
+    async (profileData: Profile) => {
       try {
         const calculateAge = (birthDate: Date | null): number | undefined => {
           if (!birthDate) return undefined;
@@ -154,9 +135,6 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
         localStorage.setItem('userProfile', JSON.stringify(profileToSave));
         setProfile(profileToSave);
 
-        if(isFinal) {
-           setProfileCompleted(true);
-        }
       } catch (error) {
         console.error('Failed to save profile to localStorage', error);
         toast({
@@ -206,8 +184,6 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
     profile,
     creditBalance,
     isLoading,
-    isProfileComplete,
-    setProfileCompleted,
     saveProfile,
     fetchProfile,
     updateCreditBalance,

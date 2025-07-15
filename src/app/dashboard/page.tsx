@@ -985,28 +985,29 @@ const SallyView = () => {
 };
 
 const ProfileView = () => {
-  const { profile, isLoading, saveProfile, isProfileComplete, setProfileCompleted } = useUserData();
+  const { profile, isLoading, saveProfile } = useUserData();
   const [isSaving, setIsSaving] = useState(false);
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
+  const { toast } = useToast();
 
   const handleInputChange = (
     e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { id, value } = e.target;
     if (profile) {
-      saveProfile({ ...profile, [id]: value }, false); // Save locally without marking complete
+      saveProfile({ ...profile, [id]: value }); 
     }
   };
 
   const handleSelectChange = (value: string) => {
     if (profile) {
-      saveProfile({ ...profile, gender: value }, false);
+      saveProfile({ ...profile, gender: value });
     }
   };
 
   const handleDateChange = (date: Date | undefined) => {
     if (date && profile) {
-      saveProfile({ ...profile, birthDate: date }, false);
+      saveProfile({ ...profile, birthDate: date });
     }
     setIsDatePickerOpen(false);
   };
@@ -1026,11 +1027,10 @@ const ProfileView = () => {
     }
     
     setIsSaving(true);
-    await saveProfile(profile, true); // Mark as complete on final save
-    setProfileCompleted(true); // Ensure context and app state updates
+    await saveProfile(profile);
     toast({
-        title: 'Profile Complete!',
-        description: 'Thank you! You can now access all app features.',
+        title: 'Profile Saved',
+        description: 'Your profile has been updated.',
     });
     setIsSaving(false);
   };
@@ -1072,18 +1072,9 @@ const ProfileView = () => {
     );
   }
 
-  const { toast } = useToast();
   return (
     <div className="flex min-h-screen flex-col items-center bg-black pb-40 pt-5">
       <div className="w-[90%] max-w-[600px] rounded-lg bg-[rgba(14,1,15,0.32)] p-5">
-         {!isProfileComplete && (
-            <Alert className="mb-6 border-primary/50 bg-primary/20 text-white">
-                <AlertTitle className="font-bold">Welcome to ScanEats!</AlertTitle>
-                <AlertDescription>
-                    Please complete your profile below. Sally needs this information to give you the best personalized advice on your health and goals.
-                </AlertDescription>
-            </Alert>
-          )}
         <div className="mb-8 flex justify-center">
           <Image
             src="https://gallery.scaneats.app/images/Personal%20Pic.png"
@@ -1706,43 +1697,12 @@ const SettingsView = ({
 
 
 export default function DashboardPage() {
-  const { isProfileComplete } = useUserData();
   const [activeView, setActiveView] = useState<View>('home');
-  const [forceProfileView, setForceProfileView] = useState(false);
+  const { toast } = useToast();
 
-  useEffect(() => {
-    if (isProfileComplete === false) { // Explicitly check for false, not null
-      setActiveView('profile');
-      setForceProfileView(true);
-    } else if (isProfileComplete === true) {
-      setForceProfileView(false);
-      // If profile is complete, but we are on the profile view (e.g. after saving),
-      // navigate to home.
-      if (activeView === 'profile') {
-        setActiveView('home');
-      }
-    }
-  }, [isProfileComplete, activeView]);
-  
   const handleNavigate = (view: View) => {
-    if (forceProfileView) {
-      setActiveView('profile');
-      toast({
-          variant: 'destructive',
-          title: 'Complete Your Profile',
-          description: 'Please save your profile before exploring the app.',
-      });
-      return;
-    }
     setActiveView(view);
   };
-  
-  // This effect handles the navigation after profile completion.
-  useEffect(() => {
-     if (!forceProfileView && isProfileComplete && activeView === 'profile') {
-        setActiveView('home');
-     }
-  },[forceProfileView, isProfileComplete, activeView])
 
   const renderView = () => {
     switch (activeView) {
@@ -1772,4 +1732,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-

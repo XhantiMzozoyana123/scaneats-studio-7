@@ -15,7 +15,7 @@ async function checkSubscriptionStatus(token: string): Promise<boolean> {
 }
 
 async function getRemainingCredits(token: string): Promise<number> {
-  const response = await fetch(`${API_BASE_URL}/api/event/credits/remaining`, {
+  const response = await fetch(`${API_BASE_URL}/api/credit/balance`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (!response.ok) {
@@ -24,7 +24,7 @@ async function getRemainingCredits(token: string): Promise<number> {
     return 0;
   }
   const data = await response.json();
-  return data.remainingCredits || 0;
+  return data.credits || 0;
 }
 
 async function deductCredits(token: string, amount: number): Promise<boolean> {
@@ -44,38 +44,44 @@ async function deductCredits(token: string, amount: number): Promise<boolean> {
  * Throws specific errors for the UI to handle.
  * @param action - The async function to execute if checks pass.
  * @param creditsToDeduct - The number of credits to deduct upon success.
+ * @param bypassSubscriptionCheck - If true, skips the subscription check.
  * @returns The result of the action function.
  */
 export async function runProtectedAction<T>(
   action: () => Promise<T>,
-  creditsToDeduct: number = 1
+  creditsToDeduct: number = 1,
+  bypassSubscriptionCheck: boolean = false
 ): Promise<T> {
   const token = localStorage.getItem('authToken');
   if (!token) {
     throw new Error('AUTH_TOKEN_MISSING');
   }
 
-  // 1. Check subscription status
-  const isSubscribed = await checkSubscriptionStatus(token);
-  if (!isSubscribed) {
-    throw new Error('SUBSCRIPTION_REQUIRED');
-  }
+  if (!bypassSubscriptionCheck) {
+      // 1. Check subscription status
+      const isSubscribed = await checkSubscriptionStatus(token);
+      if (!isSubscribed) {
+        throw new Error('SUBSCRIPTION_REQUIRED');
+      }
 
-  // 2. Check remaining credits
-  const remainingCredits = await getRemainingCredits(token);
-  if (remainingCredits < creditsToDeduct) {
-    throw new Error('INSUFFICIENT_CREDITS');
+      // 2. Check remaining credits
+      const remainingCredits = await getRemainingCredits(token);
+      if (remainingCredits < creditsToDeduct) {
+        throw new Error('INSUFFICIENT_CREDITS');
+      }
   }
 
   // 3. Execute the core function
   const result = await action();
 
-  // 4. Deduct credits *after* the action is successful
-  const deductionSuccess = await deductCredits(token, creditsToDeduct);
-  if (!deductionSuccess) {
-    // This is a non-critical error for the user, but should be logged.
-    // The user got the service, but credit deduction failed on the backend.
-    console.warn('Credit deduction failed post-action. Please check backend logs.');
+  // 4. Deduct credits *after* the action is successful (if applicable)
+  if (!bypassSubscriptionCheck) {
+      const deductionSuccess = await deductCredits(token, creditsToDeduct);
+      if (!deductionSuccess) {
+        // This is a non-critical error for the user, but should be logged.
+        // The user got the service, but credit deduction failed on the backend.
+        console.warn('Credit deduction failed post-action. Please check backend logs.');
+      }
   }
 
   return result;
