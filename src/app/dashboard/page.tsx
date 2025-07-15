@@ -103,7 +103,7 @@ const HomeView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
     <>
       <div className="fixed inset-0 -z-10">
         <video
-          src="https://gallery.scaneats.app/images/ScanHomePage.webm"
+          src="https://gallery.scaneats.app/images/ScanFoodNEW.webm"
           className="h-full w-full object-cover"
           autoPlay
           loop
@@ -1762,7 +1762,7 @@ export default function DashboardPage() {
   return (
     <div className="relative h-screen">
       {renderView()}
-      {!forceProfileView && <BottomNav activeView={activeView} onNavigate={handleNavigate} />}
+      <BottomNav activeView={activeView} onNavigate={handleNavigate} />
     </div>
   );
 }
