@@ -60,7 +60,7 @@ export async function runProtectedAction<T>(
   flowName: string,
   payload: any,
 ): Promise<T> {
-  const headersList = headers();
+  const headersList = await headers();
   const token = headersList.get('Authorization')?.replace('Bearer ', '');
 
   if (!token) {
