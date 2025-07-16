@@ -92,6 +92,7 @@ import { runProtectedAction } from '@/services/checkpointService';
 import type { FoodScanNutritionOutput } from '@/ai/flows/food-scan-nutrition';
 import type { GetMealInsightsOutput } from '@/ai/flows/meal-insights';
 import type { TextToSpeechOutput } from '@/ai/flows/text-to-speech';
+import { API_BASE_URL } from '@/lib/api';
 
 
 type View = 'home' | 'meal-plan' | 'sally' | 'profile' | 'settings' | 'scan';
