@@ -18,7 +18,7 @@ type TextToSpeechInput = z.infer<typeof TextToSpeechInputSchema>;
 const TextToSpeechOutputSchema = z.object({
   media: z.string().describe('The base64 encoded audio data URI.'),
 });
-type TextToSpeechOutput = z.infer<typeof TextToSpeechOutputSchema>;
+export type TextToSpeechOutput = z.infer<typeof TextToSpeechOutputSchema>;
 
 export async function textToSpeech(
   input: TextToSpeechInput
