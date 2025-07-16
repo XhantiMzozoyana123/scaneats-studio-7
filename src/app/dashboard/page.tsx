@@ -578,8 +578,8 @@ const MealPlanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
 
   // iOS Audio Fix: Pre-load a silent audio on user interaction
   const primeAudio = () => {
-    if (audioRef.current) {
-        audioRef.current.src = '/silent.mp3';
+    if (audioRef.current && audioRef.current.paused) {
+        audioRef.current.src = 'data:audio/mp3;base64,'; // tiny silent audio
         audioRef.current.play().catch(() => {}); // Play and ignore errors on first load
         audioRef.current.pause();
         audioRef.current.currentTime = 0;
@@ -859,8 +859,8 @@ const SallyView = () => {
   
   // iOS Audio Fix: Pre-load a silent audio on user interaction
   const primeAudio = () => {
-    if (audioRef.current) {
-        audioRef.current.src = '/silent.mp3';
+    if (audioRef.current && audioRef.current.paused) {
+        audioRef.current.src = 'data:audio/mp3;base64,'; // tiny silent audio
         audioRef.current.play().catch(() => {}); // Play and ignore errors on first load
         audioRef.current.pause();
         audioRef.current.currentTime = 0;
@@ -1383,7 +1383,15 @@ const SettingsView = ({
     }
 
     try {
-      await runProtectedAction<void>('delete-account', {});
+      const response = await fetch(`${API_BASE_URL}/api/Auth/delete-account`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({error: 'An unknown error occurred.'}));
+        throw new Error(errorData.error);
+      }
 
       toast({
         title: 'Account Deleted',
