@@ -13,6 +13,7 @@ const availableFlows: Record<string, { func: Function; cost: number }> = {
   'meal-insights': { func: getMealInsights, cost: 1 },
   'text-to-speech': { func: textToSpeech, cost: 1 },
   'personalized-dietary-suggestions': { func: personalizedDietarySuggestions, cost: 1 },
+  'delete-account': { func: async () => {}, cost: 0 }, // Placeholder for delete
 };
 
 async function checkSubscriptionStatus(token: string): Promise<boolean> {
@@ -48,22 +49,39 @@ async function deductCredits(token: string, amount: number): Promise<boolean> {
   return response.ok;
 }
 
+async function deleteUserAccount(token: string): Promise<void> {
+    const response = await fetch(`${API_BASE_URL}/api/Auth/delete-account`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({error: 'An unknown error occurred during account deletion.'}));
+      throw new Error(errorData.error);
+    }
+}
+
 /**
  * Executes a protected AI flow by first performing server-side checks for subscription and credit status.
  * Throws specific errors for the UI to handle based on the checks.
- * @param flowName - The name of the AI flow to run (e.g., 'food-scan-nutrition').
+ * @param flowName - The name of the AI flow to run.
  * @param payload - The data to send to the AI flow.
- * @param token - The user's authentication token.
  * @returns The result of the action function.
  */
 export async function runProtectedAction<T>(
   flowName: string,
   payload: any,
-  token: string | null
 ): Promise<T> {
+  const token = (await import('next/headers')).headers().get('Authorization')?.replace('Bearer ', '');
+
   if (!token) {
-    // Throw an error the client can handle, which will prompt for login/subscription.
     throw new Error('SUBSCRIPTION_REQUIRED');
+  }
+
+  // Handle special case for account deletion
+  if (flowName === 'delete-account') {
+      await deleteUserAccount(token);
+      return undefined as T;
   }
 
   const flowConfig = availableFlows[flowName];

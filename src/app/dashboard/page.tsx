@@ -87,7 +87,6 @@ import { useToast } from '@/hooks/use-toast';
 import { useUserData } from '@/context/user-data-context';
 import { cn } from '@/lib/utils';
 import { BottomNav } from '@/components/bottom-nav';
-import { API_BASE_URL } from '@/lib/api';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { runProtectedAction } from '@/services/checkpointService';
 import type { FoodScanNutritionOutput } from '@/ai/flows/food-scan-nutrition';
@@ -271,11 +270,9 @@ const ScanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
     setIsSending(true);
 
     try {
-      const token = localStorage.getItem('authToken');
       const scanResult = await runProtectedAction<FoodScanNutritionOutput>(
         'food-scan-nutrition', 
         { photoDataUri: capturedImage },
-        token
       );
       
       await updateCreditBalance(true); 
@@ -582,10 +579,11 @@ const MealPlanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
   // iOS Audio Fix: Pre-load a silent audio on user interaction
   const primeAudio = () => {
     if (audioRef.current) {
-        audioRef.current.src = '/silent.mp3';
-        audioRef.current.play().catch(() => {}); // Play and ignore errors
+        // A silent audio data URI can be used to avoid needing an extra file
+        audioRef.current.src = 'data:audio/mp3;base64,SUQzBAAAAAABEVRYWFgAAAAtAAADY29tbWVudABCaWdTb3VuZEJhbmsuY29tIC8gTGFTb25vdGhlcXVlLm9yZwBURU5DAAAAHQAAA1N3aXRjaCBQbHVzIMKpIE5DSCBTb2Z0d2FyZQBUSVQyAAAABgAAAzIyMzUAVFNTRQAAAA8AAANMYXZmNTcuODMuMTAwAAAAAAAAAAAAAAD/80DEAAAAA0gAAAAATEFNRTMuMTAwVVVVVVVVVVVVVUxBTUUzLjEwMFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVf/zRMQwAAAACgAAAAAwAAABNjb21tZW50ABJFbmdsaXNoIABiZSA5NjMgbG9zcyBvZiB0aGUgUm9tYW4gRW1waXJlIGluIDQwMHBWAAAAWGlORwAAAAcAAAAAgwAAABVjb21tZW50AEVuZ2xpc2ggYnkgOTYzIGxvc3Mgb2YgdGhlIFJvbWFuIEVtcGlyZSBpbiA0MDBwVgAAAFhJTkcAAAADAAAAAwAAQVRYWFgAAAAbAAADSGNvbW1lbnQAA0VBRgQAAADOAAAAAAAAAAAAAAAAAADSGF2aW5nIGludGVyZXN0IGluIHRoZSBtdXNpYyB0aGUgbGlzdGVuZXIgY2FuIHNlYXJjaCBmb3IgbW9yZSBjb250ZW50IGJ5IHRoYXQgY3JlYXRvciBhbmQgb3RoZXIgYWZmaWxpYXRlZCBhcnRpc3RzIGluIHRoZSBsaXN0IG9mIHN1bmdzLiBUaGlzIGZpZWxkIGNvbnRhaW5zIGEgZGF0YSBwcm92aWRlciBpZGVudGlmaWVyIGFuZCBhbiBpZGVudGlmaWVyIHNwZWNpZmljIHRvIHRoZSBkYXRhIHByb3ZpZGVyLiBJbiB0aGUgY2FzZSBvZiBwcm9kdWN0cyBmcm9tIGFuIGVudGVydGFpbm1lbnQgY29tcGFueSB0aGUgcHJvdmlkZXIgaXMgdGhlaXIgYnJhbmQuAAAAAFhJTkcAAAAJAAAAAwAAAF9hdXRoAGl2YW4gbWFyY2Vsb0BYSU5HAAAEAAAAAwAAAANhdXRoAGl2YW4gbWFyY2VsbwAA/80DEQAAAARPAAAAQVQvV1VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV';
+        audioRef.current.play().catch(() => {}); // Play and ignore errors on first load
         audioRef.current.pause();
-        audioRef.current.currentTime = 0;
+        audio.current.currentTime = 0;
     }
   };
 
@@ -624,7 +622,6 @@ const MealPlanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
     }
 
     try {
-      const token = localStorage.getItem('authToken');
       const lastFood = currentFoods[0];
       const nutritionalInfo = {
         calories: lastFood.calories,
@@ -639,10 +636,10 @@ const MealPlanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
         userQuery: userInput,
       };
 
-      const insightsResult = await runProtectedAction<GetMealInsightsOutput>('meal-insights', insightsPayload, token);
+      const insightsResult = await runProtectedAction<GetMealInsightsOutput>('meal-insights', insightsPayload);
       
       const ttsPayload = { text: insightsResult.response };
-      const ttsResult = await runProtectedAction<TextToSpeechOutput>('text-to-speech', ttsPayload, token);
+      const ttsResult = await runProtectedAction<TextToSpeechOutput>('text-to-speech', ttsPayload);
 
       setSallyResponse(insightsResult.response);
       
@@ -864,8 +861,9 @@ const SallyView = () => {
   // iOS Audio Fix: Pre-load a silent audio on user interaction
   const primeAudio = () => {
     if (audioRef.current) {
-        audioRef.current.src = '/silent.mp3';
-        audioRef.current.play().catch(() => {}); // Play and ignore errors
+        // A silent audio data URI can be used to avoid needing an extra file
+        audioRef.current.src = 'data:audio/mp3;base64,SUQzBAAAAAABEVRYWFgAAAAtAAADY29tbWVudABCaWdTb3VuZEJhbmsuY29tIC8gTGFTb25vdGhlcXVlLm9yZwBURU5DAAAAHQAAA1N3aXRjaCBQbHVzIMKpIE5DSCBTb2Z0d2FyZQBUSVQyAAAABgAAAzIyMzUAVFNTRQAAAA8AAANMYXZmNTcuODMuMTAwAAAAAAAAAAAAAAD/80DEAAAAA0gAAAAATEFNRTMuMTAwVVVVVVVVVVVVVUxBTUUzLjEwMFVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVf/zRMQwAAAACgAAAAAwAAABNjb21tZW50ABJFbmdsaXNoIABiZSA5NjMgbG9zcyBvZiB0aGUgUm9tYW4gRW1waXJlIGluIDQwMHBWAAAAWGlORwAAAAcAAAAAgwAAABVjb21tZW50AEVuZ2xpc2ggYnkgOTYzIGxvc3Mgb2YgdGhlIFJvbWFuIEVtcGlyZSBpbiA0MDBwVgAAAFhJTkcAAAADAAAAAwAAQVRYWFgAAAAbAAADSGNvbW1lbnQAA0VBRgQAAADOAAAAAAAAAAAAAAAAAADSGF2aW5nIGludGVyZXN0IGluIHRoZSBtdXNpYyB0aGUgbGlzdGVuZXIgY2FuIHNlYXJjaCBmb3IgbW9yZSBjb250ZW50IGJ5IHRoYXQgY3JlYXRvciBhbmQgb3RoZXIgYWZmaWxpYXRlZCBhcnRpc3RzIGluIHRoZSBsaXN0IG9mIHN1bmdzLiBUaGlzIGZpZWxkIGNvbnRhaW5zIGEgZGF0YSBwcm92aWRlciBpZGVudGlmaWVyIGFuZCBhbiBpZGVudGlmaWVyIHNwZWNpZmljIHRvIHRoZSBkYXRhIHByb3ZpZGVyLiBJbiB0aGUgY2FzZSBvZiBwcm9kdWN0cyBmcm9tIGFuIGVudGVydGFpbm1lbnQgY29tcGFueSB0aGUgcHJvdmlkZXIgYXMgdGhlaXIgYnJhbmQuAAAAAFhJTkcAAAAJAAAAAwAAAF9hdXRoAGl2YW4gbWFyY2Vsb0BYSU5HAAAEAAAAAwAAAANhdXRoAGl2YW4gbWFyY2VsbwAA/80DEQAAAARPAAAAQVQvV1VVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV';
+        audioRef.current.play().catch(() => {}); // Play and ignore errors on first load
         audioRef.current.pause();
         audioRef.current.currentTime = 0;
     }
@@ -890,16 +888,15 @@ const SallyView = () => {
     setSallyResponse(`Thinking about: "${userInput}"`);
     
     try {
-        const token = localStorage.getItem('authToken');
         const insightsPayload = {
           foodItemName: "your body and health",
           nutritionalInformation: JSON.stringify(profile),
           userQuery: userInput,
         };
-        const insightsResult = await runProtectedAction<GetMealInsightsOutput>('meal-insights', insightsPayload, token);
+        const insightsResult = await runProtectedAction<GetMealInsightsOutput>('meal-insights', insightsPayload);
 
         const ttsPayload = { text: insightsResult.response };
-        const ttsResult = await runProtectedAction<TextToSpeechOutput>('text-to-speech', ttsPayload, token);
+        const ttsResult = await runProtectedAction<TextToSpeechOutput>('text-to-speech', ttsPayload);
         
         setSallyResponse(insightsResult.response);
 
@@ -1335,7 +1332,7 @@ const SettingsView = ({
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/subscription/cancel`, {
+      const response = await fetch(`https://api.scaneats.app/api/subscription/cancel`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -1388,16 +1385,8 @@ const SettingsView = ({
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/Auth/delete-account`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      await runProtectedAction<void>('delete-account', {});
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({error: 'An unknown error occurred.'}));
-        throw new Error(errorData.error);
-      }
-      
       toast({
         title: 'Account Deleted',
         description: 'Your account has been permanently deleted.',
@@ -1443,7 +1432,7 @@ const SettingsView = ({
     };
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/Auth/update-password`, {
+      const response = await fetch(`https://api.scaneats.app/api/Auth/update-password`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -1709,7 +1698,6 @@ const SettingsView = ({
 
 export default function DashboardPage() {
   const [activeView, setActiveView] = useState<View>('home');
-  const { toast } = useToast();
 
   const handleNavigate = (view: View) => {
     setActiveView(view);
