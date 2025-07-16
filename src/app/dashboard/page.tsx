@@ -579,14 +579,21 @@ const MealPlanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
     );
   }, [foods]);
 
+  // iOS Audio Fix: Pre-load a silent audio on user interaction
+  const primeAudio = () => {
+    if (audioRef.current) {
+        audioRef.current.src = '/silent.mp3';
+        audioRef.current.play().catch(() => {}); // Play and ignore errors
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+    }
+  };
+
   const handleMicClick = () => {
     if (isRecording) {
       recognitionRef.current?.stop();
     } else {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.currentTime = 0;
-      }
+      primeAudio(); // Prime audio for iOS
       setIsRecording(true);
       setSallyResponse('Listening...');
       recognitionRef.current?.start();
@@ -853,15 +860,23 @@ const SallyView = () => {
       });
     }
   }, [toast]);
+  
+  // iOS Audio Fix: Pre-load a silent audio on user interaction
+  const primeAudio = () => {
+    if (audioRef.current) {
+        audioRef.current.src = '/silent.mp3';
+        audioRef.current.play().catch(() => {}); // Play and ignore errors
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+    }
+  };
+
 
   const handleMicClick = () => {
     if (isRecording || isLoading) {
       recognitionRef.current?.stop();
     } else {
-       if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.currentTime = 0;
-      }
+      primeAudio(); // Prime audio for iOS
       setIsRecording(true);
       recognitionRef.current?.start();
     }
