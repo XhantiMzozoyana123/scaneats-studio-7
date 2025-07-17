@@ -43,6 +43,7 @@ async function deductCredits(token: string, amount: number): Promise<boolean> {
       Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify(amount),
+    cache: 'no-store',
   });
   return response.ok;
 }

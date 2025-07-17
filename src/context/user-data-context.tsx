@@ -90,6 +90,7 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
         // Fetch subscription status from the backend
         const subResponse = await fetch(`${API_BASE_URL}/api/event/subscription/status`, {
             headers: { Authorization: `Bearer ${token}` },
+            cache: 'no-store',
         });
         const subData = subResponse.ok ? await subResponse.json() : { isSubscribed: false };
         
