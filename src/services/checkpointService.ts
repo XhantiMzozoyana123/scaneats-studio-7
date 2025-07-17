@@ -5,14 +5,12 @@ import { headers } from 'next/headers';
 import { foodScanNutrition } from '@/ai/flows/food-scan-nutrition';
 import { getMealInsights } from '@/ai/flows/meal-insights';
 import { personalizedDietarySuggestions } from '@/ai/flows/personalized-dietary-suggestions';
-import { textToSpeech } from '@/ai/flows/text-to-speech';
 import { API_BASE_URL } from '@/lib/api';
 
 // Map flow names to their functions and credit costs
 const availableFlows: Record<string, { func: Function; cost: number }> = {
   'food-scan-nutrition': { func: foodScanNutrition, cost: 1 },
   'meal-insights': { func: getMealInsights, cost: 1 },
-  'text-to-speech': { func: textToSpeech, cost: 1 },
   'personalized-dietary-suggestions': { func: personalizedDietarySuggestions, cost: 1 },
 };
 
@@ -60,7 +58,7 @@ export async function runProtectedAction<T>(
   flowName: string,
   payload: any,
 ): Promise<T> {
-  const headersList = await headers();
+  const headersList = headers();
   const token = headersList.get('Authorization')?.replace('Bearer ', '');
 
   if (!token) {

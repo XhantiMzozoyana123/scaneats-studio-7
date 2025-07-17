@@ -91,7 +91,6 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { runProtectedAction } from '@/services/checkpointService';
 import type { FoodScanNutritionOutput } from '@/ai/flows/food-scan-nutrition';
 import type { GetMealInsightsOutput } from '@/ai/flows/meal-insights';
-import type { TextToSpeechOutput } from '@/ai/flows/text-to-speech';
 import { API_BASE_URL } from '@/lib/api';
 
 
@@ -444,8 +443,6 @@ type ScannedFood = {
   carbs: number;
 };
 
-type SallyOutput = GetMealInsightsOutput & { audio: string };
-
 
 declare global {
   interface Window {
@@ -580,7 +577,7 @@ const MealPlanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
   // iOS Audio Fix: Pre-load a silent audio on user interaction
   const primeAudio = () => {
     if (audioRef.current && audioRef.current.paused) {
-        audioRef.current.src = 'data:audio/mp3;base64,'; // tiny silent audio
+        audioRef.current.src = '/silent.mp3';
         audioRef.current.play().catch(() => {}); // Play and ignore errors on first load
         audioRef.current.pause();
         audioRef.current.currentTime = 0;
@@ -637,14 +634,12 @@ const MealPlanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
       };
 
       const insightsResult = await runProtectedAction<GetMealInsightsOutput>('meal-insights', insightsPayload);
-      
-      const ttsPayload = { text: insightsResult.response };
-      const ttsResult = await runProtectedAction<TextToSpeechOutput>('text-to-speech', ttsPayload);
-
       setSallyResponse(insightsResult.response);
       
-      if (ttsResult.media && audioRef.current) {
-          audioRef.current.src = ttsResult.media;
+      const ttsUrl = `${API_BASE_URL}/api/TTS/speak?text=${encodeURIComponent(insightsResult.response)}`;
+
+      if (audioRef.current) {
+          audioRef.current.src = ttsUrl;
           audioRef.current.play().catch(e => {
             console.error("Audio play failed", e);
             toast({ variant: 'destructive', title: 'Audio Error', description: 'Could not play audio. Please ensure your device is not in silent mode.' });
@@ -861,7 +856,7 @@ const SallyView = () => {
   // iOS Audio Fix: Pre-load a silent audio on user interaction
   const primeAudio = () => {
     if (audioRef.current && audioRef.current.paused) {
-        audioRef.current.src = 'data:audio/mp3;base64,'; // tiny silent audio
+        audioRef.current.src = '/silent.mp3'; 
         audioRef.current.play().catch(() => {}); // Play and ignore errors on first load
         audioRef.current.pause();
         audioRef.current.currentTime = 0;
@@ -893,14 +888,12 @@ const SallyView = () => {
           userQuery: userInput,
         };
         const insightsResult = await runProtectedAction<GetMealInsightsOutput>('meal-insights', insightsPayload);
-
-        const ttsPayload = { text: insightsResult.response };
-        const ttsResult = await runProtectedAction<TextToSpeechOutput>('text-to-speech', ttsPayload);
-        
         setSallyResponse(insightsResult.response);
 
-        if (ttsResult.media && audioRef.current) {
-          audioRef.current.src = ttsResult.media;
+        const ttsUrl = `${API_BASE_URL}/api/TTS/speak?text=${encodeURIComponent(insightsResult.response)}`;
+        
+        if (audioRef.current) {
+          audioRef.current.src = ttsUrl;
           audioRef.current.play().catch(e => {
             console.error("Audio play failed", e);
             toast({ variant: 'destructive', title: 'Audio Error', description: 'Could not play audio. Please ensure your device is not in silent mode.' });
@@ -1331,7 +1324,7 @@ const SettingsView = ({
     }
 
     try {
-      const response = await fetch(`https://api.scaneats.app/api/subscription/cancel`, {
+      const response = await fetch(`${API_BASE_URL}/api/subscription/cancel`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -1439,7 +1432,7 @@ const SettingsView = ({
     };
 
     try {
-      const response = await fetch(`https://api.scaneats.app/api/Auth/update-password`, {
+      const response = await fetch(`${API_BASE_URL}/api/Auth/update-password`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
