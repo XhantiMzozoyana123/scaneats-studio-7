@@ -1,7 +1,6 @@
 
 'use server';
 
-import { headers } from 'next/headers';
 import { foodScanNutrition } from '@/ai/flows/food-scan-nutrition';
 import { getMealInsights } from '@/ai/flows/meal-insights';
 import { personalizedDietarySuggestions } from '@/ai/flows/personalized-dietary-suggestions';
@@ -51,17 +50,16 @@ async function deductCredits(token: string, amount: number): Promise<boolean> {
 /**
  * Executes a protected AI flow by first performing server-side checks for subscription and credit status.
  * Throws specific errors for the UI to handle based on the checks.
+ * @param token - The user's authentication token.
  * @param flowName - The name of the AI flow to run.
  * @param payload - The data to send to the AI flow.
  * @returns The result of the action function.
  */
 export async function runProtectedAction<T>(
+  token: string,
   flowName: string,
-  payload: any,
+  payload: any
 ): Promise<T> {
-  const headersList = headers();
-  const token = headersList.get('Authorization')?.replace('Bearer ', '');
-
   if (!token) {
     throw new Error('SUBSCRIPTION_REQUIRED');
   }

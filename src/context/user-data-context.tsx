@@ -83,6 +83,7 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
     const token = localStorage.getItem('authToken');
     if (!token) {
         setIsLoading(false);
+        setProfile(initialProfileState);
         return;
     }
 
@@ -90,11 +91,11 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
         // Fetch subscription status from the backend
         const subResponse = await fetch(`${API_BASE_URL}/api/event/subscription/status`, {
             headers: { Authorization: `Bearer ${token}` },
-            cache: 'no-store',
+            cache: 'no-store', // Always get the latest status
         });
         const subData = subResponse.ok ? await subResponse.json() : { isSubscribed: false };
         
-        // Load local profile
+        // Load local profile data from storage
         const storedProfile = localStorage.getItem('userProfile');
         let localProfile: Profile;
         if (storedProfile) {
@@ -104,12 +105,19 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
             localProfile = initialProfileState;
         }
 
-        // Combine and set
+        // Combine local profile with authoritative subscription status from the server
         setProfile({ ...localProfile, isSubscribed: subData.isSubscribed });
 
     } catch (error) {
       console.error('Failed to load profile/subscription status', error);
-      setProfile(initialProfileState);
+      // Fallback to initial state on error
+      const storedProfile = localStorage.getItem('userProfile');
+      if (storedProfile) {
+          const parsed = JSON.parse(storedProfile);
+          setProfile({ ...parsed, birthDate: parsed.birthDate ? new Date(parsed.birthDate) : null, isSubscribed: false });
+      } else {
+          setProfile(initialProfileState);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -164,6 +172,7 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
     try {
       const creditRes = await fetch(`${API_BASE_URL}/api/credit/balance`, {
         headers: { Authorization: `Bearer ${token}` },
+        cache: 'no-store', // Always fetch latest credits
       });
 
       if (creditRes.ok) {

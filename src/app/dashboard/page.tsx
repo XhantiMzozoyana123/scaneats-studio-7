@@ -268,9 +268,17 @@ const ScanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
     if (!capturedImage) return;
 
     setIsSending(true);
+    const token = localStorage.getItem('authToken');
+
+    if (!token) {
+      setSubscriptionModalOpen(true);
+      setIsSending(false);
+      return;
+    }
 
     try {
       const scanResult = await runProtectedAction<FoodScanNutritionOutput>(
+        token,
         'food-scan-nutrition', 
         { photoDataUri: capturedImage },
       );
@@ -602,6 +610,13 @@ const MealPlanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
     setSallyProgress(10);
     setSallyResponse(`Thinking about: "${userInput}"`);
 
+    const token = localStorage.getItem('authToken');
+    if (!token) {
+        setSubscriptionModalOpen(true);
+        setIsSallyLoading(false);
+        return;
+    }
+
     let currentFoods = foods;
     if (!currentFoods || currentFoods.length === 0) {
       currentFoods = loadFoodFromStorage();
@@ -633,7 +648,7 @@ const MealPlanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
         userQuery: userInput,
       };
 
-      const insightsResult = await runProtectedAction<GetMealInsightsOutput>('meal-insights', insightsPayload);
+      const insightsResult = await runProtectedAction<GetMealInsightsOutput>(token, 'meal-insights', insightsPayload);
       setSallyResponse(insightsResult.response);
       
       const ttsUrl = `${API_BASE_URL}/api/TTS/speak?text=${encodeURIComponent(insightsResult.response)}`;
@@ -880,6 +895,13 @@ const SallyView = () => {
     setIsLoading(true);
     setLoadingProgress(10);
     setSallyResponse(`Thinking about: "${userInput}"`);
+
+    const token = localStorage.getItem('authToken');
+    if (!token) {
+        setSubscriptionModalOpen(true);
+        setIsLoading(false);
+        return;
+    }
     
     try {
         const insightsPayload = {
@@ -887,7 +909,7 @@ const SallyView = () => {
           nutritionalInformation: JSON.stringify(profile),
           userQuery: userInput,
         };
-        const insightsResult = await runProtectedAction<GetMealInsightsOutput>('meal-insights', insightsPayload);
+        const insightsResult = await runProtectedAction<GetMealInsightsOutput>(token, 'meal-insights', insightsPayload);
         setSallyResponse(insightsResult.response);
 
         const ttsUrl = `${API_BASE_URL}/api/TTS/speak?text=${encodeURIComponent(insightsResult.response)}`;
