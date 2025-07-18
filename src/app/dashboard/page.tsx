@@ -91,6 +91,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { runProtectedAction } from '@/services/checkpointService';
 import type { FoodScanNutritionOutput } from '@/ai/flows/food-scan-nutrition';
 import type { GetMealInsightsOutput } from '@/ai/flows/meal-insights';
+import type { TextToSpeechOutput } from '@/ai/flows/text-to-speech';
 import { API_BASE_URL } from '@/lib/api';
 
 
@@ -649,12 +650,12 @@ const MealPlanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
       };
 
       const insightsResult = await runProtectedAction<GetMealInsightsOutput>(token, 'meal-insights', insightsPayload);
-      setSallyResponse(insightsResult.response);
+      const textResponse = insightsResult.response;
+      setSallyResponse(textResponse);
       
-      const ttsUrl = `${API_BASE_URL}/api/TTS/speak?text=${encodeURIComponent(insightsResult.response)}`;
-
+      const ttsResult = await runProtectedAction<TextToSpeechOutput>(token, 'text-to-speech', textResponse);
       if (audioRef.current) {
-          audioRef.current.src = ttsUrl;
+          audioRef.current.src = ttsResult.media;
           audioRef.current.play().catch(e => {
             console.error("Audio play failed", e);
             toast({ variant: 'destructive', title: 'Audio Error', description: 'Could not play audio. Please ensure your device is not in silent mode.' });
@@ -910,12 +911,13 @@ const SallyView = () => {
           userQuery: userInput,
         };
         const insightsResult = await runProtectedAction<GetMealInsightsOutput>(token, 'meal-insights', insightsPayload);
-        setSallyResponse(insightsResult.response);
+        const textResponse = insightsResult.response;
+        setSallyResponse(textResponse);
 
-        const ttsUrl = `${API_BASE_URL}/api/TTS/speak?text=${encodeURIComponent(insightsResult.response)}`;
+        const ttsResult = await runProtectedAction<TextToSpeechOutput>(token, 'text-to-speech', textResponse);
         
         if (audioRef.current) {
-          audioRef.current.src = ttsUrl;
+          audioRef.current.src = ttsResult.media;
           audioRef.current.play().catch(e => {
             console.error("Audio play failed", e);
             toast({ variant: 'destructive', title: 'Audio Error', description: 'Could not play audio. Please ensure your device is not in silent mode.' });
