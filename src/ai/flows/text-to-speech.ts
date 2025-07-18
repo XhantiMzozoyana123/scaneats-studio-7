@@ -70,7 +70,7 @@ const textToSpeechFlow = ai.defineFlow(
         responseModalities: ['AUDIO'],
         speechConfig: {
           voiceConfig: {
-            prebuiltVoiceConfig: { voiceName: 'Algenib' }, // A standard, clear female voice
+            prebuiltVoiceConfig: { voiceName: 'Vega' }, // A young, clear female voice
           },
         },
       },
