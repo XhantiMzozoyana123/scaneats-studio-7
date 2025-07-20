@@ -23,13 +23,13 @@ const UserProfileSchema = z.object({
   email: z.string().optional(),
 });
 
-export const SallyHealthInsightsInputSchema = z.object({
+const SallyHealthInsightsInputSchema = z.object({
   userProfile: UserProfileSchema.describe("The user's profile information."),
   userQuery: z.string().describe("The user's question about their health."),
 });
 export type SallyHealthInsightsInput = z.infer<typeof SallyHealthInsightsInputSchema>;
 
-export const SallyHealthInsightsOutputSchema = z.object({
+const SallyHealthInsightsOutputSchema = z.object({
   response: z.string().describe('A conversational and helpful response to the user\'s query.'),
 });
 export type SallyHealthInsightsOutput = z.infer<typeof SallyHealthInsightsOutputSchema>;
