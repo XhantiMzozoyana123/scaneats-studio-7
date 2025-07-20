@@ -272,7 +272,11 @@ const ScanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
     const token = localStorage.getItem('authToken');
 
     if (!token) {
-      setSubscriptionModalOpen(true);
+      toast({
+        variant: 'destructive',
+        title: 'Authentication Error',
+        description: 'You must be logged in to scan food.',
+      });
       setIsSending(false);
       return;
     }
@@ -285,10 +289,22 @@ const ScanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
       );
       
       await updateCreditBalance(true); 
-      localStorage.setItem('scannedFood', JSON.stringify(scanResult));
+
+      // Directly use properties from the output schema
+      const { foodIdentification, nutritionInformation } = scanResult;
+      const simplifiedResult = {
+        name: foodIdentification.name,
+        calories: nutritionInformation.calories,
+        protein: nutritionInformation.protein,
+        fat: nutritionInformation.fat,
+        carbohydrates: nutritionInformation.carbohydrates,
+      }
+
+      localStorage.setItem('scannedFood', JSON.stringify(simplifiedResult));
+      
       toast({
           title: 'Success!',
-          description: `Identified: ${scanResult.name}.`,
+          description: `Identified: ${simplifiedResult.name}.`,
       });
       onNavigate('meal-plan');
 
@@ -650,10 +666,15 @@ const MealPlanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
       };
 
       const insightsResult = await runProtectedAction<GetMealInsightsOutput>(token, 'meal-insights', insightsPayload);
-      const textResponse = insightsResult.response;
+      
+      const ingredients = insightsResult.ingredients;
+      const benefits = insightsResult.healthBenefits;
+      const risks = insightsResult.potentialRisks;
+      
+      const textResponse = `This seems to be made of ${ingredients}. Some benefits are: ${benefits}. However, watch out for: ${risks}.`;
       setSallyResponse(textResponse);
       
-      const ttsResult = await runProtectedAction<TextToSpeechOutput>(token, 'text-to-speech', textResponse);
+      const ttsResult = await runProtectedAction<TextToSpeechOutput>(token, 'text-to-speech', { text: textResponse });
       if (audioRef.current) {
           audioRef.current.src = ttsResult.media;
           audioRef.current.play().catch(e => {
@@ -911,10 +932,15 @@ const SallyView = () => {
           userQuery: userInput,
         };
         const insightsResult = await runProtectedAction<GetMealInsightsOutput>(token, 'meal-insights', insightsPayload);
-        const textResponse = insightsResult.response;
+        
+        const ingredients = insightsResult.ingredients;
+        const benefits = insightsResult.healthBenefits;
+        const risks = insightsResult.potentialRisks;
+      
+        const textResponse = `Based on your profile, here are some insights for "${userInput}". Your body might benefit from focusing on ${benefits}. It seems some of your goals align with this. However, be mindful of ${risks}. Would you like to explore meal options related to this?`;
         setSallyResponse(textResponse);
 
-        const ttsResult = await runProtectedAction<TextToSpeechOutput>(token, 'text-to-speech', textResponse);
+        const ttsResult = await runProtectedAction<TextToSpeechOutput>(token, 'text-to-speech', { text: textResponse });
         
         if (audioRef.current) {
           audioRef.current.src = ttsResult.media;
