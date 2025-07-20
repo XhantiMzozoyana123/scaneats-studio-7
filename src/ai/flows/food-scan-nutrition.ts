@@ -16,66 +16,45 @@ const FoodScanNutritionInputSchema = z.object({
   photoDataUri: z
     .string()
     .describe(
-      "A photo of the food item, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'"
+      "A photo of the food item, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
     ),
 });
 export type FoodScanNutritionInput = z.infer<typeof FoodScanNutritionInputSchema>;
 
 const FoodScanNutritionOutputSchema = z.object({
-  name: z.string().describe('The name of the food item.'),
-  calories: z.number().describe('The total number of calories.'),
-  protein: z.number().describe('The amount of protein in grams.'),
-  fat: z.number().describe('The amount of fat in grams.'),
-  carbohydrates: z.number().describe('The amount of carbohydrates in grams.'),
+  foodIdentification: z.object({
+    name: z.string().describe('The identified name of the food item.'),
+    confidence: z
+      .number()
+      .describe('The confidence level of the food identification.'),
+  }),
+  nutritionInformation: z.object({
+    calories: z.number().describe('The number of calories in the food item.'),
+    protein: z.number().describe('The amount of protein in grams.'),
+    fat: z.number().describe('The amount of fat in grams.'),
+    carbohydrates: z.number().describe('The amount of carbohydrates in grams.'),
+    allergens: z
+      .array(z.string())
+      .describe('A list of potential allergens in the food item.'),
+  }),
 });
 export type FoodScanNutritionOutput = z.infer<typeof FoodScanNutritionOutputSchema>;
 
-export async function foodScanNutrition(
-  input: FoodScanNutritionInput
-): Promise<FoodScanNutritionOutput> {
+
+export async function foodScanNutrition(input: FoodScanNutritionInput): Promise<FoodScanNutritionOutput> {
   return foodScanNutritionFlow(input);
 }
 
-// First step: Simple prompt to just get the name of the food
-const identifyFoodPrompt = ai.definePrompt({
-  name: 'identifyFoodPrompt',
-  input: {schema: z.object({ photoDataUri: z.string() })},
-  prompt: `Give me the name of the food that's on this plate. Just the name.
-  
-  Photo: {{media url=photoDataUri}}`,
+const prompt = ai.definePrompt({
+  name: 'foodScanNutritionPrompt',
+  input: {schema: FoodScanNutritionInputSchema},
+  output: {schema: FoodScanNutritionOutputSchema},
+  prompt: `You are a nutritional expert. You will identify the food item in the photo and provide detailed nutritional information, including calories, macro-nutrients (protein, fat, carbohydrates), and potential allergens.
+
+  Photo: {{media url=photoDataUri}}
+  \nGive me the food identification and nutrition information in JSON format. Make sure the data is accurate.`,
 });
 
-
-// Second step: Detailed prompt to get nutritional info based on the food name
-const getNutritionPrompt = ai.definePrompt({
-  name: 'getNutritionPrompt',
-  input: {
-    schema: z.object({
-      photoDataUri: z.string(),
-      mealName: z.string(),
-    }),
-  },
-  // We only ask the model for the macros, we will calculate calories ourselves.
-  output: {
-    schema: z.object({
-        name: z.string().describe('The name of the food item.'),
-        protein: z.number().describe('The amount of protein in grams.'),
-        fat: z.number().describe('The amount of fat in grams.'),
-        carbohydrates: z.number().describe('The amount of carbohydrates in grams.'),
-      }),
-  },
-  prompt: `You are a nutritional expert. Examine the image very carefully.
-The food has been identified as: {{{mealName}}}.
-
-Based on this, estimate the approximate food macronutrients in grams.
-
-Provide your response in a valid JSON object only, following the specified schema.
-- No extra explanation, comments, or text outside the JSON.
-- Ensure the data is as accurate as possible based on the visual information.
-
-Photo: {{media url=photoDataUri}}
-`,
-});
 
 const foodScanNutritionFlow = ai.defineFlow(
   {
@@ -83,30 +62,16 @@ const foodScanNutritionFlow = ai.defineFlow(
     inputSchema: FoodScanNutritionInputSchema,
     outputSchema: FoodScanNutritionOutputSchema,
   },
-  async (input) => {
-    // Step 1: Identify the food to get its name
-    const identifyResponse = await identifyFoodPrompt({ photoDataUri: input.photoDataUri });
-    const mealName = identifyResponse.text.trim();
-
-    // Step 2: Use the meal name to get detailed nutritional info
-    const nutritionResponse = await getNutritionPrompt({
-        photoDataUri: input.photoDataUri,
-        mealName: mealName,
-    });
+  async input => {
+    const {output} = await prompt(input);
     
-    // The model output should be a clean JSON object based on the prompt's output schema
-    const nutritionMacros = nutritionResponse.output;
-
-    if (!nutritionMacros) {
-        throw new Error("Failed to get nutritional information from the model.");
+    // Fallback logic for calories calculation if model fails to provide it
+    if (output?.nutritionInformation && output.nutritionInformation.calories === 0) {
+        const { protein, carbohydrates, fat } = output.nutritionInformation;
+        const calculatedCalories = (protein * 4) + (carbohydrates * 4) + (fat * 9);
+        output.nutritionInformation.calories = Math.round(calculatedCalories);
     }
     
-    // Step 3: Calculate calories in code for accuracy
-    const calories = (nutritionMacros.protein * 4) + (nutritionMacros.carbohydrates * 4) + (nutritionMacros.fat * 9);
-    
-    return {
-        ...nutritionMacros,
-        calories: Math.round(calories),
-    };
+    return output!;
   }
 );

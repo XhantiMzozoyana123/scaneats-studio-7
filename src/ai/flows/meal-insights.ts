@@ -24,9 +24,13 @@ const GetMealInsightsInputSchema = z.object({
 export type GetMealInsightsInput = z.infer<typeof GetMealInsightsInputSchema>;
 
 const GetMealInsightsOutputSchema = z.object({
-  response: z
+  ingredients: z
     .string()
-    .describe('A helpful and conversational response to the user\'s query about their meal or health.'),
+    .describe('A comma-separated list of the ingredients in the food item.'),
+  healthBenefits: z.string().describe('The health benefits of the food item.'),
+  potentialRisks: z
+    .string()
+    .describe('The potential health risks of the food item.'),
 });
 export type GetMealInsightsOutput = z.infer<typeof GetMealInsightsOutputSchema>;
 
@@ -40,21 +44,18 @@ const prompt = ai.definePrompt({
   name: 'getMealInsightsPrompt',
   input: {schema: GetMealInsightsInputSchema},
   output: {schema: GetMealInsightsOutputSchema},
-  prompt: `You are Sally, a funny, witty, and helpful personal AI nutritionist.
-  A user is asking a question. Your response should be pure human text, not JSON.
+  prompt: `You are Sally, a funny, witty, and helpful personal AI nutritionist. 
+  A user has asked for insights about a food item.
+  
+  Your primary task is to provide a structured response in JSON format based on the following:
+  - Food Name: {{{foodItemName}}}
+  - Nutritional Information: {{{nutritionalInformation}}}
 
-  Here is the context for their question:
-  - Topic/Food Name: {{{foodItemName}}}
-  - Contextual Information (JSON): {{{nutritionalInformation}}}
-
-  Here is the user's question:
-  "{{{userQuery}}}"
-
-  Based on all this information, provide a conversational, funny, and helpful response to the user.
-  Address them directly. For example, if they ask "is this healthy?", you could say "Well, let's take a look at this {{{foodItemName}}}...".
-  Keep your response concise and to the point.
+  Based on the food name and its nutritional information, describe its likely ingredients, its health benefits, and potential risks.
+  Fill out the 'ingredients', 'healthBenefits', and 'potentialRisks' fields in the JSON output.
   `,
 });
+
 
 const getMealInsightsFlow = ai.defineFlow(
   {
