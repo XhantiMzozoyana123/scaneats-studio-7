@@ -28,9 +28,9 @@ type Profile = {
   id: number | null;
   name: string;
   gender: string;
-  weight: number | string;
+  weight: number;
   goals: string;
-  birthDate: Date | null;
+  birthDate: string | null;
   age?: number;
   isSubscribed?: boolean;
   email?: string;
@@ -55,7 +55,7 @@ const initialProfileState: Profile = {
   id: null,
   name: '',
   gender: 'Prefer not to say',
-  weight: '',
+  weight: 0,
   goals: '',
   birthDate: null,
   isSubscribed: false,
@@ -100,7 +100,9 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
         let localProfile: Profile;
         if (storedProfile) {
             const parsed = JSON.parse(storedProfile);
-            localProfile = { ...parsed, birthDate: parsed.birthDate ? new Date(parsed.birthDate) : null };
+            // Ensure birthDate is a string for consistency with the server
+            const birthDateString = parsed.birthDate ? new Date(parsed.birthDate).toISOString() : null;
+            localProfile = { ...parsed, birthDate: birthDateString };
         } else {
             localProfile = initialProfileState;
         }
@@ -114,7 +116,8 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
       const storedProfile = localStorage.getItem('userProfile');
       if (storedProfile) {
           const parsed = JSON.parse(storedProfile);
-          setProfile({ ...parsed, birthDate: parsed.birthDate ? new Date(parsed.birthDate) : null, isSubscribed: false });
+          const birthDateString = parsed.birthDate ? new Date(parsed.birthDate).toISOString() : null;
+          setProfile({ ...parsed, birthDate: birthDateString, isSubscribed: false });
       } else {
           setProfile(initialProfileState);
       }
@@ -126,7 +129,7 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
   const saveProfile = useCallback(
     async (profileData: Profile) => {
       try {
-        const calculateAge = (birthDate: Date | null): number | undefined => {
+        const calculateAge = (birthDate: string | null): number | undefined => {
           if (!birthDate) return undefined;
           const today = new Date();
           let age = today.getFullYear() - new Date(birthDate).getFullYear();

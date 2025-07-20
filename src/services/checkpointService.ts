@@ -17,16 +17,6 @@ const availableFlows: Record<string, { func: Function; cost: number }> = {
   'text-to-speech': { func: textToSpeech, cost: 0 }, // TTS is often free or very low cost
 };
 
-async function checkSubscriptionStatus(token: string): Promise<boolean> {
-  const response = await fetch(`${API_BASE_URL}/api/event/subscription/status`, {
-    headers: { Authorization: `Bearer ${token}` },
-    cache: 'no-store',
-  });
-  if (!response.ok) return false;
-  const data = await response.json();
-  return data.isSubscribed === true;
-}
-
 async function getRemainingCredits(token: string): Promise<number> {
   const response = await fetch(`${API_BASE_URL}/api/credit/balance`, {
     headers: { Authorization: `Bearer ${token}` },
@@ -52,7 +42,7 @@ async function deductCredits(token: string, amount: number): Promise<boolean> {
 }
 
 /**
- * Executes a protected AI flow by first performing server-side checks for subscription and credit status.
+ * Executes a protected AI flow by first performing server-side checks for credit status.
  * Throws specific errors for the UI to handle based on the checks.
  * @param token - The user's authentication token.
  * @param flowName - The name of the AI flow to run.
@@ -65,7 +55,8 @@ export async function runProtectedAction<T>(
   payload: any
 ): Promise<T> {
   if (!token) {
-    throw new Error('SUBSCRIPTION_REQUIRED');
+    // This case should be handled client-side, but as a safeguard:
+    throw new Error('Authentication token is missing.');
   }
 
   const flowConfig = availableFlows[flowName];
@@ -73,12 +64,7 @@ export async function runProtectedAction<T>(
     throw new Error(`Flow not found: ${flowName}`);
   }
 
-  // --- Server-side Checkpoint Logic ---
-  const isSubscribed = await checkSubscriptionStatus(token);
-  if (!isSubscribed) {
-    throw new Error('SUBSCRIPTION_REQUIRED');
-  }
-
+  // --- Server-side Credit Check ---
   const remainingCredits = await getRemainingCredits(token);
   if (remainingCredits < flowConfig.cost) {
     throw new Error('INSUFFICIENT_CREDITS');
@@ -88,8 +74,12 @@ export async function runProtectedAction<T>(
   try {
     const result = await flowConfig.func(payload);
 
-    // Deduct credits after successful action
-    await deductCredits(token, flowConfig.cost);
+    // Deduct credits only after the action succeeds
+    const deductionSuccess = await deductCredits(token, flowConfig.cost);
+    if (!deductionSuccess) {
+      // Log this failure, but don't fail the whole operation since the user already got the result
+      console.warn(`Failed to deduct ${flowConfig.cost} credits for flow: ${flowName}`);
+    }
 
     return result;
   } catch (err: any) {

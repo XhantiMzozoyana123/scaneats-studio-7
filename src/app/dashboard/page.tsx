@@ -160,7 +160,7 @@ const HomeView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
 
 const ScanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
   const { toast } = useToast();
-  const { setSubscriptionModalOpen, updateCreditBalance } = useUserData();
+  const { profile, setSubscriptionModalOpen, updateCreditBalance } = useUserData();
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -269,18 +269,22 @@ const ScanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
   const handleSendScan = async () => {
     if (!capturedImage) return;
 
-    setIsSending(true);
     const token = localStorage.getItem('authToken');
-
-    if (!token) {
+    if (!token || !profile) {
       toast({
         variant: 'destructive',
         title: 'Authentication Error',
         description: 'You must be logged in to scan food.',
       });
-      setIsSending(false);
       return;
     }
+    
+    if (!profile.isSubscribed) {
+      setSubscriptionModalOpen(true);
+      return;
+    }
+
+    setIsSending(true);
 
     try {
       const scanResult = await runProtectedAction<FoodScanNutritionOutput>(
@@ -310,9 +314,7 @@ const ScanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
       onNavigate('meal-plan');
 
     } catch (error: any) {
-      if (error.message === 'SUBSCRIPTION_REQUIRED') {
-        setSubscriptionModalOpen(true);
-      } else if (error.message === 'INSUFFICIENT_CREDITS') {
+      if (error.message === 'INSUFFICIENT_CREDITS') {
         toast({
           variant: 'destructive',
           title: 'No Credits Left',
@@ -481,7 +483,7 @@ const MealPlanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
   const router = useRouter();
   const [foods, setFoods] = useState<ScannedFood[] | null>(null);
   const { toast } = useToast();
-  const { setSubscriptionModalOpen, updateCreditBalance } = useUserData();
+  const { profile, setSubscriptionModalOpen, updateCreditBalance } = useUserData();
   const [sallyResponse, setSallyResponse] = useState<string>(
     "Ask me about this meal and I'll tell you everything."
   );
@@ -624,16 +626,20 @@ const MealPlanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
   const handleApiCall = async (userInput: string) => {
     if (!userInput.trim()) return;
 
+    const token = localStorage.getItem('authToken');
+    if (!token || !profile) {
+        toast({ variant: 'destructive', title: 'Authentication Error' });
+        return;
+    }
+
+    if (!profile.isSubscribed) {
+        setSubscriptionModalOpen(true);
+        return;
+    }
+
     setIsSallyLoading(true);
     setSallyProgress(10);
     setSallyResponse(`Thinking about: "${userInput}"`);
-
-    const token = localStorage.getItem('authToken');
-    if (!token) {
-        setSubscriptionModalOpen(true);
-        setIsSallyLoading(false);
-        return;
-    }
 
     let currentFoods = foods;
     if (!currentFoods || currentFoods.length === 0) {
@@ -687,9 +693,7 @@ const MealPlanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
       await updateCreditBalance(true);
 
     } catch (error: any) {
-      if (error.message === 'SUBSCRIPTION_REQUIRED') {
-        setSubscriptionModalOpen(true);
-      } else if (error.message === 'INSUFFICIENT_CREDITS') {
+      if (error.message === 'INSUFFICIENT_CREDITS') {
         toast({
           variant: 'destructive',
           title: 'No Credits Left',
@@ -914,17 +918,21 @@ const SallyView = () => {
 
  const handleApiCall = async (userInput: string) => {
     if (!userInput.trim() || !profile) return;
+    
+    const token = localStorage.getItem('authToken');
+    if (!token) {
+        toast({ variant: 'destructive', title: 'Authentication Error' });
+        return;
+    }
+    
+    if (!profile.isSubscribed) {
+        setSubscriptionModalOpen(true);
+        return;
+    }
 
     setIsLoading(true);
     setLoadingProgress(10);
     setSallyResponse(`Thinking about: "${userInput}"`);
-
-    const token = localStorage.getItem('authToken');
-    if (!token) {
-        setSubscriptionModalOpen(true);
-        setIsLoading(false);
-        return;
-    }
     
     try {
         const insightsPayload = {
@@ -949,9 +957,7 @@ const SallyView = () => {
         await updateCreditBalance(true);
 
     } catch (error: any) {
-      if (error.message === 'SUBSCRIPTION_REQUIRED') {
-        setSubscriptionModalOpen(true);
-      } else if (error.message === 'INSUFFICIENT_CREDITS') {
+      if (error.message === 'INSUFFICIENT_CREDITS') {
         toast({
           variant: 'destructive',
           title: 'No Credits Left',
