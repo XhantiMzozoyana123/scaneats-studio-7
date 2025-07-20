@@ -17,7 +17,7 @@ const UserProfileSchema = z.object({
   gender: z.string(),
   weight: z.union([z.number(), z.string()]),
   goals: z.string(),
-  birthDate: z.date().nullable(),
+  birthDate: z.string().nullable(),
   age: z.number().optional(),
   isSubscribed: z.boolean().optional(),
   email: z.string().optional(),
