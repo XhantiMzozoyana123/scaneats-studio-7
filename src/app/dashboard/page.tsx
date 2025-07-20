@@ -92,6 +92,7 @@ import { runProtectedAction } from '@/services/checkpointService';
 import type { FoodScanNutritionOutput } from '@/ai/flows/food-scan-nutrition';
 import type { GetMealInsightsOutput } from '@/ai/flows/meal-insights';
 import type { TextToSpeechOutput } from '@/ai/flows/text-to-speech';
+import type { SallyHealthInsightsOutput } from '@/ai/flows/sally-health-insights';
 import { API_BASE_URL } from '@/lib/api';
 
 
@@ -912,7 +913,7 @@ const SallyView = () => {
   };
 
  const handleApiCall = async (userInput: string) => {
-    if (!userInput.trim()) return;
+    if (!userInput.trim() || !profile) return;
 
     setIsLoading(true);
     setLoadingProgress(10);
@@ -927,17 +928,12 @@ const SallyView = () => {
     
     try {
         const insightsPayload = {
-          foodItemName: "your body and health",
-          nutritionalInformation: JSON.stringify(profile),
+          userProfile: profile,
           userQuery: userInput,
         };
-        const insightsResult = await runProtectedAction<GetMealInsightsOutput>(token, 'meal-insights', insightsPayload);
+        const insightsResult = await runProtectedAction<SallyHealthInsightsOutput>(token, 'sally-health-insights', insightsPayload);
         
-        const ingredients = insightsResult.ingredients;
-        const benefits = insightsResult.healthBenefits;
-        const risks = insightsResult.potentialRisks;
-      
-        const textResponse = `Based on your profile, here are some insights for "${userInput}". Your body might benefit from focusing on ${benefits}. It seems some of your goals align with this. However, be mindful of ${risks}. Would you like to explore meal options related to this?`;
+        const textResponse = insightsResult.response;
         setSallyResponse(textResponse);
 
         const ttsResult = await runProtectedAction<TextToSpeechOutput>(token, 'text-to-speech', { text: textResponse });

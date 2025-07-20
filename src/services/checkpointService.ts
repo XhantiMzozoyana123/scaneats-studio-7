@@ -4,6 +4,7 @@
 import { foodScanNutrition } from '@/ai/flows/food-scan-nutrition';
 import { getMealInsights } from '@/ai/flows/meal-insights';
 import { personalizedDietarySuggestions } from '@/ai/flows/personalized-dietary-suggestions';
+import { sallyHealthInsights } from '@/ai/flows/sally-health-insights';
 import { textToSpeech } from '@/ai/flows/text-to-speech';
 import { API_BASE_URL } from '@/lib/api';
 
@@ -11,6 +12,7 @@ import { API_BASE_URL } from '@/lib/api';
 const availableFlows: Record<string, { func: Function; cost: number }> = {
   'food-scan-nutrition': { func: foodScanNutrition, cost: 1 },
   'meal-insights': { func: getMealInsights, cost: 1 },
+  'sally-health-insights': { func: sallyHealthInsights, cost: 1 },
   'personalized-dietary-suggestions': { func: personalizedDietarySuggestions, cost: 1 },
   'text-to-speech': { func: textToSpeech, cost: 0 }, // TTS is often free or very low cost
 };
