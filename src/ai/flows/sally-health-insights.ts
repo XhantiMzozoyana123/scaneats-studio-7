@@ -1,7 +1,7 @@
-
 'use server';
+
 /**
- * @fileOverview An AI agent that provides insights about user health based on their profile.
+ * @fileOverview An AI agent that provides health insights based on user profile.
  *
  * - sallyHealthInsights - A function that handles the process of providing health insights.
  * - SallyHealthInsightsInput - The input type for the sallyHealthInsights function.
@@ -11,28 +11,28 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
-const UserProfileSchema = z.object({
-  id: z.number().nullable(),
-  name: z.string(),
-  gender: z.string(),
-  weight: z.number(),
-  goals: z.string(),
-  birthDate: z.string().nullable(),
-  age: z.number().optional(),
-  isSubscribed: z.boolean().optional(),
-  email: z.string().optional(),
-});
-
 const SallyHealthInsightsInputSchema = z.object({
-  userProfile: UserProfileSchema.describe("The user's profile information."),
-  userQuery: z.string().describe("The user's question about their health."),
+  userProfileJson: z
+    .string()
+    .describe("A JSON string of the user's profile data."),
+  userQuery: z
+    .string()
+    .describe("The user's question about their health."),
 });
-export type SallyHealthInsightsInput = z.infer<typeof SallyHealthInsightsInputSchema>;
+export type SallyHealthInsightsInput = z.infer<
+  typeof SallyHealthInsightsInputSchema
+>;
 
 const SallyHealthInsightsOutputSchema = z.object({
-  response: z.string().describe('A conversational and helpful response to the user\'s query.'),
+  response: z
+    .string()
+    .describe(
+      "A helpful and conversational response to the user's query about their health."
+    ),
 });
-export type SallyHealthInsightsOutput = z.infer<typeof SallyHealthInsightsOutputSchema>;
+export type SallyHealthInsightsOutput = z.infer<
+  typeof SallyHealthInsightsOutputSchema
+>;
 
 export async function sallyHealthInsights(
   input: SallyHealthInsightsInput
@@ -44,16 +44,18 @@ const prompt = ai.definePrompt({
   name: 'sallyHealthInsightsPrompt',
   input: {schema: SallyHealthInsightsInputSchema},
   output: {schema: SallyHealthInsightsOutputSchema},
-  prompt: `You are Sally, a funny, witty, and helpful personal AI nutritionist and health assistant. 
-  A user has asked for insights about their health.
-  Your response should be conversational, encouraging, and match your personality.
-  
-  Your primary task is to provide a helpful response based on the user's profile and their question.
-  - User Profile: {{{json userProfile}}}
-  - User's Question: {{{userQuery}}}
+  prompt: `You are Sally, a funny, witty, and helpful personal AI nutritionist and health assistant.
+  A user is asking a question about their health. Your response should be pure human text, not JSON.
 
-  Use the user's question and their profile data (like goals, weight, etc.) to give a relevant and personalized answer.
-  Provide a single, conversational string in the 'response' field of the JSON output.
+  Here is the user's profile information (as a JSON string):
+  {{{userProfileJson}}}
+
+  Here is the user's question:
+  "{{{userQuery}}}"
+
+  Based on all this information, provide a conversational, funny, and helpful response to the user.
+  Address them directly and use their profile information to make the advice personal.
+  Keep your response concise and to the point.
   `,
 });
 

@@ -28,19 +28,20 @@ type Profile = {
   id: number | null;
   name: string;
   gender: string;
-  weight: number;
+  weight: number | string;
   goals: string;
-  birthDate: string | null;
+  birthDate: Date | null;
   age?: number;
   isSubscribed?: boolean;
-  email?: string;
 };
 
 type UserDataContextType = {
   profile: Profile | null;
   creditBalance: number | null;
   isLoading: boolean;
-  saveProfile: (profile: Profile) => Promise<void>;
+  isProfileComplete: boolean | null;
+  setProfileCompleted: (status: boolean) => void;
+  saveProfile: (profile: Profile, isFinal: boolean) => Promise<void>;
   fetchProfile: () => void;
   updateCreditBalance: (force?: boolean) => Promise<void>;
   isSubscriptionModalOpen: boolean;
@@ -55,7 +56,7 @@ const initialProfileState: Profile = {
   id: null,
   name: '',
   gender: 'Prefer not to say',
-  weight: 0,
+  weight: '',
   goals: '',
   birthDate: null,
   isSubscribed: false,
@@ -77,13 +78,18 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
   );
   const [isLoading, setIsLoading] = useState(true);
   const [isSubscriptionModalOpen, setSubscriptionModalOpen] = useState(false);
+  const [isProfileComplete, setIsProfileComplete] = useState<boolean | null>(null);
+
+  const setProfileCompleted = (status: boolean) => {
+    localStorage.setItem('profileCompleted', JSON.stringify(status));
+    setIsProfileComplete(status);
+  };
 
   const fetchProfile = useCallback(async () => {
     setIsLoading(true);
     const token = localStorage.getItem('authToken');
     if (!token) {
         setIsLoading(false);
-        setProfile(initialProfileState);
         return;
     }
 
@@ -91,45 +97,45 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
         // Fetch subscription status from the backend
         const subResponse = await fetch(`${API_BASE_URL}/api/event/subscription/status`, {
             headers: { Authorization: `Bearer ${token}` },
-            cache: 'no-store', // Always get the latest status
         });
         const subData = subResponse.ok ? await subResponse.json() : { isSubscribed: false };
         
-        // Load local profile data from storage
+        // Load local profile
         const storedProfile = localStorage.getItem('userProfile');
         let localProfile: Profile;
         if (storedProfile) {
             const parsed = JSON.parse(storedProfile);
-            // Ensure birthDate is a string for consistency with the server
-            const birthDateString = parsed.birthDate ? new Date(parsed.birthDate).toISOString() : null;
-            localProfile = { ...parsed, birthDate: birthDateString };
+            localProfile = { ...parsed, birthDate: parsed.birthDate ? new Date(parsed.birthDate) : null };
         } else {
             localProfile = initialProfileState;
         }
 
-        // Combine local profile with authoritative subscription status from the server
+        // Combine and set
         setProfile({ ...localProfile, isSubscribed: subData.isSubscribed });
+
+        // Check completion status
+        const storedCompletion = localStorage.getItem('profileCompleted');
+        const isComplete = storedCompletion ? JSON.parse(storedCompletion) : false;
+        
+        if (subData.isSubscribed && !isComplete) {
+            setIsProfileComplete(false); // Force completion if subscribed but not complete
+        } else {
+            setIsProfileComplete(isComplete);
+        }
 
     } catch (error) {
       console.error('Failed to load profile/subscription status', error);
-      // Fallback to initial state on error
-      const storedProfile = localStorage.getItem('userProfile');
-      if (storedProfile) {
-          const parsed = JSON.parse(storedProfile);
-          const birthDateString = parsed.birthDate ? new Date(parsed.birthDate).toISOString() : null;
-          setProfile({ ...parsed, birthDate: birthDateString, isSubscribed: false });
-      } else {
-          setProfile(initialProfileState);
-      }
+      setProfile(initialProfileState);
+      setIsProfileComplete(false);
     } finally {
       setIsLoading(false);
     }
   }, []);
 
   const saveProfile = useCallback(
-    async (profileData: Profile) => {
+    async (profileData: Profile, isFinal: boolean) => {
       try {
-        const calculateAge = (birthDate: string | null): number | undefined => {
+        const calculateAge = (birthDate: Date | null): number | undefined => {
           if (!birthDate) return undefined;
           const today = new Date();
           let age = today.getFullYear() - new Date(birthDate).getFullYear();
@@ -148,6 +154,9 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
         localStorage.setItem('userProfile', JSON.stringify(profileToSave));
         setProfile(profileToSave);
 
+        if(isFinal) {
+           setProfileCompleted(true);
+        }
       } catch (error) {
         console.error('Failed to save profile to localStorage', error);
         toast({
@@ -175,7 +184,6 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
     try {
       const creditRes = await fetch(`${API_BASE_URL}/api/credit/balance`, {
         headers: { Authorization: `Bearer ${token}` },
-        cache: 'no-store', // Always fetch latest credits
       });
 
       if (creditRes.ok) {
@@ -198,6 +206,8 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
     profile,
     creditBalance,
     isLoading,
+    isProfileComplete,
+    setProfileCompleted,
     saveProfile,
     fetchProfile,
     updateCreditBalance,

@@ -87,14 +87,13 @@ import { useToast } from '@/hooks/use-toast';
 import { useUserData } from '@/context/user-data-context';
 import { cn } from '@/lib/utils';
 import { BottomNav } from '@/components/bottom-nav';
+import { API_BASE_URL } from '@/lib/api';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { runProtectedAction } from '@/services/checkpointService';
-import type { FoodScanNutritionOutput } from '@/ai/flows/food-scan-nutrition';
-import type { GetMealInsightsOutput } from '@/ai/flows/meal-insights';
-import type { TextToSpeechOutput } from '@/ai/flows/text-to-speech';
-import type { SallyHealthInsightsOutput } from '@/ai/flows/sally-health-insights';
-import { API_BASE_URL } from '@/lib/api';
-
+import { foodScanNutrition } from '@/ai/flows/food-scan-nutrition';
+import { getMealInsights } from '@/ai/flows/meal-insights';
+import { textToSpeech } from '@/ai/flows/text-to-speech';
+import { sallyHealthInsights } from '@/ai/flows/sally-health-insights';
 
 type View = 'home' | 'meal-plan' | 'sally' | 'profile' | 'settings' | 'scan';
 
@@ -269,17 +268,7 @@ const ScanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
   const handleSendScan = async () => {
     if (!capturedImage) return;
 
-    const token = localStorage.getItem('authToken');
-    if (!token || !profile) {
-      toast({
-        variant: 'destructive',
-        title: 'Authentication Error',
-        description: 'You must be logged in to scan food.',
-      });
-      return;
-    }
-    
-    if (!profile.isSubscribed) {
+    if (!profile?.isSubscribed) {
       setSubscriptionModalOpen(true);
       return;
     }
@@ -287,29 +276,22 @@ const ScanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
     setIsSending(true);
 
     try {
-      const scanResult = await runProtectedAction<FoodScanNutritionOutput>(
-        token,
-        'food-scan-nutrition', 
-        { photoDataUri: capturedImage },
-      );
+      const scanAction = () => foodScanNutrition({ photoDataUri: capturedImage });
+      
+      const token = localStorage.getItem('authToken');
+      if (!token) throw new Error("Authentication token not found.");
+      
+      const { result: scanResult, newToken } = await runProtectedAction(token, scanAction, 1);
+      
+      if (newToken) {
+        localStorage.setItem('authToken', newToken);
+      }
       
       await updateCreditBalance(true); 
-
-      // Directly use properties from the output schema
-      const { foodIdentification, nutritionInformation } = scanResult;
-      const simplifiedResult = {
-        name: foodIdentification.name,
-        calories: nutritionInformation.calories,
-        protein: nutritionInformation.protein,
-        fat: nutritionInformation.fat,
-        carbohydrates: nutritionInformation.carbohydrates,
-      }
-
-      localStorage.setItem('scannedFood', JSON.stringify(simplifiedResult));
-      
+      localStorage.setItem('scannedFood', JSON.stringify(scanResult));
       toast({
           title: 'Success!',
-          description: `Identified: ${simplifiedResult.name}.`,
+          description: `Identified: ${scanResult.foodIdentification.name}.`,
       });
       onNavigate('meal-plan');
 
@@ -471,7 +453,6 @@ type ScannedFood = {
   carbs: number;
 };
 
-
 declare global {
   interface Window {
     SpeechRecognition: any;
@@ -555,13 +536,14 @@ const MealPlanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
     if (storedFood) {
       try {
         const parsedFood = JSON.parse(storedFood);
+        const foodInfo = parsedFood.nutritionInformation;
         const formattedData: ScannedFood = {
           id: parsedFood.id,
-          name: parsedFood.name || 'Unknown Food',
-          calories: parsedFood.calories || 0,
-          protein: parsedFood.protein || 0,
-          fat: parsedFood.fat || 0,
-          carbs: parsedFood.carbohydrates || 0,
+          name: parsedFood.foodIdentification?.name || 'Unknown Food',
+          calories: foodInfo?.calories || 0,
+          protein: foodInfo?.protein || 0,
+          fat: foodInfo?.fat || 0,
+          carbs: foodInfo?.carbohydrates || 0,
         };
         setFoods([formattedData]);
         return [formattedData];
@@ -602,21 +584,14 @@ const MealPlanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
     );
   }, [foods]);
 
-  // iOS Audio Fix: Pre-load a silent audio on user interaction
-  const primeAudio = () => {
-    if (audioRef.current && audioRef.current.paused) {
-        audioRef.current.src = '/silent.mp3';
-        audioRef.current.play().catch(() => {}); // Play and ignore errors on first load
-        audioRef.current.pause();
-        audioRef.current.currentTime = 0;
-    }
-  };
-
   const handleMicClick = () => {
     if (isRecording) {
       recognitionRef.current?.stop();
     } else {
-      primeAudio(); // Prime audio for iOS
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+      }
       setIsRecording(true);
       setSallyResponse('Listening...');
       recognitionRef.current?.start();
@@ -626,15 +601,9 @@ const MealPlanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
   const handleApiCall = async (userInput: string) => {
     if (!userInput.trim()) return;
 
-    const token = localStorage.getItem('authToken');
-    if (!token || !profile) {
-        toast({ variant: 'destructive', title: 'Authentication Error' });
-        return;
-    }
-
-    if (!profile.isSubscribed) {
-        setSubscriptionModalOpen(true);
-        return;
+    if (!profile?.isSubscribed) {
+      setSubscriptionModalOpen(true);
+      return;
     }
 
     setIsSallyLoading(true);
@@ -665,25 +634,32 @@ const MealPlanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
         fat: lastFood.fat,
         carbs: lastFood.carbs,
       };
-      
-      const insightsPayload = {
-        foodItemName: lastFood.name || 'your meal',
-        nutritionalInformation: JSON.stringify(nutritionalInfo),
-        userQuery: userInput,
-      };
 
-      const insightsResult = await runProtectedAction<GetMealInsightsOutput>(token, 'meal-insights', insightsPayload);
+      const mealInsightAction = async () => {
+        const insightsResult = await getMealInsights({
+            foodItemName: lastFood.name || 'your meal',
+            nutritionalInformation: JSON.stringify(nutritionalInfo),
+            userQuery: userInput,
+        });
+
+        const ttsResult = await textToSpeech({ text: insightsResult.response });
+        
+        return { ...insightsResult, audio: ttsResult.media };
+      };
       
-      const ingredients = insightsResult.ingredients;
-      const benefits = insightsResult.healthBenefits;
-      const risks = insightsResult.potentialRisks;
+      const token = localStorage.getItem('authToken');
+      if (!token) throw new Error("Authentication token not found.");
+
+      const { result: insightsResult, newToken } = await runProtectedAction(token, mealInsightAction, 1);
+
+      if (newToken) {
+        localStorage.setItem('authToken', newToken);
+      }
+
+      setSallyResponse(insightsResult.response);
       
-      const textResponse = `This seems to be made of ${ingredients}. Some benefits are: ${benefits}. However, watch out for: ${risks}.`;
-      setSallyResponse(textResponse);
-      
-      const ttsResult = await runProtectedAction<TextToSpeechOutput>(token, 'text-to-speech', { text: textResponse });
-      if (audioRef.current) {
-          audioRef.current.src = ttsResult.media;
+      if (insightsResult.audio && audioRef.current) {
+          audioRef.current.src = insightsResult.audio;
           audioRef.current.play().catch(e => {
             console.error("Audio play failed", e);
             toast({ variant: 'destructive', title: 'Audio Error', description: 'Could not play audio. Please ensure your device is not in silent mode.' });
@@ -894,35 +870,26 @@ const SallyView = () => {
       });
     }
   }, [toast]);
-  
-  // iOS Audio Fix: Pre-load a silent audio on user interaction
-  const primeAudio = () => {
-    if (audioRef.current && audioRef.current.paused) {
-        audioRef.current.src = '/silent.mp3'; 
-        audioRef.current.play().catch(() => {}); // Play and ignore errors on first load
-        audioRef.current.pause();
-        audioRef.current.currentTime = 0;
-    }
-  };
-
 
   const handleMicClick = () => {
     if (isRecording || isLoading) {
       recognitionRef.current?.stop();
     } else {
-      primeAudio(); // Prime audio for iOS
+       if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+      }
       setIsRecording(true);
       recognitionRef.current?.start();
     }
   };
 
  const handleApiCall = async (userInput: string) => {
-    if (!userInput.trim() || !profile) return;
-    
-    const token = localStorage.getItem('authToken');
-    if (!token) {
-        toast({ variant: 'destructive', title: 'Authentication Error' });
-        return;
+    if (!userInput.trim()) return;
+
+    if (!profile) {
+      toast({ variant: 'destructive', title: 'Profile not loaded' });
+      return;
     }
     
     if (!profile.isSubscribed) {
@@ -935,19 +902,30 @@ const SallyView = () => {
     setSallyResponse(`Thinking about: "${userInput}"`);
     
     try {
-        const insightsPayload = {
-          userProfile: profile,
-          userQuery: userInput,
-        };
-        const insightsResult = await runProtectedAction<SallyHealthInsightsOutput>(token, 'sally-health-insights', insightsPayload);
-        
-        const textResponse = insightsResult.response;
-        setSallyResponse(textResponse);
+        const healthInsightAction = async () => {
+            const insightsResult = await sallyHealthInsights({
+                userProfileJson: JSON.stringify(profile),
+                userQuery: userInput,
+            });
 
-        const ttsResult = await runProtectedAction<TextToSpeechOutput>(token, 'text-to-speech', { text: textResponse });
+            const ttsResult = await textToSpeech({ text: insightsResult.response });
+
+            return { ...insightsResult, audio: ttsResult.media };
+        };
+
+        const token = localStorage.getItem('authToken');
+        if (!token) throw new Error("Authentication token not found.");
         
-        if (audioRef.current) {
-          audioRef.current.src = ttsResult.media;
+        const { result: insightsResult, newToken } = await runProtectedAction(token, healthInsightAction, 1);
+        
+        if (newToken) {
+          localStorage.setItem('authToken', newToken);
+        }
+
+        setSallyResponse(insightsResult.response);
+
+        if (insightsResult.audio && audioRef.current) {
+          audioRef.current.src = insightsResult.audio;
           audioRef.current.play().catch(e => {
             console.error("Audio play failed", e);
             toast({ variant: 'destructive', title: 'Audio Error', description: 'Could not play audio. Please ensure your device is not in silent mode.' });
@@ -1043,29 +1021,28 @@ const SallyView = () => {
 };
 
 const ProfileView = () => {
-  const { profile, isLoading, saveProfile } = useUserData();
+  const { profile, isLoading, saveProfile, isProfileComplete, setProfileCompleted } = useUserData();
   const [isSaving, setIsSaving] = useState(false);
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
-  const { toast } = useToast();
 
   const handleInputChange = (
     e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { id, value } = e.target;
     if (profile) {
-      saveProfile({ ...profile, [id]: value }); 
+      saveProfile({ ...profile, [id]: value }, false); // Save locally without marking complete
     }
   };
 
   const handleSelectChange = (value: string) => {
     if (profile) {
-      saveProfile({ ...profile, gender: value });
+      saveProfile({ ...profile, gender: value }, false);
     }
   };
 
   const handleDateChange = (date: Date | undefined) => {
     if (date && profile) {
-      saveProfile({ ...profile, birthDate: date });
+      saveProfile({ ...profile, birthDate: date }, false);
     }
     setIsDatePickerOpen(false);
   };
@@ -1085,10 +1062,11 @@ const ProfileView = () => {
     }
     
     setIsSaving(true);
-    await saveProfile(profile);
+    await saveProfile(profile, true); // Mark as complete on final save
+    setProfileCompleted(true); // Ensure context and app state updates
     toast({
-        title: 'Profile Saved',
-        description: 'Your profile has been updated.',
+        title: 'Profile Complete!',
+        description: 'Thank you! You can now access all app features.',
     });
     setIsSaving(false);
   };
@@ -1130,9 +1108,18 @@ const ProfileView = () => {
     );
   }
 
+  const { toast } = useToast();
   return (
     <div className="flex min-h-screen flex-col items-center bg-black pb-40 pt-5">
       <div className="w-[90%] max-w-[600px] rounded-lg bg-[rgba(14,1,15,0.32)] p-5">
+         {!isProfileComplete && (
+            <Alert className="mb-6 border-primary/50 bg-primary/20 text-white">
+                <AlertTitle className="font-bold">Welcome to ScanEats!</AlertTitle>
+                <AlertDescription>
+                    Please complete your profile below. Sally needs this information to give you the best personalized advice on your health and goals.
+                </AlertDescription>
+            </Alert>
+          )}
         <div className="mb-8 flex justify-center">
           <Image
             src="https://gallery.scaneats.app/images/Personal%20Pic.png"
@@ -1434,17 +1421,22 @@ const SettingsView = ({
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({error: 'An unknown error occurred.'}));
-        throw new Error(errorData.error);
+      if (response.ok) {
+        toast({
+          title: 'Account Deleted',
+          description: 'Your account has been permanently deleted.',
+        });
+        handleLogout();
+      } else {
+        let errorMessage = 'Failed to delete account.';
+        if (response.status === 401 || response.status === 403) {
+            errorMessage = 'Authentication error. Please log in again.';
+        } else if (response.status >= 500) {
+          errorMessage =
+            'Our servers are experiencing issues. Please try again later.';
+        }
+        throw new Error(errorMessage);
       }
-
-      toast({
-        title: 'Account Deleted',
-        description: 'Your account has been permanently deleted.',
-      });
-      handleLogout();
-
     } catch (error: any) {
       toast({
         variant: 'destructive',
@@ -1479,8 +1471,8 @@ const SettingsView = ({
     }
 
     const payload = {
-        currentPassword: currentPassword,
-        newPassword: newPassword,
+      currentPassword: currentPassword,
+      newPassword: newPassword,
     };
 
     try {
@@ -1504,14 +1496,6 @@ const SettingsView = ({
         setConfirmPassword('');
       } else {
         let errorMessage = 'Failed to change password.';
-         try {
-            const errorData = await response.json();
-            if (errorData.error) {
-              errorMessage = errorData.error;
-            }
-          } catch {
-            // Keep generic message
-          }
         if (response.status === 401 || response.status === 403) {
            errorMessage = 'Authentication error. Please log in again.';
         } else if (response.status === 400) {
@@ -1519,6 +1503,15 @@ const SettingsView = ({
         } else if (response.status >= 500) {
           errorMessage =
             'Our servers are experiencing issues. Please try again later.';
+        } else {
+          try {
+            const errorData = await response.json();
+            if (errorData.error) {
+              errorMessage = errorData.error;
+            }
+          } catch {
+            // Keep generic message
+          }
         }
         throw new Error(errorMessage);
       }
@@ -1749,12 +1742,45 @@ const SettingsView = ({
 
 
 export default function DashboardPage() {
+  const { isProfileComplete } = useUserData();
   const [activeView, setActiveView] = useState<View>('home');
+  const [forceProfileView, setForceProfileView] = useState(false);
 
+  useEffect(() => {
+    if (isProfileComplete === false) { // Explicitly check for false, not null
+      setActiveView('profile');
+      setForceProfileView(true);
+    } else if (isProfileComplete === true) {
+      setForceProfileView(false);
+      // If profile is complete, but we are on the profile view (e.g. after saving),
+      // navigate to home.
+      if (activeView === 'profile') {
+        setActiveView('home');
+      }
+    }
+  }, [isProfileComplete, activeView]);
+  
   const handleNavigate = (view: View) => {
+    if (forceProfileView) {
+      setActiveView('profile');
+      toast({
+          variant: 'destructive',
+          title: 'Complete Your Profile',
+          description: 'Please save your profile before exploring the app.',
+      });
+      return;
+    }
     setActiveView(view);
   };
+  
+  // This effect handles the navigation after profile completion.
+  useEffect(() => {
+     if (!forceProfileView && isProfileComplete && activeView === 'profile') {
+        setActiveView('home');
+     }
+  },[forceProfileView, isProfileComplete, activeView])
 
+  const { toast } = useToast();
   const renderView = () => {
     switch (activeView) {
       case 'home':
