@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import {
@@ -281,7 +280,7 @@ const ScanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
       
       const scanResult = await foodScanNutrition({ photoDataUri: capturedImage });
       
-      const { newToken } = await deductCredits(token, 1);
+      const { newToken } = await deductCredits(token);
       
       if (newToken) {
         localStorage.setItem('authToken', newToken);
@@ -644,13 +643,14 @@ const MealPlanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
           userQuery: userInput,
       });
 
-      const ttsResult = await textToSpeech({ text: insightsResult.response });
-      
-      const { newToken } = await deductCredits(token, 1);
+      const { newToken } = await deductCredits(token);
 
       if (newToken) {
         localStorage.setItem('authToken', newToken);
       }
+      await updateCreditBalance(true);
+      
+      const ttsResult = await textToSpeech({ text: insightsResult.response });
 
       setSallyResponse(insightsResult.response);
       
@@ -662,7 +662,6 @@ const MealPlanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
           });
       }
 
-      await updateCreditBalance(true);
 
     } catch (error: any) {
       if (error.message === 'INSUFFICIENT_CREDITS') {
@@ -807,7 +806,7 @@ const SallyView = () => {
   const recognitionRef = useRef<any>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const { toast } = useToast();
-  const { profile, setSubscriptionModalOpen, updateCreditBalance } = useUserData();
+  const { profile, isProfileComplete, setSubscriptionModalOpen, updateCreditBalance } = useUserData();
   
   useEffect(() => {
     if (!audioRef.current) {
@@ -887,6 +886,15 @@ const SallyView = () => {
       toast({ variant: 'destructive', title: 'Profile not loaded' });
       return;
     }
+
+    if (!isProfileComplete) {
+      toast({
+        variant: 'destructive',
+        title: 'Profile Incomplete',
+        description: 'Please complete your profile before talking to Sally.',
+      });
+      return;
+    }
     
     if (!profile.isSubscribed) {
         setSubscriptionModalOpen(true);
@@ -906,13 +914,14 @@ const SallyView = () => {
             userQuery: userInput,
         });
 
-        const ttsResult = await textToSpeech({ text: insightsResult.response });
-
-        const { newToken } = await deductCredits(token, 1);
+        const { newToken } = await deductCredits(token);
         
         if (newToken) {
           localStorage.setItem('authToken', newToken);
         }
+        await updateCreditBalance(true);
+
+        const ttsResult = await textToSpeech({ text: insightsResult.response });
 
         setSallyResponse(insightsResult.response);
 
@@ -923,8 +932,6 @@ const SallyView = () => {
             toast({ variant: 'destructive', title: 'Audio Error', description: 'Could not play audio. Please ensure your device is not in silent mode.' });
           });
         }
-        
-        await updateCreditBalance(true);
 
     } catch (error: any) {
       if (error.message === 'INSUFFICIENT_CREDITS') {
@@ -1422,7 +1429,7 @@ const SettingsView = ({
       } else {
         let errorMessage = 'Failed to delete account.';
         if (response.status === 401 || response.status === 403) {
-            errorMessage = 'Authentication error. Please log in again.';
+           errorMessage = 'Authentication error. Please log in again.';
         } else if (response.status >= 500) {
           errorMessage =
             'Our servers are experiencing issues. Please try again later.';
@@ -1489,7 +1496,7 @@ const SettingsView = ({
       } else {
         let errorMessage = 'Failed to change password.';
         if (response.status === 401 || response.status === 403) {
-           errorMessage = 'Authentication error. Please log in again.';
+          errorMessage = 'Authentication error. Please log in again.';
         } else if (response.status === 400) {
           errorMessage = 'The current password you entered is incorrect.';
         } else if (response.status >= 500) {
@@ -1801,3 +1808,5 @@ export default function DashboardPage() {
     </div>
   );
 }
+
+    
