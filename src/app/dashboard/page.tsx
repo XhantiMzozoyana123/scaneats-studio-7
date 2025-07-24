@@ -88,11 +88,11 @@ import { cn } from '@/lib/utils';
 import { BottomNav } from '@/components/bottom-nav';
 import { API_BASE_URL } from '@/lib/api';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { deductCredits } from '@/services/checkpointService';
 import { foodScanNutrition } from '@/ai/flows/food-scan-nutrition';
 import { getMealInsights } from '@/ai/flows/meal-insights';
 import { textToSpeech } from '@/ai/flows/text-to-speech';
 import { sallyHealthInsights } from '@/ai/flows/sally-health-insights';
+import { deductCredits } from '@/services/checkpointService';
 
 type View = 'home' | 'meal-plan' | 'sally' | 'profile' | 'settings' | 'scan';
 
@@ -642,7 +642,7 @@ const MealPlanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
           nutritionalInformation: JSON.stringify(nutritionalInfo),
           userQuery: userInput,
       });
-
+      
       const { newToken } = await deductCredits(token);
 
       if (newToken) {
@@ -656,6 +656,7 @@ const MealPlanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
       
       if (ttsResult.media && audioRef.current) {
           audioRef.current.src = ttsResult.media;
+          // audioRef.current.play(); //<- This is removed
       }
 
 
@@ -882,16 +883,16 @@ const SallyView = () => {
       toast({ variant: 'destructive', title: 'Profile not loaded' });
       return;
     }
-
-    if (!isProfileComplete) {
-      toast({
-        variant: 'destructive',
-        title: 'Profile Incomplete',
-        description: 'Please complete your profile before talking to Sally.',
-      });
-      return;
-    }
     
+    if (!isProfileComplete) {
+       toast({
+         variant: 'destructive',
+         title: 'Profile Incomplete',
+         description: 'Please complete your profile before talking to Sally.',
+       });
+       return;
+    }
+
     if (!profile.isSubscribed) {
         setSubscriptionModalOpen(true);
         return;
@@ -923,6 +924,7 @@ const SallyView = () => {
 
         if (ttsResult.media && audioRef.current) {
           audioRef.current.src = ttsResult.media;
+          // audioRef.current.play(); //<- This is removed
         }
 
     } catch (error: any) {
@@ -1013,6 +1015,7 @@ const SallyView = () => {
 
 const ProfileView = () => {
   const { profile, isLoading, saveProfile, isProfileComplete, setProfileCompleted } = useUserData();
+  const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
 
@@ -1099,7 +1102,6 @@ const ProfileView = () => {
     );
   }
 
-  const { toast } = useToast();
   return (
     <div className="flex min-h-screen flex-col items-center bg-black pb-40 pt-5">
       <div className="w-[90%] max-w-[600px] rounded-lg bg-[rgba(14,1,15,0.32)] p-5">
@@ -1734,6 +1736,7 @@ const SettingsView = ({
 
 export default function DashboardPage() {
   const { isProfileComplete } = useUserData();
+  const { toast } = useToast();
   const [activeView, setActiveView] = useState<View>('home');
   const [forceProfileView, setForceProfileView] = useState(false);
 
@@ -1771,7 +1774,6 @@ export default function DashboardPage() {
      }
   },[forceProfileView, isProfileComplete, activeView])
 
-  const { toast } = useToast();
   const renderView = () => {
     switch (activeView) {
       case 'home':
