@@ -89,7 +89,7 @@ import { cn } from '@/lib/utils';
 import { BottomNav } from '@/components/bottom-nav';
 import { API_BASE_URL } from '@/lib/api';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { runProtectedAction } from '@/services/checkpointService';
+import { deductCredits } from '@/services/checkpointService';
 import { foodScanNutrition } from '@/ai/flows/food-scan-nutrition';
 import { getMealInsights } from '@/ai/flows/meal-insights';
 import { textToSpeech } from '@/ai/flows/text-to-speech';
@@ -276,12 +276,12 @@ const ScanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
     setIsSending(true);
 
     try {
-      const scanAction = () => foodScanNutrition({ photoDataUri: capturedImage });
-      
       const token = localStorage.getItem('authToken');
       if (!token) throw new Error("Authentication token not found.");
       
-      const { result: scanResult, newToken } = await runProtectedAction(token, scanAction, 1);
+      const scanResult = await foodScanNutrition({ photoDataUri: capturedImage });
+      
+      const { newToken } = await deductCredits(token, 1);
       
       if (newToken) {
         localStorage.setItem('authToken', newToken);
@@ -627,6 +627,9 @@ const MealPlanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
     }
 
     try {
+      const token = localStorage.getItem('authToken');
+      if (!token) throw new Error("Authentication token not found.");
+      
       const lastFood = currentFoods[0];
       const nutritionalInfo = {
         calories: lastFood.calories,
@@ -635,22 +638,15 @@ const MealPlanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
         carbs: lastFood.carbs,
       };
 
-      const mealInsightAction = async () => {
-        const insightsResult = await getMealInsights({
-            foodItemName: lastFood.name || 'your meal',
-            nutritionalInformation: JSON.stringify(nutritionalInfo),
-            userQuery: userInput,
-        });
+      const insightsResult = await getMealInsights({
+          foodItemName: lastFood.name || 'your meal',
+          nutritionalInformation: JSON.stringify(nutritionalInfo),
+          userQuery: userInput,
+      });
 
-        const ttsResult = await textToSpeech({ text: insightsResult.response });
-        
-        return { ...insightsResult, audio: ttsResult.media };
-      };
+      const ttsResult = await textToSpeech({ text: insightsResult.response });
       
-      const token = localStorage.getItem('authToken');
-      if (!token) throw new Error("Authentication token not found.");
-
-      const { result: insightsResult, newToken } = await runProtectedAction(token, mealInsightAction, 1);
+      const { newToken } = await deductCredits(token, 1);
 
       if (newToken) {
         localStorage.setItem('authToken', newToken);
@@ -658,8 +654,8 @@ const MealPlanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
 
       setSallyResponse(insightsResult.response);
       
-      if (insightsResult.audio && audioRef.current) {
-          audioRef.current.src = insightsResult.audio;
+      if (ttsResult.media && audioRef.current) {
+          audioRef.current.src = ttsResult.media;
           audioRef.current.play().catch(e => {
             console.error("Audio play failed", e);
             toast({ variant: 'destructive', title: 'Audio Error', description: 'Could not play audio. Please ensure your device is not in silent mode.' });
@@ -902,21 +898,17 @@ const SallyView = () => {
     setSallyResponse(`Thinking about: "${userInput}"`);
     
     try {
-        const healthInsightAction = async () => {
-            const insightsResult = await sallyHealthInsights({
-                userProfileJson: JSON.stringify(profile),
-                userQuery: userInput,
-            });
-
-            const ttsResult = await textToSpeech({ text: insightsResult.response });
-
-            return { ...insightsResult, audio: ttsResult.media };
-        };
-
         const token = localStorage.getItem('authToken');
         if (!token) throw new Error("Authentication token not found.");
         
-        const { result: insightsResult, newToken } = await runProtectedAction(token, healthInsightAction, 1);
+        const insightsResult = await sallyHealthInsights({
+            userProfileJson: JSON.stringify(profile),
+            userQuery: userInput,
+        });
+
+        const ttsResult = await textToSpeech({ text: insightsResult.response });
+
+        const { newToken } = await deductCredits(token, 1);
         
         if (newToken) {
           localStorage.setItem('authToken', newToken);
@@ -924,8 +916,8 @@ const SallyView = () => {
 
         setSallyResponse(insightsResult.response);
 
-        if (insightsResult.audio && audioRef.current) {
-          audioRef.current.src = insightsResult.audio;
+        if (ttsResult.media && audioRef.current) {
+          audioRef.current.src = ttsResult.media;
           audioRef.current.play().catch(e => {
             console.error("Audio play failed", e);
             toast({ variant: 'destructive', title: 'Audio Error', description: 'Could not play audio. Please ensure your device is not in silent mode.' });

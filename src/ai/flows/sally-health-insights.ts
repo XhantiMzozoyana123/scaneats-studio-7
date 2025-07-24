@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -34,39 +35,39 @@ export type SallyHealthInsightsOutput = z.infer<
   typeof SallyHealthInsightsOutputSchema
 >;
 
-export async function sallyHealthInsights(
-  input: SallyHealthInsightsInput
-): Promise<SallyHealthInsightsOutput> {
-  return sallyHealthInsightsFlow(input);
-}
-
-const prompt = ai.definePrompt({
-  name: 'sallyHealthInsightsPrompt',
-  input: {schema: SallyHealthInsightsInputSchema},
-  output: {schema: SallyHealthInsightsOutputSchema},
-  prompt: `You are Sally, a funny, witty, and helpful personal AI nutritionist and health assistant.
-  A user is asking a question about their health. Your response should be pure human text, not JSON.
-
-  Here is the user's profile information (as a JSON string):
-  {{{userProfileJson}}}
-
-  Here is the user's question:
-  "{{{userQuery}}}"
-
-  Based on all this information, provide a conversational, funny, and helpful response to the user.
-  Address them directly and use their profile information to make the advice personal.
-  Keep your response concise and to the point.
-  `,
-});
-
-const sallyHealthInsightsFlow = ai.defineFlow(
+export const sallyHealthInsights = ai.defineFlow(
   {
-    name: 'sallyHealthInsightsFlow',
+    name: 'sallyHealthInsights',
     inputSchema: SallyHealthInsightsInputSchema,
     outputSchema: SallyHealthInsightsOutputSchema,
   },
   async (input) => {
-    const {output} = await prompt(input);
-    return output!;
+    const prompt = `You are Sally, a funny, witty, and helpful personal AI nutritionist and health assistant.
+A user is asking a question about their health. Your response should be pure human text, not JSON.
+
+Here is the user's profile information (as a JSON string):
+${input.userProfileJson}
+
+Here is the user's question:
+"${input.userQuery}"
+
+Based on all this information, provide a conversational, funny, and helpful response to the user.
+Address them directly and use their profile information to make the advice personal.
+Keep your response concise and to the point.
+`;
+    
+    const {output} = await ai.generate({
+      prompt: prompt,
+      model: 'googleai/gemini-2.0-flash',
+      output: {
+        schema: SallyHealthInsightsOutputSchema,
+      }
+    });
+
+    if (!output) {
+      throw new Error("Failed to get a response from the model.");
+    }
+    
+    return output;
   }
 );

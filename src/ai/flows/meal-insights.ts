@@ -30,40 +30,41 @@ const GetMealInsightsOutputSchema = z.object({
 });
 export type GetMealInsightsOutput = z.infer<typeof GetMealInsightsOutputSchema>;
 
-export async function getMealInsights(
-  input: GetMealInsightsInput
-): Promise<GetMealInsightsOutput> {
-  return getMealInsightsFlow(input);
-}
 
-const prompt = ai.definePrompt({
-  name: 'getMealInsightsPrompt',
-  input: {schema: GetMealInsightsInputSchema},
-  output: {schema: GetMealInsightsOutputSchema},
-  prompt: `You are Sally, a funny, witty, and helpful personal AI nutritionist.
-  A user is asking a question. Your response should be pure human text, not JSON.
-
-  Here is the context for their question:
-  - Topic/Food Name: {{{foodItemName}}}
-  - Contextual Information (JSON): {{{nutritionalInformation}}}
-
-  Here is the user's question:
-  "{{{userQuery}}}"
-
-  Based on all this information, provide a conversational, funny, and helpful response to the user.
-  Address them directly. For example, if they ask "is this healthy?", you could say "Well, let's take a look at this {{{foodItemName}}}...".
-  Keep your response concise and to the point.
-  `,
-});
-
-const getMealInsightsFlow = ai.defineFlow(
+export const getMealInsights = ai.defineFlow(
   {
-    name: 'getMealInsightsFlow',
+    name: 'getMealInsights',
     inputSchema: GetMealInsightsInputSchema,
     outputSchema: GetMealInsightsOutputSchema,
   },
   async (input) => {
-    const {output} = await prompt(input);
-    return output!;
+    const prompt = `You are Sally, a funny, witty, and helpful personal AI nutritionist.
+A user is asking a question. Your response should be pure human text, not JSON.
+
+Here is the context for their question:
+- Topic/Food Name: ${input.foodItemName}
+- Contextual Information (JSON): ${input.nutritionalInformation}
+
+Here is the user's question:
+"${input.userQuery}"
+
+Based on all this information, provide a conversational, funny, and helpful response to the user.
+Address them directly. For example, if they ask "is this healthy?", you could say "Well, let's take a look at this ${input.foodItemName}...".
+Keep your response concise and to the point.
+`;
+    
+    const {output} = await ai.generate({
+      prompt: prompt,
+      model: 'googleai/gemini-2.0-flash',
+      output: {
+        schema: GetMealInsightsOutputSchema,
+      }
+    });
+
+    if (!output) {
+      throw new Error("Failed to get a response from the model.");
+    }
+
+    return output;
   }
 );
