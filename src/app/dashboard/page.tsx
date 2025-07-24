@@ -474,13 +474,6 @@ const MealPlanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   
   useEffect(() => {
-    // Initialize the Audio object only once on component mount.
-    if (!audioRef.current) {
-      audioRef.current = new Audio();
-    }
-  }, []);
-
-  useEffect(() => {
     if (isSallyLoading) {
       const interval = setInterval(() => {
         setSallyProgress((prev) => {
@@ -588,10 +581,11 @@ const MealPlanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
     if (isRecording) {
       recognitionRef.current?.stop();
     } else {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.currentTime = 0;
+      if (!audioRef.current) {
+        audioRef.current = new Audio();
       }
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
       setIsRecording(true);
       setSallyResponse('Listening...');
       recognitionRef.current?.start();
@@ -807,13 +801,6 @@ const SallyView = () => {
   const { profile, setSubscriptionModalOpen, updateCreditBalance } = useUserData();
   
   useEffect(() => {
-    // Initialize the Audio object only once on component mount.
-    if (!audioRef.current) {
-      audioRef.current = new Audio();
-    }
-  }, []);
-
-  useEffect(() => {
     if (isLoading) {
       const interval = setInterval(() => {
         setLoadingProgress((prev) => {
@@ -869,10 +856,11 @@ const SallyView = () => {
     if (isRecording || isLoading) {
       recognitionRef.current?.stop();
     } else {
-       if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.currentTime = 0;
+       if (!audioRef.current) {
+        audioRef.current = new Audio();
       }
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
       setIsRecording(true);
       recognitionRef.current?.start();
     }
@@ -1007,7 +995,7 @@ const SallyView = () => {
 };
 
 const ProfileView = () => {
-  const { profile, isLoading, saveProfile, isProfileComplete, setProfileCompleted } = useUserData();
+  const { profile, isLoading, saveProfile } = useUserData();
   const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
@@ -1049,7 +1037,6 @@ const ProfileView = () => {
     
     setIsSaving(true);
     await saveProfile(profile, true); // Mark as complete on final save
-    setProfileCompleted(true); // Ensure context and app state updates
     toast({
         title: 'Profile Saved!',
         description: 'Your profile has been updated.',
@@ -1097,14 +1084,12 @@ const ProfileView = () => {
   return (
     <div className="flex min-h-screen flex-col items-center bg-black pb-40 pt-5">
       <div className="w-[90%] max-w-[600px] rounded-lg bg-[rgba(14,1,15,0.32)] p-5">
-         {!isProfileComplete && (
-            <Alert className="mb-6 border-primary/50 bg-primary/20 text-white">
-                <AlertTitle className="font-bold">Complete Your Profile</AlertTitle>
-                <AlertDescription>
-                    Filling out your profile helps Sally give you the best personalized advice on your health and goals.
-                </AlertDescription>
-            </Alert>
-          )}
+         <Alert className="mb-6 border-primary/50 bg-primary/20 text-white">
+            <AlertTitle className="font-bold">Complete Your Profile</AlertTitle>
+            <AlertDescription>
+                Filling out your profile helps Sally give you the best personalized advice on your health and goals. It's optional, but recommended!
+            </AlertDescription>
+        </Alert>
         <div className="mb-8 flex justify-center">
           <Image
             src="https://gallery.scaneats.app/images/Personal%20Pic.png"
@@ -1728,12 +1713,11 @@ const SettingsView = ({
 
 export default function DashboardPage() {
   const [activeView, setActiveView] = useState<View>('home');
-  const { isProfileComplete } = useUserData();
 
   const handleNavigate = (view: View) => {
     setActiveView(view);
   };
-  
+
   const renderView = () => {
     switch (activeView) {
       case 'home':
