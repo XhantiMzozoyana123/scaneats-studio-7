@@ -474,6 +474,7 @@ const MealPlanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   
   useEffect(() => {
+    // Initialize the Audio object only once on component mount.
     if (!audioRef.current) {
       audioRef.current = new Audio();
     }
@@ -806,6 +807,7 @@ const SallyView = () => {
   const { profile, setSubscriptionModalOpen, updateCreditBalance } = useUserData();
   
   useEffect(() => {
+    // Initialize the Audio object only once on component mount.
     if (!audioRef.current) {
       audioRef.current = new Audio();
     }
@@ -1726,6 +1728,7 @@ const SettingsView = ({
 
 export default function DashboardPage() {
   const [activeView, setActiveView] = useState<View>('home');
+  const { isProfileComplete } = useUserData();
 
   const handleNavigate = (view: View) => {
     setActiveView(view);
