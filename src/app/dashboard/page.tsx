@@ -656,6 +656,7 @@ const MealPlanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
       
       if (ttsResult.media && audioRef.current) {
           audioRef.current.src = ttsResult.media;
+          audioRef.current.play();
       }
 
 
@@ -914,6 +915,7 @@ const SallyView = () => {
 
         if (ttsResult.media && audioRef.current) {
           audioRef.current.src = ttsResult.media;
+          audioRef.current.play();
         }
 
     } catch (error: any) {
@@ -1012,7 +1014,7 @@ const ProfileView = () => {
     e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     if (profile) {
-      saveProfile({ ...profile, [id]: e.target.value }, false); // Save locally without marking complete
+      saveProfile({ ...profile, [e.target.id]: e.target.value }, false); // Save locally without marking complete
     }
   };
 
@@ -1723,27 +1725,12 @@ const SettingsView = ({
 
 
 export default function DashboardPage() {
-  const { isProfileComplete, setProfileCompleted } = useUserData();
   const [activeView, setActiveView] = useState<View>('home');
-
-  useEffect(() => {
-    // When the profile is finally marked as complete,
-    // move the user away from the profile page to the home page.
-    if (isProfileComplete && activeView === 'profile') {
-      setActiveView('home');
-    }
-  }, [isProfileComplete, activeView]);
 
   const handleNavigate = (view: View) => {
     setActiveView(view);
   };
-
-  const handleProfileSave = () => {
-    // Mark as complete and navigate home
-    setProfileCompleted(true);
-    setActiveView('home');
-  };
-
+  
   const renderView = () => {
     switch (activeView) {
       case 'home':
@@ -1755,7 +1742,6 @@ export default function DashboardPage() {
       case 'sally':
         return <SallyView />;
       case 'profile':
-        // Pass a new callback to the ProfileView to handle navigation after save
         return <ProfileView />;
       case 'settings':
         return (
