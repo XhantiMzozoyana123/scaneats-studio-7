@@ -883,15 +883,6 @@ const SallyView = () => {
       toast({ variant: 'destructive', title: 'Profile not loaded' });
       return;
     }
-    
-    if (!isProfileComplete) {
-       toast({
-         variant: 'destructive',
-         title: 'Profile Incomplete',
-         description: 'Please complete your profile before talking to Sally.',
-       });
-       return;
-    }
 
     if (!profile.isSubscribed) {
         setSubscriptionModalOpen(true);
@@ -1064,7 +1055,7 @@ const ProfileView = () => {
     });
     setIsSaving(false);
   };
-
+  
   if (isLoading || !profile) {
     return (
       <div className="flex min-h-screen flex-col items-center bg-black pb-40 pt-5">
