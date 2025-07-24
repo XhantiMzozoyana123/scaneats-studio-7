@@ -656,10 +656,6 @@ const MealPlanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
       
       if (ttsResult.media && audioRef.current) {
           audioRef.current.src = ttsResult.media;
-          audioRef.current.play().catch(e => {
-            console.error("Audio play failed", e);
-            toast({ variant: 'destructive', title: 'Audio Error', description: 'Could not play audio. Please ensure your device is not in silent mode.' });
-          });
       }
 
 
@@ -927,10 +923,6 @@ const SallyView = () => {
 
         if (ttsResult.media && audioRef.current) {
           audioRef.current.src = ttsResult.media;
-          audioRef.current.play().catch(e => {
-            console.error("Audio play failed", e);
-            toast({ variant: 'destructive', title: 'Audio Error', description: 'Could not play audio. Please ensure your device is not in silent mode.' });
-          });
         }
 
     } catch (error: any) {
