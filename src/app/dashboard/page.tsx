@@ -13,6 +13,7 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { format } from 'date-fns';
+import wav from 'wav';
 
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -474,6 +475,10 @@ const MealPlanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   
   useEffect(() => {
+    audioRef.current = new Audio();
+  }, []);
+
+  useEffect(() => {
     if (isSallyLoading) {
       const interval = setInterval(() => {
         setSallyProgress((prev) => {
@@ -581,11 +586,10 @@ const MealPlanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
     if (isRecording) {
       recognitionRef.current?.stop();
     } else {
-      if (!audioRef.current) {
-        audioRef.current = new Audio();
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
       }
-      audioRef.current.pause();
-      audioRef.current.currentTime = 0;
       setIsRecording(true);
       setSallyResponse('Listening...');
       recognitionRef.current?.start();
@@ -798,7 +802,11 @@ const SallyView = () => {
   const recognitionRef = useRef<any>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const { toast } = useToast();
-  const { profile, setSubscriptionModalOpen, updateCreditBalance } = useUserData();
+  const { profile, isProfileComplete, setSubscriptionModalOpen, updateCreditBalance } = useUserData();
+  
+  useEffect(() => {
+    audioRef.current = new Audio();
+  }, []);
   
   useEffect(() => {
     if (isLoading) {
@@ -856,11 +864,10 @@ const SallyView = () => {
     if (isRecording || isLoading) {
       recognitionRef.current?.stop();
     } else {
-       if (!audioRef.current) {
-        audioRef.current = new Audio();
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
       }
-      audioRef.current.pause();
-      audioRef.current.currentTime = 0;
       setIsRecording(true);
       recognitionRef.current?.start();
     }
@@ -1084,12 +1091,6 @@ const ProfileView = () => {
   return (
     <div className="flex min-h-screen flex-col items-center bg-black pb-40 pt-5">
       <div className="w-[90%] max-w-[600px] rounded-lg bg-[rgba(14,1,15,0.32)] p-5">
-         <Alert className="mb-6 border-primary/50 bg-primary/20 text-white">
-            <AlertTitle className="font-bold">Complete Your Profile</AlertTitle>
-            <AlertDescription>
-                Filling out your profile helps Sally give you the best personalized advice on your health and goals. It's optional, but recommended!
-            </AlertDescription>
-        </Alert>
         <div className="mb-8 flex justify-center">
           <Image
             src="https://gallery.scaneats.app/images/Personal%20Pic.png"
@@ -1712,12 +1713,13 @@ const SettingsView = ({
 
 
 export default function DashboardPage() {
+  const { isProfileComplete } = useUserData();
   const [activeView, setActiveView] = useState<View>('home');
-
+  
   const handleNavigate = (view: View) => {
     setActiveView(view);
   };
-
+  
   const renderView = () => {
     switch (activeView) {
       case 'home':
