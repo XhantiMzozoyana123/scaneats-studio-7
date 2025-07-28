@@ -47,11 +47,17 @@ export const foodScanNutrition = ai.defineFlow(
     outputSchema: FoodScanNutritionOutputSchema,
   },
   async ({ photoDataUri }) => {
-    const prompt = `You are a nutritional expert. You will identify the food item in the photo and provide detailed nutritional information, including calories, macro-nutrients (protein, fat, carbohydrates), and potential allergens.
+    const prompt = `You are a nutrition AI. Analyze the food in the image and give a consistent, realistic estimate of the total calories, protein, carbohydrates, and fat based on what you see. 
+    
+    Your primary rules are:
+    1.  **Consistency is Key**: Do not guess or change values between identical foods. If the same food is scanned again by a different person, the result must stay the same.
+    2.  **Use Reliable Data**: Base your analysis on common portion sizes and standard nutritional data from reliable databases.
+    3.  **Realistic Estimates**: Focus on realistic estimates, not random guesses.
+    4.  **Repeatable Output**: If the same food appears again, always return the same output.
 
     Photo: {{media url=photoDataUri}}
     
-    Give me the food identification and nutrition information in JSON format. Make sure the data is accurate. If you cannot determine the calories, set it to 0.`;
+    Give me the food identification and nutrition information in the required JSON format. If you cannot determine the calories, set it to 0.`;
 
     const { output } = await ai.generate({
       prompt: prompt,
