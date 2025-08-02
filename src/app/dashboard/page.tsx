@@ -83,7 +83,9 @@ import {
 } from 'lucide-react';
 
 import { useToast } from '@/hooks/use-toast';
-import { useUserData, type Profile } from '@/context/user-data-context';
+import { useUserData } from '@/context/user-data-context';
+import type { Profile } from '@/app/core/entities/profile';
+import type { ScannedFood } from '@/app/core/entities/scanned-food';
 import { cn } from '@/lib/utils';
 import { BottomNav } from '@/components/bottom-nav';
 import { API_BASE_URL } from '@/lib/api';
@@ -458,16 +460,6 @@ const ScanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
   );
 };
 
-
-type ScannedFood = {
-  id?: number;
-  name?: string;
-  calories: number;
-  protein: number;
-  fat: number;
-  carbs: number;
-  carbohydrates?: number;
-};
 
 declare global {
   interface Window {
@@ -1037,7 +1029,6 @@ const ProfileView = () => {
 
   const isDirty = useMemo(() => {
     if (!profile || !initialProfile) return false;
-    // Deep comparison to check for changes
     return JSON.stringify(profile) !== JSON.stringify(initialProfile);
   }, [profile, initialProfile]);
 
@@ -1114,7 +1105,7 @@ const ProfileView = () => {
 
   return (
     <div className="flex min-h-screen flex-col items-center bg-black pb-40 pt-5">
-      <div className="w-[90%] max-w-[600px] rounded-lg bg-[rgba(14,1,15,0.32)] p-5">
+      <div className="w-[90%] max-w-[600px] rounded-lg bg-[rgba(14,1_5,0.32)] p-5">
         <div className="mb-8 flex justify-center">
           <Image
             src="https://gallery.scaneats.app/images/Personal%20Pic.png"
@@ -1768,5 +1759,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
-    

@@ -24,26 +24,10 @@ import {
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
-
-export type Profile = {
-  id: number | null;
-  name: string;
-  gender: string;
-  weight: number | string;
-  goals: string;
-  birthDate: Date | null;
-  age?: number;
-  isSubscribed?: boolean;
-};
-
-type ScannedFood = {
-  id: number;
-  name: string;
-  calories: number;
-  protein: number;
-  fat: number;
-  carbohydrates: number;
-};
+import type { Profile } from '@/app/core/entities/profile';
+import type { ScannedFood } from '@/app/core/entities/scanned-food';
+import { ProfileService } from '@/app/core/services/profile-service';
+import { ProfileApiRepository } from '@/data/api/profile-api-repository';
 
 
 type UserDataContextType = {
@@ -84,6 +68,10 @@ const getCachedCredits = (): number | null => {
   return cached ? JSON.parse(cached) : null;
 };
 
+// Instantiate repository and service
+const profileRepository = new ProfileApiRepository();
+const profileService = new ProfileService(profileRepository);
+
 export function UserDataProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
   const router = useRouter();
@@ -111,48 +99,27 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-        const [profileRes, subRes] = await Promise.all([
-            fetch(`${API_BASE_URL}/api/profile`, { headers: { Authorization: `Bearer ${token}` } }),
-            fetch(`${API_BASE_URL}/api/subscription/status`, { headers: { Authorization: `Bearer ${token}` } })
-        ]);
+        const { profile: userProfile, isSubscribed } = await profileService.getProfile(token);
+        
+        const finalProfile = { ...(userProfile || initialProfileState), isSubscribed };
+        setProfile(finalProfile);
+        setInitialProfile(JSON.parse(JSON.stringify(finalProfile)));
 
-        if (profileRes.status === 401 || subRes.status === 401) {
-            toast({
+    } catch (error: any) {
+        if (error.message === 'Session Expired') {
+             toast({
                 variant: 'destructive',
                 title: 'Session Expired',
                 description: 'Please log in again to continue.',
             });
             localStorage.clear();
             router.push('/login');
-            return;
+        } else {
+            console.error('Failed to load user data', error);
+            const finalProfile = { ...initialProfileState, isSubscribed: false };
+            setProfile(finalProfile);
+            setInitialProfile(JSON.parse(JSON.stringify(finalProfile)));
         }
-
-        const subData = subRes.ok ? await subRes.json() : { isSubscribed: false };
-        let userProfile = initialProfileState;
-
-        if (profileRes.ok) {
-            const profiles = await profileRes.json();
-            if (profiles && profiles.length > 0) {
-                const p = profiles[0];
-                userProfile = {
-                    ...p,
-                    birthDate: p.birthDate ? new Date(p.birthDate) : null,
-                    weight: p.weight || '',
-                };
-            }
-        } else if (profileRes.status !== 404) {
-             console.error('Failed to fetch profile', profileRes.statusText);
-        }
-
-        const finalProfile = { ...userProfile, isSubscribed: subData.isSubscribed };
-        setProfile(finalProfile);
-        setInitialProfile(JSON.parse(JSON.stringify(finalProfile)));
-
-    } catch (error) {
-      console.error('Failed to load user data', error);
-      const finalProfile = { ...initialProfileState, isSubscribed: false };
-      setProfile(finalProfile);
-      setInitialProfile(JSON.parse(JSON.stringify(finalProfile)));
     } finally {
       setIsLoading(false);
     }
@@ -165,76 +132,27 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
         toast({ variant: 'destructive', title: 'Error', description: 'You are not logged in.' });
         return false;
       }
-      
-      const isNewProfile = !profileData.id;
-      const endpoint = isNewProfile ? `${API_BASE_URL}/api/profile` : `${API_BASE_URL}/api/profile/${profileData.id}`;
-      const method = isNewProfile ? 'POST' : 'PUT';
-
-      const calculateAge = (birthDate: Date | null): number => {
-        if (!birthDate) return 0;
-        const today = new Date();
-        let age = today.getFullYear() - new Date(birthDate).getFullYear();
-        const m = today.getMonth() - new Date(birthDate).getMonth();
-        if (m < 0 || (m === 0 && today.getDate() < new Date(birthDate).getDate())) {
-          age--;
-        }
-        return age;
-      };
-      
-      const payload: any = {
-        Name: profileData.name,
-        Gender: profileData.gender,
-        Weight: String(profileData.weight || '0'),
-        Goals: profileData.goals,
-        BirthDate: profileData.birthDate ? new Date(profileData.birthDate).toISOString() : null,
-        Age: calculateAge(profileData.birthDate),
-      };
-
-      if (!isNewProfile) {
-        payload.Id = profileData.id;
-      }
 
       try {
-        const response = await fetch(endpoint, {
-            method: method,
-            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-            body: JSON.stringify(payload)
-        });
-        
-        if (response.status === 403) {
-            setSubscriptionModalOpen(true);
-            return false;
-        }
-
-        if (!response.ok) {
-            const errorData = await response.json().catch(() => ({ message: 'Failed to save profile.' }));
-            throw new Error(errorData.message || `Request failed with status ${response.status}`);
-        }
-
-        if (method === 'POST') {
-            const newProfileData = await response.json();
-            const fullProfile = { ...newProfileData, isSubscribed: profileData.isSubscribed, birthDate: newProfileData.birthDate ? new Date(newProfileData.birthDate) : null };
-            setProfile(fullProfile);
-            setInitialProfile(JSON.parse(JSON.stringify(fullProfile)));
-        } else { // For PUT request
-             const updatedProfileWithSub = { ...profileData, isSubscribed: profileData.isSubscribed };
-             setProfile(updatedProfileWithSub);
-             setInitialProfile(JSON.parse(JSON.stringify(updatedProfileWithSub)));
-        }
-
+        const savedProfile = await profileService.saveProfile(token, profileData);
+        setProfile(savedProfile);
+        setInitialProfile(JSON.parse(JSON.stringify(savedProfile)));
         return true;
-
       } catch (error: any) {
         console.error('Save profile error:', error);
-        toast({
-          variant: 'destructive',
-          title: 'Save Failed',
-          description: error.message || 'An unknown error occurred.',
-        });
+        if (error.message === 'Subscription Required') {
+            setSubscriptionModalOpen(true);
+        } else {
+            toast({
+              variant: 'destructive',
+              title: 'Save Failed',
+              description: error.message || 'An unknown error occurred.',
+            });
+        }
         return false;
       }
     },
-    [toast, setSubscriptionModalOpen]
+    [toast]
   );
 
   const updateCreditBalance = useCallback(async (force = false) => {
