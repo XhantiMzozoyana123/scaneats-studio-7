@@ -1,1 +1,1 @@
-export const API_BASE_URL = 'https://applysmart.loclx.io';
+export const API_BASE_URL = 'https://scaneats.loclx.io';
