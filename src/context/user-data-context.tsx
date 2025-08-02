@@ -114,6 +114,17 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
             fetch(`${API_BASE_URL}/api/event/subscription/status`, { headers: { Authorization: `Bearer ${token}` } })
         ]);
 
+        if (profileRes.status === 401 || subRes.status === 401) {
+            toast({
+                variant: 'destructive',
+                title: 'Session Expired',
+                description: 'Please log in again to continue.',
+            });
+            localStorage.clear();
+            router.push('/login');
+            return;
+        }
+
         const subData = subRes.ok ? await subRes.json() : { isSubscribed: false };
         let userProfile = initialProfileState;
 
@@ -127,17 +138,8 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
                     weight: p.weight || '',
                 };
             }
-        } else if (profileRes.status === 401) {
-            toast({
-                variant: 'destructive',
-                title: 'Session Expired',
-                description: 'Please log in again to continue.',
-            });
-            localStorage.clear();
-            router.push('/login');
-            return;
         } else if (profileRes.status !== 404) {
-            console.error('Failed to fetch profile', profileRes.statusText);
+             console.error('Failed to fetch profile', profileRes.statusText);
         }
 
         const finalProfile = { ...userProfile, isSubscribed: subData.isSubscribed };
@@ -167,7 +169,6 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
         return false;
       }
 
-      // The backend calculates age, so we don't send it from the frontend.
       const { age, ...profileToSave } = profileData;
       
       const endpoint = profileToSave.id ? `${API_BASE_URL}/api/profile/${profileToSave.id}` : `${API_BASE_URL}/api/profile`;
@@ -190,12 +191,18 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
             throw new Error(errorData.message || 'Failed to save profile.');
         }
 
-        if(method === 'POST') {
+        if (method === 'POST') {
             const newProfile = await response.json();
             const finalProfile = { ...newProfile, isSubscribed: profileData.isSubscribed };
             setProfile(finalProfile);
             setInitialProfile(finalProfile);
+        } else if (method === 'PUT' && response.status === 204) {
+            // Handle successful update with no content
+            const updatedProfileWithSub = { ...profileData, isSubscribed: profileData.isSubscribed };
+            setProfile(updatedProfileWithSub);
+            setInitialProfile(updatedProfileWithSub);
         } else {
+             // Fallback for PUT if it ever returns content, or for other OK statuses.
             const updatedProfileWithSub = { ...profileData, isSubscribed: profileData.isSubscribed };
             setProfile(updatedProfileWithSub);
             setInitialProfile(updatedProfileWithSub);
