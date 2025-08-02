@@ -604,10 +604,10 @@ const MealPlanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
             Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
-            clientName: profile?.name || 'User',
-            clientDialogue: userInput,
-            foodName: scannedFood.name,
-            foodId: scannedFood.id
+            ClientName: profile?.name || 'User',
+            ClientDialogue: userInput,
+            FoodName: scannedFood.name,
+            FoodId: scannedFood.id
           }),
       });
 
@@ -886,9 +886,8 @@ const SallyView = () => {
             Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
-            clientName: profile?.name || 'User',
-            clientDialogue: userInput,
-            profileId: profile.id
+            ClientName: profile?.name || 'User',
+            ClientDialogue: userInput,
           }),
         });
 
