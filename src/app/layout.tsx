@@ -39,7 +39,7 @@ export default function RootLayout({
   const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
 
   if (!googleClientId) {
-    throw new Error("FATAL: NEXT_PUBLIC_GOOGLE_CLIENT_ID is not defined in environment variables. Build failed.");
+    throw new Error("FATAL: NEXT_PUBLIC_GOOGLE_CLIENT_ID is not defined in environment variables. Google Authentication cannot work without it.");
   }
 
   return (
