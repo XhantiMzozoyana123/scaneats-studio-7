@@ -87,8 +87,8 @@ const getCachedCredits = (): number | null => {
 export function UserDataProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
   const router = useRouter();
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [initialProfile, setInitialProfile] = useState<Profile | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(initialProfileState);
+  const [initialProfile, setInitialProfile] = useState<Profile | null>(initialProfileState);
   const [scannedFood, setScannedFoodState] = useState<ScannedFood | null | undefined>(undefined);
   const [creditBalance, setCreditBalance] = useState<number | null>(
     getCachedCredits()
@@ -181,16 +181,18 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
         return age;
       };
       
-      // Create a payload with PascalCase properties to match the C# backend
-      const payload = {
-        Id: profileData.id,
+      const payload: any = {
         Name: profileData.name,
         Gender: profileData.gender,
-        Weight: String(profileData.weight || '0'), // Ensure weight is a string and not empty
+        Weight: String(profileData.weight || '0'),
         Goals: profileData.goals,
         BirthDate: profileData.birthDate ? new Date(profileData.birthDate).toISOString() : null,
         Age: calculateAge(profileData.birthDate),
       };
+
+      if (!isNewProfile) {
+        payload.Id = profileData.id;
+      }
 
       try {
         const response = await fetch(endpoint, {
