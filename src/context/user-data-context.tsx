@@ -106,7 +106,7 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
     if (!token) {
         setIsLoading(false);
         setProfile(initialProfileState);
-        setInitialProfile(JSON.parse(JSON.stringify(initialProfileState))); // Deep copy for comparison
+        setInitialProfile(JSON.parse(JSON.stringify(initialProfileState))); // Deep copy
         return;
     }
 
@@ -146,7 +146,7 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
 
         const finalProfile = { ...userProfile, isSubscribed: subData.isSubscribed };
         setProfile(finalProfile);
-        setInitialProfile(JSON.parse(JSON.stringify(finalProfile))); // Deep copy for comparison
+        setInitialProfile(JSON.parse(JSON.stringify(finalProfile))); // Deep copy
 
     } catch (error) {
       console.error('Failed to load user data', error);
@@ -182,7 +182,6 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
         weight: parseFloat(String(profileToSend.weight)) || 0,
       };
 
-
       try {
         const response = await fetch(endpoint, {
             method: method,
@@ -195,15 +194,8 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
             return false;
         }
 
-        if (method === 'PUT' && response.status === 204) {
-             const updatedProfileWithSub = { ...profileData, isSubscribed: profileData.isSubscribed };
-             setProfile(updatedProfileWithSub);
-             setInitialProfile(JSON.parse(JSON.stringify(updatedProfileWithSub)));
-             return true;
-        }
-
         if (!response.ok) {
-            const errorData = await response.json();
+            const errorData = await response.json().catch(() => ({ message: 'Failed to save profile.' }));
             throw new Error(errorData.message || 'Failed to save profile.');
         }
 
@@ -212,6 +204,10 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
             const finalProfile = { ...newProfile, isSubscribed: profileData.isSubscribed, birthDate: newProfile.birthDate ? new Date(newProfile.birthDate) : null, };
             setProfile(finalProfile);
             setInitialProfile(JSON.parse(JSON.stringify(finalProfile)));
+        } else { // For PUT request
+             const updatedProfileWithSub = { ...profileData, isSubscribed: profileData.isSubscribed };
+             setProfile(updatedProfileWithSub);
+             setInitialProfile(JSON.parse(JSON.stringify(updatedProfileWithSub)));
         }
 
         return true;
@@ -220,12 +216,12 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
         toast({
           variant: 'destructive',
           title: 'Save Failed',
-          description: error.message || 'Failed to save profile',
+          description: error.message || 'An unknown error occurred.',
         });
         return false;
       }
     },
-    [toast, setSubscriptionModalOpen]
+    [toast, router, setSubscriptionModalOpen]
   );
 
   const updateCreditBalance = useCallback(async (force = false) => {
