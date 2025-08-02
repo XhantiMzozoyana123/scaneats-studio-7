@@ -13,7 +13,6 @@ import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { format } from 'date-fns';
-import wav from 'wav';
 
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -50,7 +49,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -84,16 +82,12 @@ import {
 } from 'lucide-react';
 
 import { useToast } from '@/hooks/use-toast';
-import { useUserData } from '@/context/user-data-context';
+import { useUserData, type Profile } from '@/context/user-data-context';
 import { cn } from '@/lib/utils';
 import { BottomNav } from '@/components/bottom-nav';
 import { API_BASE_URL } from '@/lib/api';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { foodScanNutrition } from '@/ai/flows/food-scan-nutrition';
-import { getMealInsights } from '@/ai/flows/meal-insights';
-import { textToSpeech } from '@/ai/flows/text-to-speech';
-import { sallyHealthInsights } from '@/ai/flows/sally-health-insights';
-import { deductCredits } from '@/services/checkpointService';
+
 
 type View = 'home' | 'meal-plan' | 'sally' | 'profile' | 'settings' | 'scan';
 
@@ -159,7 +153,7 @@ const HomeView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
 
 const ScanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
   const { toast } = useToast();
-  const { profile, setSubscriptionModalOpen, updateCreditBalance } = useUserData();
+  const { profile, setSubscriptionModalOpen, updateCreditBalance, setScannedFood } = useUserData();
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -279,19 +273,39 @@ const ScanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
       const token = localStorage.getItem('authToken');
       if (!token) throw new Error("Authentication token not found.");
       
-      const scanResult = await foodScanNutrition({ photoDataUri: capturedImage });
-      
-      const { newToken } = await deductCredits(token);
-      
-      if (newToken) {
-        localStorage.setItem('authToken', newToken);
+      const response = await fetch(`${API_BASE_URL}/api/scan`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            Base64: capturedImage,
+            Logging: {
+                ProfileId: profile.id,
+            }
+          })
+      });
+
+      if (!response.ok) {
+        if (response.status === 429) {
+          throw new Error('INSUFFICIENT_CREDITS');
+        }
+        let errorMsg = "Scan failed";
+        try {
+            const errorData = await response.json();
+            errorMsg = errorData.message || errorData.error || errorMsg;
+        } catch {}
+        throw new Error(errorMsg);
       }
       
+      const scanResult = await response.json();
+      
       await updateCreditBalance(true); 
-      localStorage.setItem('scannedFood', JSON.stringify(scanResult));
+      setScannedFood(scanResult);
       toast({
           title: 'Success!',
-          description: `Identified: ${scanResult.foodIdentification.name}.`,
+          description: `Identified: ${scanResult.name}.`,
       });
       onNavigate('meal-plan');
 
@@ -462,9 +476,8 @@ declare global {
 
 const MealPlanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
   const router = useRouter();
-  const [foods, setFoods] = useState<ScannedFood[] | null>(null);
   const { toast } = useToast();
-  const { profile, setSubscriptionModalOpen, updateCreditBalance } = useUserData();
+  const { profile, setSubscriptionModalOpen, updateCreditBalance, scannedFood } = useUserData();
   const [sallyResponse, setSallyResponse] = useState<string>(
     "Ask me about this meal and I'll tell you everything."
   );
@@ -529,58 +542,17 @@ const MealPlanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
     }
   }, [toast]);
 
-  const loadFoodFromStorage = useCallback(() => {
-     const storedFood = localStorage.getItem('scannedFood');
-    if (storedFood) {
-      try {
-        const parsedFood = JSON.parse(storedFood);
-        const foodInfo = parsedFood.nutritionInformation;
-        const formattedData: ScannedFood = {
-          id: parsedFood.id,
-          name: parsedFood.foodIdentification?.name || 'Unknown Food',
-          calories: foodInfo?.calories || 0,
-          protein: foodInfo?.protein || 0,
-          fat: foodInfo?.fat || 0,
-          carbs: foodInfo?.carbohydrates || 0,
-        };
-        setFoods([formattedData]);
-        return [formattedData];
-      } catch (error) {
-        console.error('Error parsing stored food data:', error);
-        toast({
-          variant: 'destructive',
-          title: 'Error',
-          description: 'Could not load stored meal plan data.',
-        });
-        setFoods([]);
-        return [];
-      }
-    } else {
-      setFoods([]);
-      return [];
-    }
-  }, [toast]);
-
-
-  useEffect(() => {
-    loadFoodFromStorage();
-  }, [loadFoodFromStorage]);
-
   const totals = useMemo(() => {
-    if (!foods) {
+    if (!scannedFood) {
       return { calories: 0, protein: 0, fat: 0, carbs: 0 };
     }
-    return foods.reduce(
-      (acc, food) => {
-        acc.calories += food?.calories || 0;
-        acc.protein += food?.protein || 0;
-        acc.fat += food?.fat || 0;
-        acc.carbs += food?.carbs || 0;
-        return acc;
-      },
-      { calories: 0, protein: 0, fat: 0, carbs: 0 }
-    );
-  }, [foods]);
+    return {
+        calories: scannedFood.calories || 0,
+        protein: scannedFood.protein || 0,
+        fat: scannedFood.fat || 0,
+        carbs: scannedFood.carbohydrates || 0,
+    }
+  }, [scannedFood]);
 
   const handleMicClick = () => {
     if (isRecording) {
@@ -608,12 +580,7 @@ const MealPlanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
     setSallyProgress(10);
     setSallyResponse(`Thinking about: "${userInput}"`);
 
-    let currentFoods = foods;
-    if (!currentFoods || currentFoods.length === 0) {
-      currentFoods = loadFoodFromStorage();
-    }
-
-    if (!currentFoods || currentFoods.length === 0) {
+    if (!scannedFood) {
       toast({
         variant: 'destructive',
         title: 'No Meal Data',
@@ -628,36 +595,42 @@ const MealPlanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
       const token = localStorage.getItem('authToken');
       if (!token) throw new Error("Authentication token not found.");
       
-      const lastFood = currentFoods[0];
-      const nutritionalInfo = {
-        calories: lastFood.calories,
-        protein: lastFood.protein,
-        fat: lastFood.fat,
-        carbs: lastFood.carbs,
-      };
-
-      const insightsResult = await getMealInsights({
-          foodItemName: lastFood.name || 'your meal',
-          nutritionalInformation: JSON.stringify(nutritionalInfo),
-          userQuery: userInput,
+      const response = await fetch(`${API_BASE_URL}/api/sally/meal-planner`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            clientName: profile?.name || 'User',
+            clientDialogue: userInput,
+            foodName: scannedFood.name,
+            foodId: scannedFood.id
+          }),
       });
-      
-      const { newToken } = await deductCredits(token);
 
-      if (newToken) {
-        localStorage.setItem('authToken', newToken);
+      if (!response.ok) {
+        if (response.status === 429) {
+          throw new Error('INSUFFICIENT_CREDITS');
+        }
+        let errorMsg = "Sally failed to respond";
+        try {
+            const errorData = await response.json();
+            errorMsg = errorData.message || errorData.error || errorMsg;
+        } catch {}
+        throw new Error(errorMsg);
       }
+      
+      const result = await response.json();
+      
       await updateCreditBalance(true);
       
-      const ttsResult = await textToSpeech({ text: insightsResult.response });
-
-      setSallyResponse(insightsResult.response);
+      setSallyResponse(result.agentDialogue);
       
-      if (ttsResult.media && audioRef.current) {
-          audioRef.current.src = ttsResult.media;
-          audioRef.current.play();
+      if (result.audioUrl && audioRef.current) {
+          audioRef.current.src = result.audioUrl;
+          audioRef.current.play().catch(e => console.error("Audio playback failed:", e));
       }
-
 
     } catch (error: any) {
       if (error.message === 'INSUFFICIENT_CREDITS') {
@@ -708,16 +681,19 @@ const MealPlanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
             />
         </header>
 
-        {foods === null ? (
+        {scannedFood === undefined ? (
           <div className="flex flex-1 flex-col items-center justify-center">
             <Loader2 className="h-16 w-16 animate-spin text-white" />
             <p className="mt-4 text-white">Loading your meal plan...</p>
           </div>
         ) : (
           <div className="flex w-full flex-1 flex-col items-center justify-center">
-            {foods.length > 0 ? (
+            {scannedFood ? (
               <>
                 <div className="mb-6 flex shrink-0 flex-col items-center">
+                   <div className="mb-2 text-2xl font-semibold text-white">
+                    {scannedFood.name}
+                  </div>
                   <div className="text-5xl font-bold text-white drop-shadow-[0_0_10px_hsl(var(--primary))]">
                     {totals.calories.toFixed(0)}
                   </div>
@@ -758,9 +734,14 @@ const MealPlanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
                 <p className="text-white">
                   No food scanned yet. Scan an item to get started!
                 </p>
+                 <Button onClick={() => onNavigate('scan')} className="mt-4">
+                  Scan Food
+                </Button>
               </div>
             )}
 
+            {scannedFood && (
+            <>
             <button
               onClick={handleMicClick}
               disabled={isSallyLoading || isRecording}
@@ -784,6 +765,8 @@ const MealPlanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
                 sallyResponse
               )}
             </div>
+            </>
+            )}
           </div>
         )}
       </div>
@@ -802,7 +785,7 @@ const SallyView = () => {
   const recognitionRef = useRef<any>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const { toast } = useToast();
-  const { profile, isProfileComplete, setSubscriptionModalOpen, updateCreditBalance } = useUserData();
+  const { profile, setSubscriptionModalOpen, updateCreditBalance } = useUserData();
   
   useEffect(() => {
     audioRef.current = new Audio();
@@ -894,25 +877,40 @@ const SallyView = () => {
         const token = localStorage.getItem('authToken');
         if (!token) throw new Error("Authentication token not found.");
         
-        const insightsResult = await sallyHealthInsights({
-            userProfileJson: JSON.stringify(profile),
-            userQuery: userInput,
+        const response = await fetch(`${API_BASE_URL}/api/sally/body-assessment`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            clientName: profile?.name || 'User',
+            clientDialogue: userInput,
+            profileId: profile.id
+          }),
         });
 
-        const { newToken } = await deductCredits(token);
-        
-        if (newToken) {
-          localStorage.setItem('authToken', newToken);
+        if (!response.ok) {
+            if (response.status === 429) {
+                throw new Error('INSUFFICIENT_CREDITS');
+            }
+            let errorMsg = "Sally failed to respond";
+            try {
+                const errorData = await response.json();
+                errorMsg = errorData.message || errorData.error || errorMsg;
+            } catch {}
+            throw new Error(errorMsg);
         }
+
+        const result = await response.json();
+
         await updateCreditBalance(true);
 
-        const ttsResult = await textToSpeech({ text: insightsResult.response });
+        setSallyResponse(result.agentDialogue);
 
-        setSallyResponse(insightsResult.response);
-
-        if (ttsResult.media && audioRef.current) {
-          audioRef.current.src = ttsResult.media;
-          audioRef.current.play();
+        if (result.audioUrl && audioRef.current) {
+          audioRef.current.src = result.audioUrl;
+          audioRef.current.play().catch(e => console.error("Audio playback failed:", e));
         }
 
     } catch (error: any) {
@@ -1002,56 +1000,53 @@ const SallyView = () => {
 };
 
 const ProfileView = () => {
-  const { profile, isLoading, saveProfile } = useUserData();
+  const { profile, isLoading, saveProfile, isProfileDirty } = useUserData();
   const { toast } = useToast();
+  const [localProfile, setLocalProfile] = useState<Profile | null>(profile);
   const [isSaving, setIsSaving] = useState(false);
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
 
+  useEffect(() => {
+    setLocalProfile(profile);
+  }, [profile]);
+  
   const handleInputChange = (
     e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
-    if (profile) {
-      saveProfile({ ...profile, [e.target.id]: e.target.value }, false); // Save locally without marking complete
+    if (localProfile) {
+      setLocalProfile({ ...localProfile, [e.target.id]: e.target.value });
     }
   };
 
   const handleSelectChange = (value: string) => {
-    if (profile) {
-      saveProfile({ ...profile, gender: value }, false);
+    if (localProfile) {
+      setLocalProfile({ ...localProfile, gender: value });
     }
   };
 
   const handleDateChange = (date: Date | undefined) => {
-    if (date && profile) {
-      saveProfile({ ...profile, birthDate: date }, false);
+    if (date && localProfile) {
+      setLocalProfile({ ...localProfile, birthDate: date });
     }
     setIsDatePickerOpen(false);
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!profile) return;
-
-    // Validation check
-    if (!profile.name || !profile.weight || !profile.goals || !profile.birthDate) {
-        toast({
-            variant: 'destructive',
-            title: 'Incomplete Profile',
-            description: 'Please fill out all fields before saving.',
-        });
-        return;
-    }
+    if (!localProfile) return;
     
     setIsSaving(true);
-    await saveProfile(profile, true); // Mark as complete on final save
-    toast({
-        title: 'Profile Saved!',
-        description: 'Your profile has been updated.',
-    });
+    const success = await saveProfile(localProfile);
+    if(success) {
+        toast({
+            title: 'Profile Saved!',
+            description: 'Your profile has been updated.',
+        });
+    }
     setIsSaving(false);
   };
   
-  if (isLoading || !profile) {
+  if (isLoading || !localProfile) {
     return (
       <div className="flex min-h-screen flex-col items-center bg-black pb-40 pt-5">
         <div className="w-[90%] max-w-[600px] rounded-lg bg-[rgba(14,1,15,0.32)] p-5">
@@ -1110,11 +1105,10 @@ const ProfileView = () => {
             </Label>
             <Input
               id="name"
-              value={profile.name}
+              value={localProfile.name}
               onChange={handleInputChange}
               placeholder="Your Name"
               className="w-full rounded-full border-2 border-[#555] bg-black px-4 py-3 text-base"
-              required
             />
           </div>
 
@@ -1125,7 +1119,7 @@ const ProfileView = () => {
             >
               Gender
             </Label>
-            <Select value={profile.gender} onValueChange={handleSelectChange}>
+            <Select value={localProfile.gender} onValueChange={handleSelectChange}>
               <SelectTrigger className="w-full rounded-full border-2 border-[#555] bg-black px-4 py-3 text-base">
                 <SelectValue placeholder="Select Gender" />
               </SelectTrigger>
@@ -1150,11 +1144,10 @@ const ProfileView = () => {
             <Input
               id="weight"
               type="number"
-              value={profile.weight}
+              value={localProfile.weight}
               onChange={handleInputChange}
               placeholder="e.g., 70"
               className="w-full rounded-full border-2 border-[#555] bg-black px-4 py-3 text-base"
-              required
             />
           </div>
 
@@ -1174,12 +1167,12 @@ const ProfileView = () => {
                   variant={'outline'}
                   className={cn(
                     'w-full justify-start rounded-full border-2 border-[#555] bg-black px-4 py-3 text-left text-base font-normal hover:bg-black/80',
-                    !profile.birthDate && 'text-gray-400'
+                    !localProfile.birthDate && 'text-gray-400'
                   )}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {profile.birthDate ? (
-                    format(new Date(profile.birthDate), 'PPP')
+                  {localProfile.birthDate ? (
+                    format(new Date(localProfile.birthDate), 'PPP')
                   ) : (
                     <span>Pick a date</span>
                   )}
@@ -1188,7 +1181,7 @@ const ProfileView = () => {
               <PopoverContent className="w-auto p-0">
                 <Calendar
                   mode="single"
-                  selected={profile.birthDate ? new Date(profile.birthDate) : undefined}
+                  selected={localProfile.birthDate ? new Date(localProfile.birthDate) : undefined}
                   onSelect={handleDateChange}
                   disabled={(date) =>
                     date > new Date() || date < new Date('1900-01-01')
@@ -1211,11 +1204,10 @@ const ProfileView = () => {
             </Label>
             <Textarea
               id="goals"
-              value={profile.goals}
+              value={localProfile.goals}
               onChange={handleInputChange}
               placeholder="e.g., Lose 5kg, build muscle, improve cardiovascular health..."
               className="min-h-[100px] w-full rounded-3xl border-2 border-[#555] bg-black px-4 py-3 text-base"
-              required
             />
           </div>
 
@@ -1713,7 +1705,6 @@ const SettingsView = ({
 
 
 export default function DashboardPage() {
-  const { isProfileComplete } = useUserData();
   const [activeView, setActiveView] = useState<View>('home');
   
   const handleNavigate = (view: View) => {

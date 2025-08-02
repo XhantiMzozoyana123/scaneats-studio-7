@@ -24,7 +24,7 @@ import {
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 
-type Profile = {
+export type Profile = {
   id: number | null;
   name: string;
   gender: string;
@@ -35,13 +35,24 @@ type Profile = {
   isSubscribed?: boolean;
 };
 
+type ScannedFood = {
+  id: number;
+  name: string;
+  calories: number;
+  protein: number;
+  fat: number;
+  carbohydrates: number;
+};
+
+
 type UserDataContextType = {
   profile: Profile | null;
+  scannedFood: ScannedFood | null | undefined; // undefined for loading, null for no food
+  setScannedFood: (food: ScannedFood | null) => void;
   creditBalance: number | null;
   isLoading: boolean;
-  isProfileComplete: boolean | null;
-  setProfileCompleted: (status: boolean) => void;
-  saveProfile: (profile: Profile, isFinal: boolean) => Promise<void>;
+  isProfileDirty: boolean;
+  saveProfile: (profile: Profile) => Promise<boolean>;
   fetchProfile: () => void;
   updateCreditBalance: (force?: boolean) => Promise<void>;
   isSubscriptionModalOpen: boolean;
@@ -62,6 +73,7 @@ const initialProfileState: Profile = {
   isSubscribed: false,
 };
 
+
 const getCachedCredits = (): number | null => {
   if (typeof window === 'undefined') {
     return null;
@@ -73,69 +85,76 @@ const getCachedCredits = (): number | null => {
 export function UserDataProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [initialProfile, setInitialProfile] = useState<Profile | null>(null);
+  const [scannedFood, setScannedFoodState] = useState<ScannedFood | null | undefined>(undefined);
   const [creditBalance, setCreditBalance] = useState<number | null>(
     getCachedCredits()
   );
   const [isLoading, setIsLoading] = useState(true);
   const [isSubscriptionModalOpen, setSubscriptionModalOpen] = useState(false);
-  const [isProfileComplete, setIsProfileComplete] = useState<boolean | null>(null);
 
-  const setProfileCompleted = (status: boolean) => {
-    localStorage.setItem('profileCompleted', JSON.stringify(status));
-    setIsProfileComplete(status);
-  };
+  const isProfileDirty = JSON.stringify(profile) !== JSON.stringify(initialProfile);
+  
+  const setScannedFood = (food: ScannedFood | null) => {
+    setScannedFoodState(food);
+  }
 
   const fetchProfile = useCallback(async () => {
     setIsLoading(true);
     const token = localStorage.getItem('authToken');
     if (!token) {
         setIsLoading(false);
+        setProfile(initialProfileState);
+        setInitialProfile(initialProfileState);
         return;
     }
 
     try {
-        // Fetch subscription status from the backend
-        const subResponse = await fetch(`${API_BASE_URL}/api/event/subscription/status`, {
-            headers: { Authorization: `Bearer ${token}` },
-        });
-        const subData = subResponse.ok ? await subResponse.json() : { isSubscribed: false };
-        
-        // Load local profile
-        const storedProfile = localStorage.getItem('userProfile');
-        let localProfile: Profile;
-        if (storedProfile) {
-            const parsed = JSON.parse(storedProfile);
-            localProfile = { ...parsed, birthDate: parsed.birthDate ? new Date(parsed.birthDate) : null };
-        } else {
-            localProfile = initialProfileState;
+        const [profileRes, subRes] = await Promise.all([
+            fetch(`${API_BASE_URL}/api/profile`, { headers: { Authorization: `Bearer ${token}` } }),
+            fetch(`${API_BASE_URL}/api/event/subscription/status`, { headers: { Authorization: `Bearer ${token}` } })
+        ]);
+
+        const subData = subRes.ok ? await subRes.json() : { isSubscribed: false };
+        let userProfile = initialProfileState;
+
+        if (profileRes.ok) {
+            const profiles = await profileRes.json();
+            if (profiles && profiles.length > 0) {
+                const p = profiles[0];
+                userProfile = {
+                    ...p,
+                    birthDate: p.birthDate ? new Date(p.birthDate) : null,
+                    weight: p.weight || '',
+                };
+            }
+        } else if (profileRes.status !== 404) {
+            console.error('Failed to fetch profile');
         }
 
-        // Combine and set
-        setProfile({ ...localProfile, isSubscribed: subData.isSubscribed });
-
-        // Check completion status
-        const storedCompletion = localStorage.getItem('profileCompleted');
-        const isComplete = storedCompletion ? JSON.parse(storedCompletion) : false;
-        
-        if (subData.isSubscribed && !isComplete) {
-            setIsProfileComplete(false); // Force completion if subscribed but not complete
-        } else {
-            setIsProfileComplete(isComplete);
-        }
+        const finalProfile = { ...userProfile, isSubscribed: subData.isSubscribed };
+        setProfile(finalProfile);
+        setInitialProfile(finalProfile);
 
     } catch (error) {
-      console.error('Failed to load profile/subscription status', error);
-      setProfile(initialProfileState);
-      setIsProfileComplete(false);
+      console.error('Failed to load user data', error);
+      const finalProfile = { ...initialProfileState, isSubscribed: false };
+      setProfile(finalProfile);
+      setInitialProfile(finalProfile);
     } finally {
       setIsLoading(false);
     }
   }, []);
 
   const saveProfile = useCallback(
-    async (profileData: Profile, isFinal: boolean) => {
-      try {
-        const calculateAge = (birthDate: Date | null): number | undefined => {
+    async (profileData: Profile): Promise<boolean> => {
+      const token = localStorage.getItem('authToken');
+      if (!token) {
+        toast({ variant: 'destructive', title: 'Error', description: 'You are not logged in.' });
+        return false;
+      }
+      
+      const calculateAge = (birthDate: Date | null): number | undefined => {
           if (!birthDate) return undefined;
           const today = new Date();
           let age = today.getFullYear() - new Date(birthDate).getFullYear();
@@ -144,26 +163,45 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
             age--;
           }
           return age;
-        };
+      };
 
-        const profileToSave = {
+      const profileToSave: Omit<Profile, 'isSubscribed'> & { age?: number } = {
           ...profileData,
           age: calculateAge(profileData.birthDate),
-        };
-        
-        localStorage.setItem('userProfile', JSON.stringify(profileToSave));
-        setProfile(profileToSave);
+      };
+      
+      const endpoint = profileToSave.id ? `${API_BASE_URL}/api/profile/${profileToSave.id}` : `${API_BASE_URL}/api/profile`;
+      const method = profileToSave.id ? 'PUT' : 'POST';
 
-        if(isFinal) {
-           setProfileCompleted(true);
+      try {
+        const response = await fetch(endpoint, {
+            method: method,
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body: JSON.stringify(profileToSave)
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Failed to save profile.');
         }
-      } catch (error) {
-        console.error('Failed to save profile to localStorage', error);
+
+        if(method === 'POST') {
+            const newProfile = await response.json();
+            setProfile(newProfile);
+            setInitialProfile(newProfile);
+        } else {
+            setInitialProfile(profileData);
+        }
+
+        return true;
+
+      } catch (error: any) {
         toast({
           variant: 'destructive',
           title: 'Save Failed',
-          description: 'Could not save your profile data locally.',
+          description: error.message,
         });
+        return false;
       }
     },
     [toast]
@@ -191,9 +229,13 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
         const newBalance = data.credits;
         setCreditBalance(newBalance);
         localStorage.setItem('creditBalance', JSON.stringify(newBalance));
+      } else {
+        localStorage.removeItem('creditBalance');
+        setCreditBalance(null);
       }
     } catch (error) {
       console.error('Failed to fetch credit balance', error);
+      setCreditBalance(null);
     }
   }, []);
 
@@ -204,10 +246,11 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
 
   const value = {
     profile,
+    scannedFood,
+    setScannedFood,
     creditBalance,
     isLoading,
-    isProfileComplete,
-    setProfileCompleted,
+    isProfileDirty,
     saveProfile,
     fetchProfile,
     updateCreditBalance,
