@@ -1,6 +1,6 @@
 
-import type { IProfileRepository } from '../repositories/profile-repository';
-import type { Profile } from '../entities/profile';
+import type { IProfileRepository } from '@/app/domain/profile.repository';
+import type { Profile } from '@/app/domain/profile';
 
 export class ProfileService {
   constructor(private profileRepository: IProfileRepository) {}

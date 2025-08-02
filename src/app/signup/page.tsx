@@ -5,20 +5,19 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { GoogleLogin, type CredentialResponse } from '@react-oauth/google';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
-import { AuthBackgroundImage } from '@/components/auth-background-image';
+import { Button } from '@/app/shared/components/ui/button';
+import { Input } from '@/app/shared/components/ui/input';
+import { Label } from '@/app/shared/components/ui/label';
+import { Checkbox } from '@/app/shared/components/ui/checkbox';
+import { AuthBackgroundImage } from '@/app/shared/components/auth-background-image';
 import { User, Mail, KeyRound, Loader2 } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-import { API_BASE_URL } from '@/lib/api';
+import { useToast } from '@/app/shared/hooks/use-toast';
+import { API_BASE_URL } from '@/app/shared/lib/api';
 import { jwtDecode } from 'jwt-decode';
 
 interface DecodedToken {
   nameid: string;
   email: string;
-  // Add other properties from your token payload as needed
 }
 
 export default function SignUpPage() {

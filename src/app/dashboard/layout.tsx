@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 
-import { UserDataProvider } from '@/context/user-data-context';
+import { UserDataProvider } from '@/app/shared/context/user-data-context';
 
 declare global {
     interface Window {

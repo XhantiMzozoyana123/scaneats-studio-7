@@ -1,7 +1,7 @@
 
-import type { IProfileRepository } from '@/app/core/repositories/profile-repository';
-import type { Profile } from '@/app/core/entities/profile';
-import { API_BASE_URL } from '@/lib/api';
+import type { IProfileRepository } from '@/app/domain/profile.repository';
+import type { Profile } from '@/app/domain/profile';
+import { API_BASE_URL } from '@/app/shared/lib/api';
 
 const initialProfileState: Profile = {
   id: null,
@@ -72,6 +72,9 @@ export class ProfileApiRepository implements IProfileRepository {
 
     if (!isNewProfile) {
       payload.Id = profileData.id;
+    } else {
+      // Ensure Id is not sent on creation
+      delete payload.Id;
     }
 
     const response = await fetch(endpoint, {
@@ -92,7 +95,8 @@ export class ProfileApiRepository implements IProfileRepository {
     if (method === 'POST') {
         const newProfileData = await response.json();
         return { 
-            ...newProfileData, 
+            ...profileData, // Keep the frontend state consistent
+            id: newProfileData.id, // Update with the new ID from the backend
             isSubscribed: profileData.isSubscribed, 
             birthDate: newProfileData.BirthDate ? new Date(newProfileData.BirthDate) : null 
         };

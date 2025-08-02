@@ -9,8 +9,8 @@ import {
   ReactNode,
   useCallback,
 } from 'react';
-import { useToast } from '@/hooks/use-toast';
-import { API_BASE_URL } from '@/lib/api';
+import { useToast } from '@/app/shared/hooks/use-toast';
+import { API_BASE_URL } from '@/app/shared/lib/api';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,14 +20,14 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+} from '@/app/shared/components/ui/alert-dialog';
 import Link from 'next/link';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/app/shared/components/ui/button';
 import { useRouter } from 'next/navigation';
-import type { Profile } from '@/app/core/entities/profile';
-import type { ScannedFood } from '@/app/core/entities/scanned-food';
-import { ProfileService } from '@/app/core/services/profile-service';
-import { ProfileApiRepository } from '@/data/api/profile-api-repository';
+import type { Profile } from '@/app/domain/profile';
+import type { ScannedFood } from '@/app/domain/scanned-food';
+import { ProfileService } from '@/app/features/profile/application/profile.service';
+import { ProfileApiRepository } from '@/app/data/profile/profile-api.repository';
 
 
 type UserDataContextType = {
