@@ -30,14 +30,14 @@ export default function SignUpPage() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ idToken: credentialResponse.credential }),
+        body: JSON.stringify({ IdToken: credentialResponse.credential }),
       });
 
       if (response.ok) {
         const data = await response.json();
         localStorage.setItem('authToken', data.token);
-        localStorage.setItem('userId', data.user.id);
-        localStorage.setItem('userEmail', data.user.email);
+        localStorage.setItem('userId', data.user.Id);
+        localStorage.setItem('userEmail', data.user.Email);
         
         toast({
           title: 'Login Successful!',
