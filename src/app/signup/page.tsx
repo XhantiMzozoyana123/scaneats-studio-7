@@ -54,6 +54,7 @@ export default function SignUpPage() {
         title: 'Login Failed',
         description: error.message,
       });
+    } finally {
       setIsLoading(false);
     }
   };
@@ -205,7 +206,12 @@ export default function SignUpPage() {
         </div>
         
         <div className="flex justify-center">
-            <Button disabled className="w-full">Google Login Coming Soon</Button>
+            <GoogleLogin
+                onSuccess={handleGoogleSuccess}
+                onError={handleGoogleError}
+                theme="filled_black"
+                shape="pill"
+            />
         </div>
 
         <p className="mt-8 text-center text-sm text-white/70">
