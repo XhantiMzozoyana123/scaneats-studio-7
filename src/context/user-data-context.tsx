@@ -52,7 +52,6 @@ type UserDataContextType = {
   setScannedFood: (food: ScannedFood | null) => void;
   creditBalance: number | null;
   isLoading: boolean;
-  isProfileDirty: boolean;
   saveProfile: (profile: Profile) => Promise<boolean>;
   fetchProfile: () => void;
   updateCreditBalance: (force?: boolean) => Promise<void>;
@@ -94,8 +93,6 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
   );
   const [isLoading, setIsLoading] = useState(true);
   const [isSubscriptionModalOpen, setSubscriptionModalOpen] = useState(false);
-
-  const isProfileDirty = JSON.stringify(profile) !== JSON.stringify(initialProfile);
   
   const setScannedFood = (food: ScannedFood | null) => {
     setScannedFoodState(food);
@@ -169,22 +166,9 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
         setSubscriptionModalOpen(true);
         return false;
       }
-      
-      const calculateAge = (birthDate: Date | null): number | undefined => {
-          if (!birthDate) return undefined;
-          const today = new Date();
-          let age = today.getFullYear() - new Date(birthDate).getFullYear();
-          const m = today.getMonth() - new Date(birthDate).getMonth();
-          if (m < 0 || (m === 0 && today.getDate() < new Date(birthDate).getDate())) {
-            age--;
-          }
-          return age;
-      };
 
-      const profileToSave: Omit<Profile, 'isSubscribed'> & { age?: number } = {
-          ...profileData,
-          age: calculateAge(profileData.birthDate),
-      };
+      // The backend calculates age, so we don't send it from the frontend.
+      const { age, ...profileToSave } = profileData;
       
       const endpoint = profileToSave.id ? `${API_BASE_URL}/api/profile/${profileToSave.id}` : `${API_BASE_URL}/api/profile`;
       const method = profileToSave.id ? 'PUT' : 'POST';
@@ -195,6 +179,11 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
             headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
             body: JSON.stringify(profileToSave)
         });
+        
+        if (response.status === 403) {
+            setSubscriptionModalOpen(true);
+            return false;
+        }
 
         if (!response.ok) {
             const errorData = await response.json();
@@ -269,7 +258,6 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
     setScannedFood,
     creditBalance,
     isLoading,
-    isProfileDirty,
     saveProfile,
     fetchProfile,
     updateCreditBalance,
