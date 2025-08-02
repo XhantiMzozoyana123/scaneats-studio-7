@@ -13,6 +13,13 @@ import { AuthBackgroundImage } from '@/components/auth-background-image';
 import { User, Mail, KeyRound, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { API_BASE_URL } from '@/lib/api';
+import { jwtDecode } from 'jwt-decode';
+
+interface DecodedToken {
+  nameid: string;
+  email: string;
+  // Add other properties from your token payload as needed
+}
 
 export default function SignUpPage() {
   const router = useRouter();
@@ -36,8 +43,10 @@ export default function SignUpPage() {
       if (response.ok) {
         const data = await response.json();
         localStorage.setItem('authToken', data.token);
-        localStorage.setItem('userId', data.user.Id);
-        localStorage.setItem('userEmail', data.user.Email);
+
+        const decodedToken: DecodedToken = jwtDecode(data.token);
+        localStorage.setItem('userId', decodedToken.nameid);
+        localStorage.setItem('userEmail', decodedToken.email);
         
         toast({
           title: 'Login Successful!',
@@ -45,7 +54,7 @@ export default function SignUpPage() {
         });
         router.push('/dashboard');
       } else {
-        const errorData = await response.json();
+        const errorData = await response.json().catch(() => ({ error: 'Google login failed.'}));
         throw new Error(errorData.error || 'Google One Tap login failed.');
       }
     } catch (error: any) {
