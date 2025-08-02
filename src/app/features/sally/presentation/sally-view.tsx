@@ -8,8 +8,8 @@ import {
 } from 'react';
 import { useRouter } from 'next/navigation';
 
-import { Button } from '@/app/shared/components/ui/button';
-import { Progress } from '@/app/shared/components/ui/progress';
+import { Button } from '@/components/ui/button';
+import { Progress } from '@/components/ui/progress';
 import {
   Loader2,
   Mic,
