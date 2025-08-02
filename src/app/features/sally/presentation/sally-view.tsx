@@ -128,39 +128,32 @@ export const SallyView = () => {
         return;
     }
 
-    if (!profile || !profile.id) {
-      toast({ variant: 'destructive', title: 'Profile not loaded' });
+    if (!profile?.name) {
+      toast({ 
+          variant: 'destructive',
+          title: 'Profile Incomplete',
+          description: 'Please set your name in the profile before talking to Sally.'
+       });
       return;
     }
 
     setIsLoading(true);
     setLoadingProgress(10);
     setSallyResponse(`Thinking about: "${userInput}"`);
-    
-    // Determine which endpoint to call based on user input keywords
-    const lowerInput = userInput.toLowerCase();
-    let endpoint = '/api/sally/body-assessment'; // Default endpoint
-
-    if (lowerInput.includes('meal plan') || lowerInput.includes('plan meals') || lowerInput.includes('diet plan')) {
-        endpoint = '/api/sally/meal-planner';
-    }
 
     try {
-        const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+        const response = await fetch(`${API_BASE_URL}/api/sally/body-assessment`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
-            UserId: profile.id, // Pass the user ID from the profile
-            ClientName: profile?.name || 'User',
+            ClientName: profile.name,
             ClientDialogue: userInput,
-            // Include other relevant ConversationDto properties if needed,
-            // e.g., AgentName, AgentDialogue (if continuing a conversation)
           }),
         });
-
+        
         if (response.status === 401) {
             toast({ variant: 'destructive', title: 'Session Expired', description: 'Please log in again.' });
             router.push('/login');
@@ -275,3 +268,5 @@ export const SallyView = () => {
     </div>
   );
 };
+
+    
