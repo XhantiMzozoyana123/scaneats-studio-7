@@ -26,61 +26,6 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleGoogleLogin = async (idToken: string) => {
-    if (!idToken) {
-      throw new Error('Google ID token is missing.');
-    }
-    setIsLoading(true);
-
-    try {
-        const response = await fetch(`${API_BASE_URL}/api/googleauth/onetap`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ idToken }),
-        });
-
-        if (!response.ok) {
-            let errorMsg = 'Google login failed.';
-            try {
-                const errorData = await response.json();
-                if (errorData.error) errorMsg = errorData.error;
-            } catch {}
-            throw new Error(errorMsg);
-        }
-
-        const data = await response.json();
-        if (!data.token || !data.user || !data.user.id || !data.user.email) {
-            throw new Error('Invalid response received from server.');
-        }
-
-        localStorage.setItem('authToken', data.token);
-        localStorage.setItem('userId', data.user.id);
-        localStorage.setItem('userEmail', data.user.email);
-
-        toast({ title: 'Login Successful!', description: 'Welcome back.' });
-        router.push('/dashboard');
-    } catch (error: any) {
-        toast({
-            variant: 'destructive',
-            title: 'Login Failed',
-            description: error.message,
-        });
-    } finally {
-        setIsLoading(false);
-    }
-  };
-
-  useGoogleOneTapLogin({
-    onSuccess: (credentialResponse) => {
-        if (credentialResponse.credential) {
-            handleGoogleLogin(credentialResponse.credential);
-        }
-    },
-    onError: () => {
-        console.log('One Tap login error');
-    },
-  });
-
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setIsLoading(true);
@@ -207,24 +152,7 @@ export default function LoginPage() {
         </div>
         
         <div className="flex justify-center">
-            <GoogleLogin
-                onSuccess={(credentialResponse) => {
-                    if (credentialResponse.credential) {
-                        handleGoogleLogin(credentialResponse.credential);
-                    }
-                }}
-                onError={() => {
-                toast({
-                    variant: 'destructive',
-                    title: 'Login Failed',
-                    description: 'Google authentication failed. Please try again.',
-                });
-                }}
-                theme="filled_black"
-                shape="rectangular"
-                size="large"
-                text="continue_with"
-            />
+            <Button disabled className="w-full">Google Login Coming Soon</Button>
         </div>
 
         <p className="mt-8 text-center text-sm text-white/70">

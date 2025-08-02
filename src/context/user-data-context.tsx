@@ -106,7 +106,7 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
     if (!token) {
         setIsLoading(false);
         setProfile(initialProfileState);
-        setInitialProfile(JSON.parse(JSON.stringify(initialProfileState))); // Deep copy
+        setInitialProfile(JSON.parse(JSON.stringify(initialProfileState)));
         return;
     }
 
@@ -146,7 +146,7 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
 
         const finalProfile = { ...userProfile, isSubscribed: subData.isSubscribed };
         setProfile(finalProfile);
-        setInitialProfile(JSON.parse(JSON.stringify(finalProfile))); // Deep copy
+        setInitialProfile(JSON.parse(JSON.stringify(finalProfile)));
 
     } catch (error) {
       console.error('Failed to load user data', error);
@@ -165,16 +165,12 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
         toast({ variant: 'destructive', title: 'Error', description: 'You are not logged in.' });
         return false;
       }
-
-      if (!profileData.isSubscribed) {
-        setSubscriptionModalOpen(true);
-        return false;
-      }
       
       const isNewProfile = !profileData.id;
       const endpoint = isNewProfile ? `${API_BASE_URL}/api/profile` : `${API_BASE_URL}/api/profile/${profileData.id}`;
       const method = isNewProfile ? 'POST' : 'PUT';
 
+      // Exclude frontend-only fields before sending
       const { age, isSubscribed, ...profileToSend } = profileData;
 
       const finalPayload = {
@@ -200,10 +196,10 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
         }
 
         if (method === 'POST') {
-            const newProfile = await response.json();
-            const finalProfile = { ...newProfile, isSubscribed: profileData.isSubscribed, birthDate: newProfile.birthDate ? new Date(newProfile.birthDate) : null, };
-            setProfile(finalProfile);
-            setInitialProfile(JSON.parse(JSON.stringify(finalProfile)));
+            const newProfileData = await response.json();
+            const fullProfile = { ...newProfileData, isSubscribed: profileData.isSubscribed, birthDate: newProfileData.birthDate ? new Date(newProfileData.birthDate) : null };
+            setProfile(fullProfile);
+            setInitialProfile(JSON.parse(JSON.stringify(fullProfile)));
         } else { // For PUT request
              const updatedProfileWithSub = { ...profileData, isSubscribed: profileData.isSubscribed };
              setProfile(updatedProfileWithSub);
@@ -221,7 +217,7 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
         return false;
       }
     },
-    [toast, router, setSubscriptionModalOpen]
+    [toast, setSubscriptionModalOpen]
   );
 
   const updateCreditBalance = useCallback(async (force = false) => {

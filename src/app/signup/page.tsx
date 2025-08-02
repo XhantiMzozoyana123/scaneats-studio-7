@@ -77,9 +77,9 @@ export default function SignUpPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          userName: username,
-          email: email,
-          password: password,
+          UserName: username,
+          Email: email,
+          Password: password,
         }),
       });
 
@@ -205,13 +205,7 @@ export default function SignUpPage() {
         </div>
         
         <div className="flex justify-center">
-            <GoogleLogin
-                onSuccess={handleGoogleSuccess}
-                onError={handleGoogleError}
-                theme="filled_black"
-                shape="rectangular"
-                size="large"
-            />
+            <Button disabled className="w-full">Google Login Coming Soon</Button>
         </div>
 
         <p className="mt-8 text-center text-sm text-white/70">
