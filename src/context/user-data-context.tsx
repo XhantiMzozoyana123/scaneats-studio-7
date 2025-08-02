@@ -173,9 +173,9 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
       const calculateAge = (birthDate: Date | null): number => {
         if (!birthDate) return 0;
         const today = new Date();
-        let age = today.getFullYear() - birthDate.getFullYear();
-        const m = today.getMonth() - birthDate.getMonth();
-        if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+        let age = today.getFullYear() - new Date(birthDate).getFullYear();
+        const m = today.getMonth() - new Date(birthDate).getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < new Date(birthDate).getDate())) {
           age--;
         }
         return age;
@@ -186,9 +186,9 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
         Id: profileData.id,
         Name: profileData.name,
         Gender: profileData.gender,
-        Weight: String(profileData.weight), // Ensure weight is a string
+        Weight: String(profileData.weight || '0'), // Ensure weight is a string and not empty
         Goals: profileData.goals,
-        BirthDate: profileData.birthDate ? profileData.birthDate.toISOString() : null,
+        BirthDate: profileData.birthDate ? new Date(profileData.birthDate).toISOString() : null,
         Age: calculateAge(profileData.birthDate),
       };
 
