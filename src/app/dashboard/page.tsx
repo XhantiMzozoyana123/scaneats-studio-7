@@ -1001,64 +1001,53 @@ const SallyView = () => {
 };
 
 const ProfileView = () => {
-  const { profile, isLoading, saveProfile, setSubscriptionModalOpen } = useUserData();
+  const { profile, initialProfile, setProfile, isLoading, saveProfile } = useUserData();
   const { toast } = useToast();
-  const [localProfile, setLocalProfile] = useState<Profile | null>(profile);
   const [isSaving, setIsSaving] = useState(false);
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
-  const [isDirty, setIsDirty] = useState(false);
 
-  useEffect(() => {
-    setLocalProfile(profile);
-    setIsDirty(false);
-  }, [profile]);
+  const isDirty = useMemo(() => {
+    if (!profile || !initialProfile) return false;
+    return JSON.stringify(profile) !== JSON.stringify(initialProfile);
+  }, [profile, initialProfile]);
   
   const handleInputChange = (
     e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
-    if (localProfile) {
-      setLocalProfile({ ...localProfile, [e.target.id]: e.target.value });
-      setIsDirty(true);
+    if (profile) {
+      setProfile({ ...profile, [e.target.id]: e.target.value });
     }
   };
 
   const handleSelectChange = (value: string) => {
-    if (localProfile) {
-      setLocalProfile({ ...localProfile, gender: value });
-      setIsDirty(true);
+    if (profile) {
+      setProfile({ ...profile, gender: value });
     }
   };
 
   const handleDateChange = (date: Date | undefined) => {
-    if (date && localProfile) {
-      setLocalProfile({ ...localProfile, birthDate: date });
-      setIsDirty(true);
+    if (date && profile) {
+      setProfile({ ...profile, birthDate: date });
     }
     setIsDatePickerOpen(false);
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!localProfile) return;
+    if (!profile) return;
 
-    if (!profile?.isSubscribed) {
-      setSubscriptionModalOpen(true);
-      return;
-    }
-    
     setIsSaving(true);
-    const success = await saveProfile(localProfile);
+    const success = await saveProfile(profile);
     if(success) {
         toast({
             title: 'Profile Saved!',
             description: 'Your profile has been updated.',
         });
-        setIsDirty(false);
     }
     setIsSaving(false);
   };
   
-  if (isLoading || !localProfile) {
+  if (isLoading || !profile) {
     return (
       <div className="flex min-h-screen flex-col items-center bg-black pb-40 pt-5">
         <div className="w-[90%] max-w-[600px] rounded-lg bg-[rgba(14,1,15,0.32)] p-5">
@@ -1117,7 +1106,7 @@ const ProfileView = () => {
             </Label>
             <Input
               id="name"
-              value={localProfile.name}
+              value={profile.name}
               onChange={handleInputChange}
               placeholder="Your Name"
               className="w-full rounded-full border-2 border-[#555] bg-black px-4 py-3 text-base"
@@ -1131,7 +1120,7 @@ const ProfileView = () => {
             >
               Gender
             </Label>
-            <Select value={localProfile.gender} onValueChange={handleSelectChange}>
+            <Select value={profile.gender} onValueChange={handleSelectChange}>
               <SelectTrigger className="w-full rounded-full border-2 border-[#555] bg-black px-4 py-3 text-base">
                 <SelectValue placeholder="Select Gender" />
               </SelectTrigger>
@@ -1156,7 +1145,7 @@ const ProfileView = () => {
             <Input
               id="weight"
               type="number"
-              value={localProfile.weight}
+              value={profile.weight}
               onChange={handleInputChange}
               placeholder="e.g., 70"
               className="w-full rounded-full border-2 border-[#555] bg-black px-4 py-3 text-base"
@@ -1179,12 +1168,12 @@ const ProfileView = () => {
                   variant={'outline'}
                   className={cn(
                     'w-full justify-start rounded-full border-2 border-[#555] bg-black px-4 py-3 text-left text-base font-normal hover:bg-black/80',
-                    !localProfile.birthDate && 'text-gray-400'
+                    !profile.birthDate && 'text-gray-400'
                   )}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {localProfile.birthDate ? (
-                    format(new Date(localProfile.birthDate), 'PPP')
+                  {profile.birthDate ? (
+                    format(new Date(profile.birthDate), 'PPP')
                   ) : (
                     <span>Pick a date</span>
                   )}
@@ -1193,7 +1182,7 @@ const ProfileView = () => {
               <PopoverContent className="w-auto p-0">
                 <Calendar
                   mode="single"
-                  selected={localProfile.birthDate ? new Date(localProfile.birthDate) : undefined}
+                  selected={profile.birthDate ? new Date(profile.birthDate) : undefined}
                   onSelect={handleDateChange}
                   disabled={(date) =>
                     date > new Date() || date < new Date('1900-01-01')
@@ -1216,7 +1205,7 @@ const ProfileView = () => {
             </Label>
             <Textarea
               id="goals"
-              value={localProfile.goals}
+              value={profile.goals}
               onChange={handleInputChange}
               placeholder="e.g., Lose 5kg, build muscle, improve cardiovascular health..."
               className="min-h-[100px] w-full rounded-3xl border-2 border-[#555] bg-black px-4 py-3 text-base"

@@ -48,6 +48,8 @@ type ScannedFood = {
 
 type UserDataContextType = {
   profile: Profile | null;
+  initialProfile: Profile | null;
+  setProfile: React.Dispatch<React.SetStateAction<Profile | null>>;
   scannedFood: ScannedFood | null | undefined; // undefined for loading, null for no food
   setScannedFood: (food: ScannedFood | null) => void;
   creditBalance: number | null;
@@ -104,7 +106,7 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
     if (!token) {
         setIsLoading(false);
         setProfile(initialProfileState);
-        setInitialProfile(initialProfileState);
+        setInitialProfile(JSON.parse(JSON.stringify(initialProfileState))); // Deep copy for comparison
         return;
     }
 
@@ -144,13 +146,13 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
 
         const finalProfile = { ...userProfile, isSubscribed: subData.isSubscribed };
         setProfile(finalProfile);
-        setInitialProfile(finalProfile);
+        setInitialProfile(JSON.parse(JSON.stringify(finalProfile))); // Deep copy for comparison
 
     } catch (error) {
       console.error('Failed to load user data', error);
       const finalProfile = { ...initialProfileState, isSubscribed: false };
       setProfile(finalProfile);
-      setInitialProfile(finalProfile);
+      setInitialProfile(JSON.parse(JSON.stringify(finalProfile)));
     } finally {
       setIsLoading(false);
     }
@@ -168,11 +170,13 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
         setSubscriptionModalOpen(true);
         return false;
       }
-
-      const { age, ...profileToSave } = profileData;
       
-      const endpoint = profileToSave.id ? `${API_BASE_URL}/api/profile/${profileToSave.id}` : `${API_BASE_URL}/api/profile`;
-      const method = profileToSave.id ? 'PUT' : 'POST';
+      const isNewProfile = !profileData.id;
+      const endpoint = isNewProfile ? `${API_BASE_URL}/api/profile` : `${API_BASE_URL}/api/profile/${profileData.id}`;
+      const method = isNewProfile ? 'POST' : 'PUT';
+
+      // The backend calculates age, so we don't send it.
+      const { age, ...profileToSave } = profileData;
 
       try {
         const response = await fetch(endpoint, {
@@ -191,26 +195,29 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
             throw new Error(errorData.message || 'Failed to save profile.');
         }
 
+        // Handle different success responses
         if (method === 'POST') {
             const newProfile = await response.json();
             const finalProfile = { ...newProfile, isSubscribed: profileData.isSubscribed };
             setProfile(finalProfile);
-            setInitialProfile(finalProfile);
-        } else if (method === 'PUT' && response.status === 204) {
-            // Handle successful update with no content
+            setInitialProfile(JSON.parse(JSON.stringify(finalProfile)));
+        } else { // PUT request was successful (204 No Content)
             const updatedProfileWithSub = { ...profileData, isSubscribed: profileData.isSubscribed };
             setProfile(updatedProfileWithSub);
-            setInitialProfile(updatedProfileWithSub);
-        } else {
-             // Fallback for PUT if it ever returns content, or for other OK statuses.
-            const updatedProfileWithSub = { ...profileData, isSubscribed: profileData.isSubscribed };
-            setProfile(updatedProfileWithSub);
-            setInitialProfile(updatedProfileWithSub);
+            setInitialProfile(JSON.parse(JSON.stringify(updatedProfileWithSub)));
         }
 
         return true;
 
       } catch (error: any) {
+        // Avoid toast for JSON parsing error on 204 response
+        if (error.message.includes('Unexpected end of JSON input') && !isNewProfile) {
+            const updatedProfileWithSub = { ...profileData, isSubscribed: profileData.isSubscribed };
+            setProfile(updatedProfileWithSub);
+            setInitialProfile(JSON.parse(JSON.stringify(updatedProfileWithSub)));
+            return true;
+        }
+        
         toast({
           variant: 'destructive',
           title: 'Save Failed',
@@ -261,6 +268,8 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
 
   const value = {
     profile,
+    initialProfile,
+    setProfile,
     scannedFood,
     setScannedFood,
     creditBalance,
