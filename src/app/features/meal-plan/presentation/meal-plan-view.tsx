@@ -44,12 +44,7 @@ export const MealPlanView = ({ onNavigate }: { onNavigate: (view: View) => void 
   const [isSallyLoading, setIsSallyLoading] = useState(false);
   const [sallyProgress, setSallyProgress] = useState(0);
   const recognitionRef = useRef<any>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
   
-  useEffect(() => {
-    audioRef.current = new Audio();
-  }, []);
-
   useEffect(() => {
     if (isSallyLoading) {
       const interval = setInterval(() => {
@@ -131,11 +126,6 @@ export const MealPlanView = ({ onNavigate }: { onNavigate: (view: View) => void 
     try {
       // Proactively request microphone permission
       await navigator.mediaDevices.getUserMedia({ audio: true });
-
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.currentTime = 0;
-      }
       setIsRecording(true);
       setSallyResponse('Listening...');
       recognitionRef.current?.start();
@@ -225,11 +215,6 @@ export const MealPlanView = ({ onNavigate }: { onNavigate: (view: View) => void 
       await updateCreditBalance(true);
       
       setSallyResponse(result.agentDialogue);
-      
-      if (result.audioUrl && audioRef.current) {
-          audioRef.current.src = result.audioUrl;
-          audioRef.current.play().catch(e => console.error("Audio playback failed:", e));
-      }
 
     } catch (error: any) {
       if (error.message === 'INSUFFICIENT_CREDITS') {
@@ -372,3 +357,5 @@ export const MealPlanView = ({ onNavigate }: { onNavigate: (view: View) => void 
     </>
   );
 };
+
+    

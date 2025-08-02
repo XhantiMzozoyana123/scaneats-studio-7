@@ -37,13 +37,8 @@ export const SallyView = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [loadingProgress, setLoadingProgress] = useState(0);
   const recognitionRef = useRef<any>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
   const { toast } = useToast();
   const { profile, setSubscriptionModalOpen, updateCreditBalance } = useUserData();
-  
-  useEffect(() => {
-    audioRef.current = new Audio();
-  }, []);
   
   useEffect(() => {
     if (isLoading) {
@@ -115,11 +110,6 @@ export const SallyView = () => {
     try {
       // Proactively request microphone permission
       await navigator.mediaDevices.getUserMedia({ audio: true });
-
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.currentTime = 0;
-      }
       setIsRecording(true);
       recognitionRef.current?.start();
     } catch (error) {
@@ -194,11 +184,6 @@ export const SallyView = () => {
         await updateCreditBalance(true);
 
         setSallyResponse(result.agentDialogue);
-
-        if (result.audioUrl && audioRef.current) {
-          audioRef.current.src = result.audioUrl;
-          audioRef.current.play().catch(e => console.error("Audio playback failed:", e));
-        }
 
     } catch (error: any) {
       if (error.message === 'INSUFFICIENT_CREDITS') {
@@ -285,3 +270,5 @@ export const SallyView = () => {
     </div>
   );
 };
+
+    
