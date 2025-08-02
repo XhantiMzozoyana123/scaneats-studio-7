@@ -1001,14 +1001,16 @@ const SallyView = () => {
 };
 
 const ProfileView = () => {
-  const { profile, isLoading, saveProfile, isProfileDirty, setSubscriptionModalOpen } = useUserData();
+  const { profile, isLoading, saveProfile, setSubscriptionModalOpen } = useUserData();
   const { toast } = useToast();
   const [localProfile, setLocalProfile] = useState<Profile | null>(profile);
   const [isSaving, setIsSaving] = useState(false);
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
 
   useEffect(() => {
     setLocalProfile(profile);
+    setIsDirty(false);
   }, [profile]);
   
   const handleInputChange = (
@@ -1016,18 +1018,21 @@ const ProfileView = () => {
   ) => {
     if (localProfile) {
       setLocalProfile({ ...localProfile, [e.target.id]: e.target.value });
+      setIsDirty(true);
     }
   };
 
   const handleSelectChange = (value: string) => {
     if (localProfile) {
       setLocalProfile({ ...localProfile, gender: value });
+      setIsDirty(true);
     }
   };
 
   const handleDateChange = (date: Date | undefined) => {
     if (date && localProfile) {
       setLocalProfile({ ...localProfile, birthDate: date });
+      setIsDirty(true);
     }
     setIsDatePickerOpen(false);
   };
@@ -1036,7 +1041,7 @@ const ProfileView = () => {
     e.preventDefault();
     if (!localProfile) return;
 
-    if (!localProfile.isSubscribed) {
+    if (!profile?.isSubscribed) {
       setSubscriptionModalOpen(true);
       return;
     }
@@ -1048,6 +1053,7 @@ const ProfileView = () => {
             title: 'Profile Saved!',
             description: 'Your profile has been updated.',
         });
+        setIsDirty(false);
     }
     setIsSaving(false);
   };
@@ -1221,7 +1227,7 @@ const ProfileView = () => {
             <Button
               type="submit"
               size="lg"
-              disabled={isSaving || isLoading || !isProfileDirty}
+              disabled={isSaving || isLoading || !isDirty}
               className="w-full rounded-lg bg-[#7F00FF] py-3 text-lg font-bold text-white transition-all hover:bg-[#9300FF] hover:shadow-[0_0_12px_6px_rgba(127,0,255,0.8)] disabled:opacity-50"
               style={{
                 boxShadow: '0 0 8px 2px rgba(127, 0, 255, 0.6)',
