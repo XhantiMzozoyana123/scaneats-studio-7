@@ -176,13 +176,21 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
       const method = isNewProfile ? 'POST' : 'PUT';
 
       // The backend calculates age, so we don't send it.
-      const { age, ...profileToSave } = profileData;
+      // And we don't send isSubscribed as it's a client-side flag
+      const { age, isSubscribed, ...profileToSend } = profileData;
+
+      // Ensure weight is a number before sending
+      const finalPayload = {
+        ...profileToSend,
+        weight: parseFloat(String(profileToSend.weight)) || 0,
+      };
+
 
       try {
         const response = await fetch(endpoint, {
             method: method,
             headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-            body: JSON.stringify(profileToSave)
+            body: JSON.stringify(finalPayload)
         });
         
         if (response.status === 403) {
@@ -190,34 +198,30 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
             return false;
         }
 
+        // Handle PUT success (204 No Content)
+        if (method === 'PUT' && response.status === 204) {
+             const updatedProfileWithSub = { ...profileData, isSubscribed: profileData.isSubscribed };
+             setProfile(updatedProfileWithSub);
+             setInitialProfile(JSON.parse(JSON.stringify(updatedProfileWithSub)));
+             return true;
+        }
+
         if (!response.ok) {
             const errorData = await response.json();
             throw new Error(errorData.message || 'Failed to save profile.');
         }
 
-        // Handle different success responses
+        // Handle POST success (returns new profile)
         if (method === 'POST') {
             const newProfile = await response.json();
             const finalProfile = { ...newProfile, isSubscribed: profileData.isSubscribed };
             setProfile(finalProfile);
             setInitialProfile(JSON.parse(JSON.stringify(finalProfile)));
-        } else { // PUT request was successful (204 No Content)
-            const updatedProfileWithSub = { ...profileData, isSubscribed: profileData.isSubscribed };
-            setProfile(updatedProfileWithSub);
-            setInitialProfile(JSON.parse(JSON.stringify(updatedProfileWithSub)));
         }
 
         return true;
 
       } catch (error: any) {
-        // Avoid toast for JSON parsing error on 204 response
-        if (error.message.includes('Unexpected end of JSON input') && !isNewProfile) {
-            const updatedProfileWithSub = { ...profileData, isSubscribed: profileData.isSubscribed };
-            setProfile(updatedProfileWithSub);
-            setInitialProfile(JSON.parse(JSON.stringify(updatedProfileWithSub)));
-            return true;
-        }
-        
         toast({
           variant: 'destructive',
           title: 'Save Failed',
@@ -226,7 +230,7 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
         return false;
       }
     },
-    [toast]
+    [toast, setSubscriptionModalOpen]
   );
 
   const updateCreditBalance = useCallback(async (force = false) => {
