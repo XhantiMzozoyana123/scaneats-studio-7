@@ -23,6 +23,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { useRouter } from 'next/navigation';
 
 export type Profile = {
   id: number | null;
@@ -84,6 +85,7 @@ const getCachedCredits = (): number | null => {
 
 export function UserDataProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
+  const router = useRouter();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [initialProfile, setInitialProfile] = useState<Profile | null>(null);
   const [scannedFood, setScannedFoodState] = useState<ScannedFood | null | undefined>(undefined);
@@ -128,8 +130,17 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
                     weight: p.weight || '',
                 };
             }
+        } else if (profileRes.status === 401) {
+            toast({
+                variant: 'destructive',
+                title: 'Session Expired',
+                description: 'Please log in again to continue.',
+            });
+            localStorage.clear();
+            router.push('/login');
+            return;
         } else if (profileRes.status !== 404) {
-            console.error('Failed to fetch profile');
+            console.error('Failed to fetch profile', profileRes.statusText);
         }
 
         const finalProfile = { ...userProfile, isSubscribed: subData.isSubscribed };
@@ -144,7 +155,7 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [router, toast]);
 
   const saveProfile = useCallback(
     async (profileData: Profile): Promise<boolean> => {
@@ -196,7 +207,9 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
             setProfile(finalProfile);
             setInitialProfile(finalProfile);
         } else {
-            setInitialProfile(profileData);
+            const updatedProfileWithSub = { ...profileData, isSubscribed: profileData.isSubscribed };
+            setProfile(updatedProfileWithSub);
+            setInitialProfile(updatedProfileWithSub);
         }
 
         return true;
