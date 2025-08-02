@@ -175,11 +175,8 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
       const endpoint = isNewProfile ? `${API_BASE_URL}/api/profile` : `${API_BASE_URL}/api/profile/${profileData.id}`;
       const method = isNewProfile ? 'POST' : 'PUT';
 
-      // The backend calculates age, so we don't send it.
-      // And we don't send isSubscribed as it's a client-side flag
       const { age, isSubscribed, ...profileToSend } = profileData;
 
-      // Ensure weight is a number before sending
       const finalPayload = {
         ...profileToSend,
         weight: parseFloat(String(profileToSend.weight)) || 0,
@@ -198,7 +195,6 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
             return false;
         }
 
-        // Handle PUT success (204 No Content)
         if (method === 'PUT' && response.status === 204) {
              const updatedProfileWithSub = { ...profileData, isSubscribed: profileData.isSubscribed };
              setProfile(updatedProfileWithSub);
@@ -211,10 +207,9 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
             throw new Error(errorData.message || 'Failed to save profile.');
         }
 
-        // Handle POST success (returns new profile)
         if (method === 'POST') {
             const newProfile = await response.json();
-            const finalProfile = { ...newProfile, isSubscribed: profileData.isSubscribed };
+            const finalProfile = { ...newProfile, isSubscribed: profileData.isSubscribed, birthDate: newProfile.birthDate ? new Date(newProfile.birthDate) : null, };
             setProfile(finalProfile);
             setInitialProfile(JSON.parse(JSON.stringify(finalProfile)));
         }
@@ -225,7 +220,7 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
         toast({
           variant: 'destructive',
           title: 'Save Failed',
-          description: error.message,
+          description: error.message || 'Failed to save profile',
         });
         return false;
       }
