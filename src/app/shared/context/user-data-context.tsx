@@ -20,7 +20,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/app/shared/components/ui/alert-dialog';
+} from '@/components/ui/alert-dialog';
 import Link from 'next/link';
 import { Button } from '@/app/shared/components/ui/button';
 import { useRouter } from 'next/navigation';

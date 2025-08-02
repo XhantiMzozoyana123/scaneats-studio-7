@@ -26,7 +26,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '@/app/shared/components/ui/alert-dialog';
+} from '@/components/ui/alert-dialog';
 import { Input } from '@/app/shared/components/ui/input';
 import { Label } from '@/app/shared/components/ui/label';
 import { Skeleton } from '@/app/shared/components/ui/skeleton';
