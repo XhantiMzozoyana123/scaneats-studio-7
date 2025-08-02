@@ -211,6 +211,7 @@ export default function SignUpPage() {
                 onError={handleGoogleError}
                 theme="filled_black"
                 shape="pill"
+                auto_select={false}
             />
         </div>
 

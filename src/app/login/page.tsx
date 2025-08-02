@@ -197,6 +197,7 @@ export default function LoginPage() {
                 onError={handleGoogleError}
                 theme="filled_black"
                 shape="pill"
+                auto_select={false}
             />
         </div>
 
