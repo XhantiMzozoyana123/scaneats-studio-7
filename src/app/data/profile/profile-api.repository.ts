@@ -15,17 +15,14 @@ const initialProfileState: Profile = {
 
 export class ProfileApiRepository implements IProfileRepository {
   async getProfile(token: string): Promise<{ profile: Profile | null; isSubscribed: boolean }> {
-    const [profileRes, subRes] = await Promise.all([
-        fetch(`${API_BASE_URL}/api/profile`, { headers: { Authorization: `Bearer ${token}` } }),
-        fetch(`${API_BASE_URL}/api/subscription/status`, { headers: { Authorization: `Bearer ${token}` } })
-    ]);
+    const profileRes = await fetch(`${API_BASE_URL}/api/profile`, { headers: { Authorization: `Bearer ${token}` } });
 
-    if (profileRes.status === 401 || subRes.status === 401) {
+    if (profileRes.status === 401) {
         throw new Error('Session Expired');
     }
 
-    const subData = subRes.ok ? await subRes.json() : { isSubscribed: false };
     let userProfile = initialProfileState;
+    let isSubscribed = false;
 
     if (profileRes.ok) {
         const profiles = await profileRes.json();
@@ -36,13 +33,15 @@ export class ProfileApiRepository implements IProfileRepository {
                 birthDate: p.BirthDate ? new Date(p.BirthDate) : null,
                 weight: p.Weight || '',
             };
+            // Assume subscription status comes with the profile
+            isSubscribed = p.isSubscribed ?? false;
         }
     } else if (profileRes.status !== 404) {
          console.error('Failed to fetch profile', profileRes.statusText);
     }
 
-    const finalProfile = { ...userProfile, isSubscribed: subData.isSubscribed };
-    return { profile: finalProfile, isSubscribed: subData.isSubscribed };
+    const finalProfile = { ...userProfile, isSubscribed: isSubscribed };
+    return { profile: finalProfile, isSubscribed: isSubscribed };
   }
 
   async saveProfile(token: string, profileData: Profile): Promise<Profile> {
