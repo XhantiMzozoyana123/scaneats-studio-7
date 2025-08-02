@@ -113,7 +113,7 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
     try {
         const [profileRes, subRes] = await Promise.all([
             fetch(`${API_BASE_URL}/api/profile`, { headers: { Authorization: `Bearer ${token}` } }),
-            fetch(`${API_BASE_URL}/api/event/subscription/status`, { headers: { Authorization: `Bearer ${token}` } })
+            fetch(`${API_BASE_URL}/api/subscription/status`, { headers: { Authorization: `Bearer ${token}` } })
         ]);
 
         if (profileRes.status === 401 || subRes.status === 401) {
@@ -170,19 +170,21 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
       const endpoint = isNewProfile ? `${API_BASE_URL}/api/profile` : `${API_BASE_URL}/api/profile/${profileData.id}`;
       const method = isNewProfile ? 'POST' : 'PUT';
 
-      // Exclude frontend-only fields before sending
-      const { age, isSubscribed, ...profileToSend } = profileData;
-
-      const finalPayload = {
-        ...profileToSend,
-        weight: parseFloat(String(profileToSend.weight)) || 0,
+      // Create a payload with PascalCase properties to match the C# backend
+      const payload = {
+        Id: profileData.id,
+        Name: profileData.name,
+        Gender: profileData.gender,
+        Weight: String(profileData.weight), // Ensure weight is a string
+        Goals: profileData.goals,
+        BirthDate: profileData.birthDate ? profileData.birthDate.toISOString() : null,
       };
 
       try {
         const response = await fetch(endpoint, {
             method: method,
             headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-            body: JSON.stringify(finalPayload)
+            body: JSON.stringify(payload)
         });
         
         if (response.status === 403) {
