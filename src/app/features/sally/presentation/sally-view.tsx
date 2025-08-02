@@ -136,14 +136,16 @@ export const SallyView = () => {
  const handleApiCall = async (userInput: string) => {
     if (!userInput.trim()) return;
 
+    const token = localStorage.getItem('authToken');
+    if (!token) {
+        toast({ variant: 'destructive', title: 'Not Logged In', description: 'Please log in to talk to Sally.' });
+        router.push('/login');
+        return;
+    }
+
     if (!profile) {
       toast({ variant: 'destructive', title: 'Profile not loaded' });
       return;
-    }
-
-    if (!profile.isSubscribed) {
-        setSubscriptionModalOpen(true);
-        return;
     }
 
     setIsLoading(true);
@@ -151,9 +153,6 @@ export const SallyView = () => {
     setSallyResponse(`Thinking about: "${userInput}"`);
     
     try {
-        const token = localStorage.getItem('authToken');
-        if (!token) throw new Error("Authentication token not found.");
-        
         const response = await fetch(`${API_BASE_URL}/api/sally/body-assessment`, {
           method: 'POST',
           headers: {
@@ -165,11 +164,23 @@ export const SallyView = () => {
             ClientDialogue: userInput,
           }),
         });
+        
+        if (response.status === 401) {
+            toast({ variant: 'destructive', title: 'Session Expired', description: 'Please log in again.' });
+            router.push('/login');
+            throw new Error('Unauthorized');
+        }
+
+        if (response.status === 403) {
+            setSubscriptionModalOpen(true);
+            throw new Error('Subscription required');
+        }
+        
+        if (response.status === 429) {
+            throw new Error('INSUFFICIENT_CREDITS');
+        }
 
         if (!response.ok) {
-            if (response.status === 429) {
-                throw new Error('INSUFFICIENT_CREDITS');
-            }
             let errorMsg = "Sally failed to respond";
             try {
                 const errorData = await response.json();
@@ -198,7 +209,7 @@ export const SallyView = () => {
            action: <Button onClick={() => router.push('/credits')}>Buy Credits</Button>
         });
         setSallyResponse("I'd love to chat, but it looks like you're out of credits.");
-      } else {
+      } else if (error.message !== 'Subscription required' && error.message !== 'Unauthorized') {
         setSallyResponse('Sorry, I had trouble with that. Please try again.');
         toast({
           variant: 'destructive',

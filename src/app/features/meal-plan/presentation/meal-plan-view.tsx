@@ -153,14 +153,17 @@ export const MealPlanView = ({ onNavigate }: { onNavigate: (view: View) => void 
   const handleApiCall = async (userInput: string) => {
     if (!userInput.trim()) return;
 
-    if (!profile?.isSubscribed) {
-      setSubscriptionModalOpen(true);
-      return;
+    const token = localStorage.getItem('authToken');
+    if (!token) {
+        toast({ variant: 'destructive', title: 'Not Logged In', description: 'Please log in to talk to Sally.' });
+        router.push('/login');
+        return;
     }
 
-    setIsSallyLoading(true);
-    setSallyProgress(10);
-    setSallyResponse(`Thinking about: "${userInput}"`);
+    if (!profile) {
+      toast({ variant: 'destructive', title: 'Profile not loaded' });
+      return;
+    }
 
     if (!scannedFood) {
       toast({
@@ -173,10 +176,12 @@ export const MealPlanView = ({ onNavigate }: { onNavigate: (view: View) => void 
       return;
     }
 
+    setIsSallyLoading(true);
+    setSallyProgress(10);
+    setSallyResponse(`Thinking about: "${userInput}"`);
+
+
     try {
-      const token = localStorage.getItem('authToken');
-      if (!token) throw new Error("Authentication token not found.");
-      
       const response = await fetch(`${API_BASE_URL}/api/sally/meal-planner`, {
           method: 'POST',
           headers: {
@@ -191,10 +196,22 @@ export const MealPlanView = ({ onNavigate }: { onNavigate: (view: View) => void 
           }),
       });
 
-      if (!response.ok) {
-        if (response.status === 429) {
+      if (response.status === 401) {
+          toast({ variant: 'destructive', title: 'Session Expired', description: 'Please log in again.' });
+          router.push('/login');
+          throw new Error('Unauthorized');
+      }
+
+      if (response.status === 403) {
+          setSubscriptionModalOpen(true);
+          throw new Error('Subscription required');
+      }
+      
+      if (response.status === 429) {
           throw new Error('INSUFFICIENT_CREDITS');
-        }
+      }
+      
+      if (!response.ok) {
         let errorMsg = "Sally failed to respond";
         try {
             const errorData = await response.json();
@@ -223,7 +240,7 @@ export const MealPlanView = ({ onNavigate }: { onNavigate: (view: View) => void 
           action: <Button onClick={() => router.push('/credits')}>Buy Credits</Button>
         });
         setSallyResponse("I'd love to chat, but it looks like you're out of credits.");
-      } else {
+      } else if (error.message !== 'Subscription required' && error.message !== 'Unauthorized') {
         setSallyResponse('Sorry, I had trouble with that. Please try again.');
         toast({
           variant: 'destructive',
