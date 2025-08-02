@@ -170,6 +170,17 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
       const endpoint = isNewProfile ? `${API_BASE_URL}/api/profile` : `${API_BASE_URL}/api/profile/${profileData.id}`;
       const method = isNewProfile ? 'POST' : 'PUT';
 
+      const calculateAge = (birthDate: Date | null): number => {
+        if (!birthDate) return 0;
+        const today = new Date();
+        let age = today.getFullYear() - birthDate.getFullYear();
+        const m = today.getMonth() - birthDate.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+          age--;
+        }
+        return age;
+      };
+      
       // Create a payload with PascalCase properties to match the C# backend
       const payload = {
         Id: profileData.id,
@@ -178,6 +189,7 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
         Weight: String(profileData.weight), // Ensure weight is a string
         Goals: profileData.goals,
         BirthDate: profileData.birthDate ? profileData.birthDate.toISOString() : null,
+        Age: calculateAge(profileData.birthDate),
       };
 
       try {
@@ -194,7 +206,7 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
 
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({ message: 'Failed to save profile.' }));
-            throw new Error(errorData.message || 'Failed to save profile.');
+            throw new Error(errorData.message || `Request failed with status ${response.status}`);
         }
 
         if (method === 'POST') {
@@ -211,6 +223,7 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
         return true;
 
       } catch (error: any) {
+        console.error('Save profile error:', error);
         toast({
           variant: 'destructive',
           title: 'Save Failed',
