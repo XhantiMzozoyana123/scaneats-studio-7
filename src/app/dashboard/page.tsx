@@ -556,10 +556,16 @@ const MealPlanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
     }
   }, [scannedFood]);
 
-  const handleMicClick = () => {
+  const handleMicClick = async () => {
     if (isRecording) {
       recognitionRef.current?.stop();
-    } else {
+      return;
+    }
+
+    try {
+      // Proactively request microphone permission
+      await navigator.mediaDevices.getUserMedia({ audio: true });
+
       if (audioRef.current) {
         audioRef.current.pause();
         audioRef.current.currentTime = 0;
@@ -567,6 +573,14 @@ const MealPlanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
       setIsRecording(true);
       setSallyResponse('Listening...');
       recognitionRef.current?.start();
+    } catch (error) {
+      console.error('Microphone permission error:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Microphone Access Denied',
+        description:
+          'Please allow microphone access in your browser settings to use this feature.',
+      });
     }
   };
 
@@ -845,16 +859,30 @@ const SallyView = () => {
     }
   }, [toast]);
 
-  const handleMicClick = () => {
+  const handleMicClick = async () => {
     if (isRecording || isLoading) {
       recognitionRef.current?.stop();
-    } else {
+      return;
+    }
+
+    try {
+      // Proactively request microphone permission
+      await navigator.mediaDevices.getUserMedia({ audio: true });
+
       if (audioRef.current) {
         audioRef.current.pause();
         audioRef.current.currentTime = 0;
       }
       setIsRecording(true);
       recognitionRef.current?.start();
+    } catch (error) {
+      console.error('Microphone permission error:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Microphone Access Denied',
+        description:
+          'Please allow microphone access in your browser settings to use this feature.',
+      });
     }
   };
 
@@ -1001,28 +1029,28 @@ const SallyView = () => {
 };
 
 const ProfileView = () => {
-  const { profile, initialProfile, setProfile, isLoading, saveProfile } = useUserData();
+  const { profile, initialProfile, setProfile, isLoading, saveProfile } =
+    useUserData();
   const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
 
   const isDirty = useMemo(() => {
     if (!profile || !initialProfile) return false;
+    // Deep comparison to check for changes
     return JSON.stringify(profile) !== JSON.stringify(initialProfile);
   }, [profile, initialProfile]);
 
   const handleInputChange = (
     e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
-    if (profile) {
-      setProfile({ ...profile, [e.target.id]: e.target.value });
-    }
+    if (!profile) return;
+    setProfile({ ...profile, [e.target.id]: e.target.value });
   };
 
   const handleSelectChange = (value: string) => {
-    if (profile) {
-      setProfile({ ...profile, gender: value });
-    }
+    if (!profile) return;
+    setProfile({ ...profile, gender: value });
   };
 
   const handleDateChange = (date: Date | undefined) => {
@@ -1038,11 +1066,11 @@ const ProfileView = () => {
 
     setIsSaving(true);
     const success = await saveProfile(profile);
-    if(success) {
-        toast({
-            title: 'Profile Saved!',
-            description: 'Your profile has been updated.',
-        });
+    if (success) {
+      toast({
+        title: 'Profile Saved!',
+        description: 'Your profile has been updated.',
+      });
     }
     setIsSaving(false);
   };
