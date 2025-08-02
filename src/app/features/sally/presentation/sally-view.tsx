@@ -102,24 +102,19 @@ export const SallyView = () => {
   }, [toast]);
 
   const handleMicClick = async () => {
-    if (isRecording || isLoading) {
+    if (isRecording) {
       recognitionRef.current?.stop();
       return;
     }
 
     try {
-      // Proactively request microphone permission
+      if (isLoading) return; // Prevent starting new recording while processing
       await navigator.mediaDevices.getUserMedia({ audio: true });
       setIsRecording(true);
       recognitionRef.current?.start();
     } catch (error) {
       console.error('Microphone permission error:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Microphone Access Denied',
-        description:
-          'Please allow microphone access in your browser settings to use this feature.',
-      });
+ toast({ variant: 'destructive', title: 'Microphone Access Denied', description: 'Please allow microphone access in your browser settings to use this feature.', });
     }
   };
 
@@ -133,7 +128,7 @@ export const SallyView = () => {
         return;
     }
 
-    if (!profile) {
+    if (!profile || !profile.id) {
       toast({ variant: 'destructive', title: 'Profile not loaded' });
       return;
     }
@@ -142,19 +137,30 @@ export const SallyView = () => {
     setLoadingProgress(10);
     setSallyResponse(`Thinking about: "${userInput}"`);
     
+    // Determine which endpoint to call based on user input keywords
+    const lowerInput = userInput.toLowerCase();
+    let endpoint = '/api/sally/body-assessment'; // Default endpoint
+
+    if (lowerInput.includes('meal plan') || lowerInput.includes('plan meals') || lowerInput.includes('diet plan')) {
+        endpoint = '/api/sally/meal-planner';
+    }
+
     try {
-        const response = await fetch(`${API_BASE_URL}/api/sally/body-assessment`, {
+        const response = await fetch(`${API_BASE_URL}${endpoint}`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify({
+            UserId: profile.id, // Pass the user ID from the profile
             ClientName: profile?.name || 'User',
             ClientDialogue: userInput,
+            // Include other relevant ConversationDto properties if needed,
+            // e.g., AgentName, AgentDialogue (if continuing a conversation)
           }),
         });
-        
+
         if (response.status === 401) {
             toast({ variant: 'destructive', title: 'Session Expired', description: 'Please log in again.' });
             router.push('/login');
@@ -184,7 +190,6 @@ export const SallyView = () => {
         await updateCreditBalance(true);
 
         setSallyResponse(result.agentDialogue);
-
     } catch (error: any) {
       if (error.message === 'INSUFFICIENT_CREDITS') {
         toast({
@@ -270,5 +275,3 @@ export const SallyView = () => {
     </div>
   );
 };
-
-    
