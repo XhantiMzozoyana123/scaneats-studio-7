@@ -11,8 +11,8 @@ import {
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 
-import { Button } from '@/app/shared/components/ui/button';
-import { Progress } from '@/app/shared/components/ui/progress';
+import { Button } from '@/components/ui/button';
+import { Progress } from '@/components/ui/progress';
 
 import {
   Loader2,
@@ -81,11 +81,20 @@ export const MealPlanView = ({ onNavigate }: { onNavigate: (view: View) => void 
 
       recognitionRef.current.onerror = (event: any) => {
         console.error('Speech recognition error', event.error);
-        toast({
-          variant: 'destructive',
-          title: 'Speech Error',
-          description: `Could not recognize speech: ${event.error}. Please check your microphone and try again.`,
-        });
+        if (event.error === 'not-allowed') {
+           toast({
+            variant: 'destructive',
+            title: 'Microphone Access Denied',
+            description:
+              'Please allow microphone access in your browser settings to use this feature.',
+          });
+        } else {
+          toast({
+            variant: 'destructive',
+            title: 'Speech Error',
+            description: `Could not recognize speech: ${event.error}. Please try again.`,
+          });
+        }
         setIsRecording(false);
       };
 
