@@ -49,6 +49,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -1006,12 +1007,11 @@ const ProfileView = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
 
-  // Compare the stringified versions of the objects to detect changes.
   const isDirty = useMemo(() => {
     if (!profile || !initialProfile) return false;
     return JSON.stringify(profile) !== JSON.stringify(initialProfile);
   }, [profile, initialProfile]);
-  
+
   const handleInputChange = (
     e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
@@ -1028,7 +1028,6 @@ const ProfileView = () => {
 
   const handleDateChange = (date: Date | undefined) => {
     if (date && profile) {
-      // Create a new object to ensure the state update is detected
       setProfile({ ...profile, birthDate: date });
     }
     setIsDatePickerOpen(false);
