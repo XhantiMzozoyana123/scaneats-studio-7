@@ -465,6 +465,7 @@ type ScannedFood = {
   protein: number;
   fat: number;
   carbs: number;
+  carbohydrates?: number;
 };
 
 declare global {
@@ -1000,7 +1001,7 @@ const SallyView = () => {
 };
 
 const ProfileView = () => {
-  const { profile, isLoading, saveProfile, isProfileDirty } = useUserData();
+  const { profile, isLoading, saveProfile, isProfileDirty, setSubscriptionModalOpen } = useUserData();
   const { toast } = useToast();
   const [localProfile, setLocalProfile] = useState<Profile | null>(profile);
   const [isSaving, setIsSaving] = useState(false);
@@ -1034,6 +1035,11 @@ const ProfileView = () => {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!localProfile) return;
+
+    if (!localProfile.isSubscribed) {
+      setSubscriptionModalOpen(true);
+      return;
+    }
     
     setIsSaving(true);
     const success = await saveProfile(localProfile);
@@ -1215,7 +1221,7 @@ const ProfileView = () => {
             <Button
               type="submit"
               size="lg"
-              disabled={isSaving || isLoading}
+              disabled={isSaving || isLoading || !isProfileDirty}
               className="w-full rounded-lg bg-[#7F00FF] py-3 text-lg font-bold text-white transition-all hover:bg-[#9300FF] hover:shadow-[0_0_12px_6px_rgba(127,0,255,0.8)] disabled:opacity-50"
               style={{
                 boxShadow: '0 0 8px 2px rgba(127, 0, 255, 0.6)',

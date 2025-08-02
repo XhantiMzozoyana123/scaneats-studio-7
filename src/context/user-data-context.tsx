@@ -153,6 +153,11 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
         toast({ variant: 'destructive', title: 'Error', description: 'You are not logged in.' });
         return false;
       }
+
+      if (!profileData.isSubscribed) {
+        setSubscriptionModalOpen(true);
+        return false;
+      }
       
       const calculateAge = (birthDate: Date | null): number | undefined => {
           if (!birthDate) return undefined;
@@ -187,8 +192,9 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
 
         if(method === 'POST') {
             const newProfile = await response.json();
-            setProfile(newProfile);
-            setInitialProfile(newProfile);
+            const finalProfile = { ...newProfile, isSubscribed: profileData.isSubscribed };
+            setProfile(finalProfile);
+            setInitialProfile(finalProfile);
         } else {
             setInitialProfile(profileData);
         }
