@@ -3,12 +3,12 @@
 
 import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from '@/app/shared/hooks/use-toast';
 import { Loader2, CheckCircle, XCircle } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/app/shared/components/ui/button';
 import Link from 'next/link';
-import { BackgroundImage } from '@/components/background-image';
-import { API_BASE_URL } from '@/lib/api';
+import { BackgroundImage } from '@/app/shared/components/background-image';
+import { API_BASE_URL } from '@/app/shared/lib/api';
 
 function PaymentSuccessContent() {
   const router = useRouter();
@@ -162,7 +162,7 @@ function PaymentSuccessContent() {
 
 export default function PaymentSuccessPage() {
     return (
-        <Suspense fallback={<div>Loading...</div>}>
+        <Suspense fallback={<div className="flex h-screen w-full items-center justify-center bg-background"><Loader2 className="h-16 w-16 animate-spin text-primary" /></div>}>
             <PaymentSuccessContent />
         </Suspense>
     )
