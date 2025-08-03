@@ -51,6 +51,7 @@ export default function RootLayout({
          {/* Apple Touch Icon (iOS Homescreen) & Fullscreen settings */}
          <link rel="apple-touch-icon" href="https://gallery.scaneats.app/images/ScanEatsLogo.png" />
          <meta name="apple-mobile-web-app-capable" content="yes" />
+         <meta name="mobile-web-app-capable" content="yes" />
          <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
          <meta name="apple-mobile-web-app-title" content="ScanEats" />
 

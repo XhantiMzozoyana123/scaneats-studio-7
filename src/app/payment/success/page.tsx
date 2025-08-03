@@ -35,7 +35,7 @@ function PaymentSuccessContent() {
         toast({
           variant: 'destructive',
           title: 'Authentication Error',
-          description: 'You are not logged in. Please log in and try again.',
+          description: 'You are not logged in. Redirecting to login page.',
         });
         router.push('/login');
         return;
@@ -47,7 +47,8 @@ function PaymentSuccessContent() {
         const response = await fetch(verificationUrl, {
           method: 'GET',
           headers: {
-            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
           },
         });
 
@@ -83,6 +84,7 @@ function PaymentSuccessContent() {
             let errorMsg = 'Failed to verify your payment.';
              if (response.status === 401) {
                 errorMsg = 'Your session has expired. Please log in again.';
+                router.push('/login');
             } else if (response.status === 404) {
                 errorMsg = 'Could not find the payment to verify. Please contact support.';
             } else if (response.status >= 500) {
