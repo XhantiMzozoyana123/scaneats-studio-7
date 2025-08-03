@@ -24,6 +24,8 @@ import { useUserData } from '@/app/shared/context/user-data-context';
 import { cn } from '@/app/shared/lib/utils';
 import { API_BASE_URL } from '@/app/shared/lib/api';
 import type { View } from '@/app/features/dashboard/dashboard.types';
+import { MealService } from '../application/meal.service';
+import { MealApiRepository } from '../data/meal-api.repository';
 
 
 declare global {
@@ -33,10 +35,13 @@ declare global {
   }
 }
 
+const mealRepository = new MealApiRepository();
+const mealService = new MealService(mealRepository);
+
 export const MealPlanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
   const router = useRouter();
   const { toast } = useToast();
-  const { profile, setSubscriptionModalOpen, updateCreditBalance, scannedFood } = useUserData();
+  const { profile, setSubscriptionModalOpen, updateCreditBalance, scannedFood, setScannedFood } = useUserData();
   const [sallyResponse, setSallyResponse] = useState<string>(
     "Ask me about this meal and I'll tell you everything."
   );
@@ -44,7 +49,36 @@ export const MealPlanView = ({ onNavigate }: { onNavigate: (view: View) => void 
   const [isSallyLoading, setIsSallyLoading] = useState(false);
   const [sallyProgress, setSallyProgress] = useState(0);
   const recognitionRef = useRef<any>(null);
+  const [isMealLoading, setIsMealLoading] = useState(true);
   
+  useEffect(() => {
+    const fetchLastMeal = async () => {
+        if (scannedFood === undefined) {
+            const token = localStorage.getItem('authToken');
+            if (!token) {
+                toast({ variant: 'destructive', title: 'Not authorized' });
+                setIsMealLoading(false);
+                setScannedFood(null); // No food if not logged in
+                return;
+            }
+            try {
+                const lastMeal = await mealService.getLastMealPlan(token);
+                setScannedFood(lastMeal);
+            } catch (error) {
+                console.error('Failed to fetch last meal:', error);
+                setScannedFood(null); // Set to null on error
+            } finally {
+                setIsMealLoading(false);
+            }
+        } else {
+            setIsMealLoading(false);
+        }
+    };
+
+    fetchLastMeal();
+  }, [scannedFood, setScannedFood, toast]);
+
+
   useEffect(() => {
     if (isSallyLoading) {
       const interval = setInterval(() => {
@@ -265,7 +299,7 @@ export const MealPlanView = ({ onNavigate }: { onNavigate: (view: View) => void 
             />
         </header>
 
-        {scannedFood === undefined ? (
+        {isMealLoading ? (
           <div className="flex flex-1 flex-col items-center justify-center">
             <Loader2 className="h-16 w-16 animate-spin text-white" />
             <p className="mt-4 text-white">Loading your meal plan...</p>
@@ -357,5 +391,3 @@ export const MealPlanView = ({ onNavigate }: { onNavigate: (view: View) => void 
     </>
   );
 };
-
-    
