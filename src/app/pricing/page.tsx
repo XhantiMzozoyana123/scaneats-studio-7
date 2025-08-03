@@ -252,7 +252,7 @@ export default function PricingPage() {
                    SALLY
                  </span>
                </FeatureListItem>
-              <FeatureListItem>50 Monthly Food Scanning Credits</FeatureListItem>
+              <FeatureListItem>Unlimited Food Scanning</FeatureListItem>
               <FeatureListItem>Detailed Nutritional Analytics</FeatureListItem>
               <FeatureListItem>Ad-Free Experience</FeatureListItem>
             </ul>
@@ -275,7 +275,7 @@ export default function PricingPage() {
                   <AlertDialogTitle>Confirm Your Subscription</AlertDialogTitle>
                   <AlertDialogDescription>
                     You are about to subscribe to the Active Account plan for
-                    ZAR {ZAR_BASE_PRICE}/month. This includes 50 credits, delivered monthly.
+                    ZAR {ZAR_BASE_PRICE}/month. This gives you unlimited access to all features.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>

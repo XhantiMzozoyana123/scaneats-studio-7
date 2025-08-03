@@ -38,7 +38,7 @@ export const SallyView = () => {
   const [loadingProgress, setLoadingProgress] = useState(0);
   const recognitionRef = useRef<any>(null);
   const { toast } = useToast();
-  const { profile, setSubscriptionModalOpen, updateCreditBalance } = useUserData();
+  const { profile, setSubscriptionModalOpen } = useUserData();
   
   useEffect(() => {
     if (isLoading) {
@@ -165,10 +165,6 @@ export const SallyView = () => {
             throw new Error('Subscription required');
         }
         
-        if (response.status === 429) {
-            throw new Error('INSUFFICIENT_CREDITS');
-        }
-
         if (!response.ok) {
             let errorMsg = "Sally failed to respond";
             try {
@@ -180,19 +176,9 @@ export const SallyView = () => {
 
         const result = await response.json();
 
-        await updateCreditBalance(true);
-
         setSallyResponse(result.agentDialogue);
     } catch (error: any) {
-      if (error.message === 'INSUFFICIENT_CREDITS') {
-        toast({
-          variant: 'destructive',
-          title: 'No Credits Left',
-          description: 'Please purchase more credits to talk to Sally.',
-           action: <Button onClick={() => router.push('/credits')}>Buy Credits</Button>
-        });
-        setSallyResponse("I'd love to chat, but it looks like you're out of credits.");
-      } else if (error.message !== 'Subscription required' && error.message !== 'Unauthorized') {
+      if (error.message !== 'Subscription required' && error.message !== 'Unauthorized') {
         setSallyResponse('Sorry, I had trouble with that. Please try again.');
         toast({
           variant: 'destructive',
@@ -268,5 +254,3 @@ export const SallyView = () => {
     </div>
   );
 };
-
-    

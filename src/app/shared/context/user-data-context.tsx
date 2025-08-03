@@ -10,7 +10,6 @@ import {
   useCallback,
 } from 'react';
 import { useToast } from '@/app/shared/hooks/use-toast';
-import { API_BASE_URL } from '@/app/shared/lib/api';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -36,11 +35,9 @@ type UserDataContextType = {
   setProfile: React.Dispatch<React.SetStateAction<Profile | null>>;
   scannedFood: ScannedFood | null | undefined; // undefined for loading, null for no food
   setScannedFood: (food: ScannedFood | null) => void;
-  creditBalance: number | null;
   isLoading: boolean;
   saveProfile: (profile: Profile) => Promise<boolean>;
   fetchProfile: () => void;
-  updateCreditBalance: (force?: boolean) => Promise<void>;
   isSubscriptionModalOpen: boolean;
   setSubscriptionModalOpen: React.Dispatch<React.SetStateAction<boolean>>;
 };
@@ -59,15 +56,6 @@ const initialProfileState: Profile = {
   isSubscribed: false,
 };
 
-
-const getCachedCredits = (): number | null => {
-  if (typeof window === 'undefined') {
-    return null;
-  }
-  const cached = localStorage.getItem('creditBalance');
-  return cached ? JSON.parse(cached) : null;
-};
-
 // Instantiate repository and service
 const profileRepository = new ProfileApiRepository();
 const profileService = new ProfileService(profileRepository);
@@ -78,9 +66,6 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(initialProfileState);
   const [initialProfile, setInitialProfile] = useState<Profile | null>(initialProfileState);
   const [scannedFood, setScannedFoodState] = useState<ScannedFood | null | undefined>(undefined);
-  const [creditBalance, setCreditBalance] = useState<number | null>(
-    getCachedCredits()
-  );
   const [isLoading, setIsLoading] = useState(true);
   const [isSubscriptionModalOpen, setSubscriptionModalOpen] = useState(false);
   
@@ -155,42 +140,9 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
     [toast]
   );
 
-  const updateCreditBalance = useCallback(async (force = false) => {
-    const token = localStorage.getItem('authToken');
-    if (!token) return;
-
-    if (!force) {
-      const cached = getCachedCredits();
-      if (cached !== null) {
-        setCreditBalance(cached);
-        return;
-      }
-    }
-
-    try {
-      const creditRes = await fetch(`${API_BASE_URL}/api/credit/balance`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (creditRes.ok) {
-        const data = await creditRes.json();
-        const newBalance = data.credits;
-        setCreditBalance(newBalance);
-        localStorage.setItem('creditBalance', JSON.stringify(newBalance));
-      } else {
-        localStorage.removeItem('creditBalance');
-        setCreditBalance(null);
-      }
-    } catch (error) {
-      console.error('Failed to fetch credit balance', error);
-      setCreditBalance(null);
-    }
-  }, []);
-
   useEffect(() => {
     fetchProfile();
-    updateCreditBalance();
-  }, [fetchProfile, updateCreditBalance]);
+  }, [fetchProfile]);
 
   const value = {
     profile,
@@ -198,11 +150,9 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
     setProfile,
     scannedFood,
     setScannedFood,
-    creditBalance,
     isLoading,
     saveProfile,
     fetchProfile,
-    updateCreditBalance,
     isSubscriptionModalOpen,
     setSubscriptionModalOpen,
   };

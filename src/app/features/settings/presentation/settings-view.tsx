@@ -32,14 +32,12 @@ import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   ChevronRight,
-  CreditCard,
   Loader2,
   Lock,
   LogOut,
   Repeat,
   Trash2,
   UserCircle,
-  Wallet,
   XCircle,
 } from 'lucide-react';
 import { API_BASE_URL } from '@/app/shared/lib/api';
@@ -100,7 +98,7 @@ export const SettingsView = ({
 }) => {
   const router = useRouter();
   const { toast } = useToast();
-  const { profile, creditBalance, isLoading, setSubscriptionModalOpen, fetchProfile } =
+  const { profile, isLoading, fetchProfile } =
     useUserData();
 
   const [isDeleting, setIsDeleting] = useState(false);
@@ -313,7 +311,6 @@ export const SettingsView = ({
               <Skeleton className="h-7 w-24 rounded-md" />
               <Skeleton className="h-14 w-full rounded-lg" />
               <Skeleton className="h-14 w-full rounded-lg" />
-              <Skeleton className="h-14 w-full rounded-lg" />
             </div>
             <div className="space-y-4 rounded-lg bg-zinc-900 p-6">
               <Skeleton className="h-7 w-24 rounded-md" />
@@ -415,17 +412,6 @@ export const SettingsView = ({
 
           <div className="space-y-4 rounded-lg bg-zinc-900 p-6">
             <h2 className="text-lg font-semibold text-white">Billing</h2>
-            <div className="flex items-center p-4">
-              <Wallet className="mr-4 h-5 w-5 text-gray-300" />
-              <span className="flex-1 font-medium text-white">My Wallet</span>
-              <span className="font-semibold text-white">
-                {creditBalance !== null ? (
-                  `${creditBalance} Credits`
-                ) : (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                )}
-              </span>
-            </div>
             {isSubscribed ? (
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
@@ -464,11 +450,6 @@ export const SettingsView = ({
                   href="/pricing"
                 />
             )}
-            <SettingsItem
-              icon={CreditCard}
-              label="Buy Credits"
-              href="/credits"
-            />
           </div>
 
           <div className="space-y-4 rounded-lg bg-zinc-900 p-6">

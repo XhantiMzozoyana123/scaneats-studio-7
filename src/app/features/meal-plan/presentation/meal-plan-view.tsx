@@ -41,7 +41,7 @@ const mealService = new MealService(mealRepository);
 export const MealPlanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
   const router = useRouter();
   const { toast } = useToast();
-  const { profile, setSubscriptionModalOpen, updateCreditBalance, scannedFood, setScannedFood } = useUserData();
+  const { profile, setSubscriptionModalOpen, scannedFood, setScannedFood } = useUserData();
   const [sallyResponse, setSallyResponse] = useState<string>(
     "Ask me about this meal and I'll tell you everything."
   );
@@ -231,10 +231,6 @@ export const MealPlanView = ({ onNavigate }: { onNavigate: (view: View) => void 
           throw new Error('Subscription required');
       }
       
-      if (response.status === 429) {
-          throw new Error('INSUFFICIENT_CREDITS');
-      }
-      
       if (!response.ok) {
         let errorMsg = "Sally failed to respond";
         try {
@@ -246,20 +242,10 @@ export const MealPlanView = ({ onNavigate }: { onNavigate: (view: View) => void 
       
       const result = await response.json();
       
-      await updateCreditBalance(true);
-      
       setSallyResponse(result.agentDialogue);
 
     } catch (error: any) {
-      if (error.message === 'INSUFFICIENT_CREDITS') {
-        toast({
-          variant: 'destructive',
-          title: 'No Credits Left',
-          description: 'Please purchase more credits to talk to Sally.',
-          action: <Button onClick={() => router.push('/credits')}>Buy Credits</Button>
-        });
-        setSallyResponse("I'd love to chat, but it looks like you're out of credits.");
-      } else if (error.message !== 'Subscription required' && error.message !== 'Unauthorized') {
+      if (error.message !== 'Subscription required' && error.message !== 'Unauthorized') {
         setSallyResponse('Sorry, I had trouble with that. Please try again.');
         toast({
           variant: 'destructive',

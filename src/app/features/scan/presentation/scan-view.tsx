@@ -20,7 +20,7 @@ import type { View } from '@/app/features/dashboard/dashboard.types';
 
 export const ScanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
   const { toast } = useToast();
-  const { profile, setSubscriptionModalOpen, updateCreditBalance, setScannedFood } = useUserData();
+  const { profile, setSubscriptionModalOpen, setScannedFood } = useUserData();
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -171,10 +171,6 @@ export const ScanView = ({ onNavigate }: { onNavigate: (view: View) => void }) =
         throw new Error('Subscription required');
       }
       
-      if (response.status === 429) {
-        throw new Error('INSUFFICIENT_CREDITS');
-      }
-
       if (!response.ok) {
         let errorMsg = "Scan failed";
         try {
@@ -186,7 +182,6 @@ export const ScanView = ({ onNavigate }: { onNavigate: (view: View) => void }) =
       
       const scanResult = await response.json();
       
-      await updateCreditBalance(true); 
       setScannedFood(scanResult);
       toast({
           title: 'Success!',
@@ -195,14 +190,7 @@ export const ScanView = ({ onNavigate }: { onNavigate: (view: View) => void }) =
       onNavigate('meal-plan');
 
     } catch (error: any) {
-      if (error.message === 'INSUFFICIENT_CREDITS') {
-        toast({
-          variant: 'destructive',
-          title: 'No Credits Left',
-          description: 'Please purchase more credits to continue scanning.',
-          action: <Button onClick={() => router.push('/credits')}>Buy Credits</Button>
-        });
-      } else if (error.message !== 'Subscription required' && error.message !== 'Unauthorized') {
+      if (error.message !== 'Subscription required' && error.message !== 'Unauthorized') {
         toast({
           variant: 'destructive',
           title: 'Scan Failed',
