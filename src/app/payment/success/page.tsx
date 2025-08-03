@@ -41,7 +41,7 @@ function PaymentSuccessContent() {
         return;
       }
 
-      const verificationUrl = `${API_BASE_URL}/api/subscription/verify?reference=${encodeURIComponent(reference)}`;
+      const verificationUrl = `${API_BASE_URL}/api/event/last/${encodeURIComponent(reference)}`;
 
       try {
         const response = await fetch(verificationUrl, {
@@ -54,26 +54,28 @@ function PaymentSuccessContent() {
         if (response.ok) {
           const data = await response.json();
           
-          if (data.accessToken) {
-            localStorage.setItem('authToken', data.accessToken);
-          }
-          
-          const isSuccess = data.status && data.status.toLowerCase().includes('success');
+          const isSuccess = data.title && data.title.toLowerCase().includes('successful');
 
           if (isSuccess) {
             setStatus('success');
             setMessage({
-                title: 'Payment Successful!',
-                description: 'Your subscription is now active. You will be redirected shortly.',
+                title: data.title,
+                description: data.message,
             });
+            
+            // The C# controller has a typo in the property name. It is UserAccesToken not UserAccessToken
+            if (data.userAccesToken) {
+              localStorage.setItem('authToken', data.userAccesToken);
+            }
+
             setTimeout(() => {
                 router.push('/dashboard');
             }, 3000);
           } else {
              setStatus('error');
              setMessage({
-                title: 'Verification Failed',
-                description: 'The transaction could not be verified or was not successful.',
+                title: data.title || 'Verification Failed',
+                description: data.message || 'The transaction could not be verified or was not successful.',
              });
           }
 
