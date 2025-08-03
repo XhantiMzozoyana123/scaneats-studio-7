@@ -6,10 +6,10 @@ import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { AuthBackgroundImage } from '@/components/auth-background-image';
+import { AuthBackgroundImage } from '@/app/shared/components/auth-background-image';
 import { KeyRound, Loader2 } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-import { API_BASE_URL } from '@/lib/api';
+import { useToast } from '@/app/shared/hooks/use-toast';
+import { API_BASE_URL } from '@/app/shared/lib/api';
 
 function ResetPasswordForm() {
     const router = useRouter();

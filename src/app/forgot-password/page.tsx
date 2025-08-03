@@ -5,10 +5,10 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { AuthBackgroundImage } from '@/components/auth-background-image';
+import { AuthBackgroundImage } from '@/app/shared/components/auth-background-image';
 import { Mail, Loader2, ArrowLeft } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-import { API_BASE_URL } from '@/lib/api';
+import { useToast } from '@/app/shared/hooks/use-toast';
+import { API_BASE_URL } from '@/app/shared/lib/api';
 
 export default function ForgotPasswordPage() {
   const { toast } = useToast();
