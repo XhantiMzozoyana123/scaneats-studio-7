@@ -52,40 +52,13 @@ function PaymentSuccessContent() {
           },
         });
 
-        if (response.ok) {
-          const data = await response.json();
-          
-          const isSuccess = data.title && data.title.toLowerCase().includes('successful');
-
-          if (isSuccess) {
-            setStatus('success');
-            setMessage({
-                title: data.title,
-                description: data.message,
-            });
-            
-            // The C# controller has a typo in the property name. It is UserAccesToken not UserAccessToken
-            if (data.userAccesToken) {
-              localStorage.setItem('authToken', data.userAccesToken);
-            }
-
-            setTimeout(() => {
-                router.push('/dashboard');
-            }, 3000);
-          } else {
-             setStatus('error');
-             setMessage({
-                title: data.title || 'Verification Failed',
-                description: data.message || 'The transaction could not be verified or was not successful.',
-             });
-          }
-
-        } else {
+        if (response.status === 401) {
+            throw new Error('Your session has expired. Please log in again.');
+        }
+        
+        if (!response.ok) {
             let errorMsg = 'Failed to verify your payment.';
-             if (response.status === 401) {
-                errorMsg = 'Your session has expired. Please log in again.';
-                router.push('/login');
-            } else if (response.status === 404) {
+            if (response.status === 404) {
                 errorMsg = 'Could not find the payment to verify. Please contact support.';
             } else if (response.status >= 500) {
                 errorMsg = 'Our servers are experiencing issues. Please try again later.';
@@ -93,7 +66,7 @@ function PaymentSuccessContent() {
                 try {
                     const errorData = await response.json();
                     if (errorData.message) {
-                    errorMsg = errorData.message;
+                      errorMsg = errorData.message;
                     }
                 } catch {
                     // keep generic message
@@ -101,14 +74,45 @@ function PaymentSuccessContent() {
             }
             throw new Error(errorMsg);
         }
+
+        const data = await response.json();
+        
+        const isSuccess = data.title && data.title.toLowerCase().includes('successful');
+
+        if (isSuccess) {
+          setStatus('success');
+          setMessage({
+              title: data.title,
+              description: data.message,
+          });
+          
+          if (data.userAccesToken) {
+            localStorage.setItem('authToken', data.userAccesToken);
+          }
+
+          setTimeout(() => {
+              router.push('/dashboard');
+          }, 3000);
+        } else {
+           setStatus('error');
+           setMessage({
+              title: data.title || 'Verification Failed',
+              description: data.message || 'The transaction could not be verified or was not successful.',
+           });
+        }
+
       } catch (error: any) {
         setStatus('error');
-        setMessage({ title: 'Verification Failed', description: error.message || 'An unexpected error occurred during verification.' });
+        const errorMessage = error.message || 'An unexpected error occurred during verification.';
+        setMessage({ title: 'Verification Failed', description: errorMessage });
         toast({
           variant: 'destructive',
           title: 'Verification Failed',
-          description: error.message,
+          description: errorMessage,
         });
+         if (error.message.includes('session has expired')) {
+            router.push('/login');
+        }
       }
     };
 
