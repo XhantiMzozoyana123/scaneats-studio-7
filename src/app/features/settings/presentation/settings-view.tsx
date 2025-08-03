@@ -148,7 +148,7 @@ export const SettingsView = ({
           title: 'Subscription Cancelled',
           description: 'Your subscription has been successfully cancelled.',
         });
-        fetchProfile(); // Refresh user data
+        await fetchProfile(); // Refresh user data
       } else {
         let errorMessage = 'Failed to cancel subscription.';
         if (response.status === 401) {
@@ -347,7 +347,7 @@ export const SettingsView = ({
             >
               <DialogTrigger asChild>
                 <button className="w-full">
-                  <SettingsItem icon={Lock} label="Change Password" />
+                  <SettingsItem icon={Lock} label="Change Password" onClick={() => {}} />
                 </button>
               </DialogTrigger>
               <DialogContent>
