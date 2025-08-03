@@ -131,7 +131,7 @@ export default function PricingPage() {
           },
           body: JSON.stringify({
             email: email,
-            planCode: 'PLN_zgktlu9fwpxo1uy',
+            planCode: 'PLN_zgktlu9fwpxo1uy', // Ensure this is a valid plan code in your Paystack account
           }),
         }
       );
@@ -139,7 +139,6 @@ export default function PricingPage() {
       if (response.ok) {
         const result = await response.json();
         if (result.authorizationUrl) {
-          localStorage.setItem('paymentType', 'subscription');
           window.location.href = result.authorizationUrl;
         } else {
           throw new Error('Payment URL not received.');

@@ -41,7 +41,7 @@ function PaymentSuccessContent() {
         return;
       }
 
-      const verificationUrl = `${API_BASE_URL}/api/event/last/${encodeURIComponent(reference)}`;
+      const verificationUrl = `${API_BASE_URL}/api/subscription/verify?reference=${encodeURIComponent(reference)}`;
 
       try {
         const response = await fetch(verificationUrl, {
@@ -54,38 +54,35 @@ function PaymentSuccessContent() {
         if (response.ok) {
           const data = await response.json();
           
-          if (data.userAccesToken) {
-            localStorage.setItem('authToken', data.userAccesToken);
+          if (data.accessToken) {
+            localStorage.setItem('authToken', data.accessToken);
           }
           
-          const isSuccess = data.title && !data.title.toLowerCase().includes('failed');
+          const isSuccess = data.status && data.status.toLowerCase().includes('success');
 
           if (isSuccess) {
             setStatus('success');
             setMessage({
-                title: data.title,
-                description: data.message,
+                title: 'Payment Successful!',
+                description: 'Your subscription is now active. You will be redirected shortly.',
             });
-            localStorage.removeItem('creditBalance');
             setTimeout(() => {
                 router.push('/dashboard');
             }, 3000);
           } else {
              setStatus('error');
              setMessage({
-                title: data.title || 'Verification Failed',
-                description: data.message || 'The transaction could not be verified.',
+                title: 'Verification Failed',
+                description: 'The transaction could not be verified or was not successful.',
              });
           }
-
-          localStorage.removeItem('paymentType');
 
         } else {
             let errorMsg = 'Failed to verify your payment.';
              if (response.status === 401) {
                 errorMsg = 'Your session has expired. Please log in again.';
             } else if (response.status === 404) {
-                errorMsg = 'Could not find the payment event to verify. Please contact support.';
+                errorMsg = 'Could not find the payment to verify. Please contact support.';
             } else if (response.status >= 500) {
                 errorMsg = 'Our servers are experiencing issues. Please try again later.';
             } else {
@@ -108,7 +105,6 @@ function PaymentSuccessContent() {
           title: 'Verification Failed',
           description: error.message,
         });
-        localStorage.removeItem('paymentType');
       }
     };
 
@@ -130,7 +126,7 @@ function PaymentSuccessContent() {
           <div className="flex flex-col items-center gap-4 text-center text-white">
             <CheckCircle className="h-16 w-16 text-green-500" />
             <h1 className="text-2xl font-semibold">{message.title}</h1>
-            <p className="text-gray-300">{message.description} You will be redirected shortly.</p>
+            <p className="text-gray-300">{message.description}</p>
           </div>
         );
       case 'error':

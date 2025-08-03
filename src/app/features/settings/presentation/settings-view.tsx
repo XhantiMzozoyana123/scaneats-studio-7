@@ -121,9 +121,8 @@ export const SettingsView = ({
   const handleCancelSubscription = async () => {
     setIsCancelling(true);
     const token = localStorage.getItem('authToken');
-    const email = localStorage.getItem('userEmail');
 
-    if (!token || !email) {
+    if (!token) {
       toast({
         variant: 'destructive',
         title: 'Authentication Error',
@@ -140,7 +139,6 @@ export const SettingsView = ({
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}` 
         },
-        body: JSON.stringify({ email: email }),
       });
 
       if (response.ok) {
