@@ -9,7 +9,7 @@ import {
 } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { Button } from '@/app/shared/components/ui/button';
+import { Button } from '@/components/ui/button';
 import { AlertTriangle, Camera, Loader2, RefreshCw, Send, Smartphone, Upload } from 'lucide-react';
 import { useToast } from '@/app/shared/hooks/use-toast';
 import { useUserData } from '@/app/shared/context/user-data-context';
@@ -129,16 +129,13 @@ export const ScanView = ({ onNavigate }: { onNavigate: (view: View) => void }) =
   const handleSendScan = async () => {
     if (!capturedImage) return;
 
-    if (!profile?.isSubscribed) {
-      setSubscriptionModalOpen(true);
-      return;
-    }
-
     setIsSending(true);
 
     try {
       const token = localStorage.getItem('authToken');
-      if (!token) throw new Error("Authentication token not found.");
+      if (!token) {
+        throw new Error("Authentication token not found. Please log in again.");
+      }
       
       const response = await fetch(`${API_BASE_URL}/api/scan`, {
           method: 'POST',
@@ -149,15 +146,27 @@ export const ScanView = ({ onNavigate }: { onNavigate: (view: View) => void }) =
           body: JSON.stringify({
             Base64: capturedImage,
             Logging: {
-                ProfileId: profile.id,
+                ProfileId: profile?.id,
             }
           })
       });
 
+      if (response.status === 401) {
+        toast({ variant: 'destructive', title: 'Session Expired', description: 'Please log in again.' });
+        router.push('/login');
+        throw new Error('Unauthorized');
+      }
+      
+      if (response.status === 403) {
+        setSubscriptionModalOpen(true);
+        throw new Error('Subscription required');
+      }
+      
+      if (response.status === 429) {
+        throw new Error('INSUFFICIENT_CREDITS');
+      }
+
       if (!response.ok) {
-        if (response.status === 429) {
-          throw new Error('INSUFFICIENT_CREDITS');
-        }
         let errorMsg = "Scan failed";
         try {
             const errorData = await response.json();
@@ -184,7 +193,7 @@ export const ScanView = ({ onNavigate }: { onNavigate: (view: View) => void }) =
           description: 'Please purchase more credits to continue scanning.',
           action: <Button onClick={() => router.push('/credits')}>Buy Credits</Button>
         });
-      } else {
+      } else if (error.message !== 'Subscription required' && error.message !== 'Unauthorized') {
         toast({
           variant: 'destructive',
           title: 'Scan Failed',
