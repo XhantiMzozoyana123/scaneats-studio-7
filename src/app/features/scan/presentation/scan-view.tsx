@@ -128,6 +128,15 @@ export const ScanView = ({ onNavigate }: { onNavigate: (view: View) => void }) =
 
   const handleSendScan = async () => {
     if (!capturedImage) return;
+    
+    if (!profile || profile.id === null) {
+        toast({
+            variant: 'destructive',
+            title: 'Profile Not Loaded',
+            description: 'Please wait for your profile to load before scanning.',
+        });
+        return;
+    }
 
     setIsSending(true);
 
@@ -146,7 +155,7 @@ export const ScanView = ({ onNavigate }: { onNavigate: (view: View) => void }) =
           body: JSON.stringify({
             Base64: capturedImage,
             Logging: {
-                ProfileId: profile?.id,
+                ProfileId: profile.id,
             }
           })
       });
