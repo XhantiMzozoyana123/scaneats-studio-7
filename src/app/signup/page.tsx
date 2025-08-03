@@ -105,7 +105,7 @@ export default function SignUpPage() {
         } else {
             try {
                 const errorData = await response.json();
-                if (errorData.error) {
+                if (errorData && errorData.error) {
                     errorMessage = errorData.error;
                 }
             } catch {

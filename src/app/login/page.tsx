@@ -62,9 +62,14 @@ export default function LoginPage() {
           errorMessage = 'Our servers are currently unavailable. Please try again later.';
         } else {
             try {
+                // Try to get a more specific error from the backend response
                 const errorData = await response.json();
-                if (errorData.error) errorMessage = errorData.error;
-            } catch {}
+                if (errorData && errorData.error) {
+                  errorMessage = errorData.error;
+                }
+            } catch {
+                // If parsing fails, stick with the generic status-based message.
+            }
         }
         throw new Error(errorMessage);
       }
