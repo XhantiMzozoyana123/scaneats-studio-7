@@ -18,6 +18,11 @@ export class MealApiRepository implements IMealRepository {
         throw new Error('Failed to fetch last meal plan');
       }
 
+      const contentLength = response.headers.get('content-length');
+      if (!contentLength || parseInt(contentLength, 10) === 0) {
+        return null; // Handle empty response body
+      }
+
       const meal = await response.json();
       // The controller returns a list, we take the first element.
       return meal && meal.length > 0 ? meal[0] : null;
