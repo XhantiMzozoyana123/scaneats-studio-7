@@ -33,6 +33,7 @@ const ScannedFoodSchema = z.object({
 const MealInsightInputSchema = z.object({
   profile: ProfileSchema,
   meal: ScannedFoodSchema,
+  userQuery: z.string().describe('The user\'s question about the meal.'),
 });
 export type MealInsightInput = z.infer<typeof MealInsightInputSchema>;
 
@@ -49,8 +50,8 @@ const mealInsightPrompt = ai.definePrompt({
   output: { format: 'text' },
   prompt: `
     You are Sally, a friendly and knowledgeable AI nutritionist.
-    Your goal is to provide a concise, helpful, and encouraging insight into a meal a user has just eaten.
-    Keep your response to 2-3 sentences.
+    Your goal is to provide a concise, helpful, and encouraging insight into a meal a user has just eaten, based on their specific question.
+    Keep your response to 2-4 sentences.
 
     Here is the user's profile:
     - Name: {{{profile.name}}}
@@ -65,10 +66,10 @@ const mealInsightPrompt = ai.definePrompt({
     - Carbohydrates: {{{meal.carbs}}}g
     - Fat: {{{meal.fat}}}g
 
-    Based on their profile and the meal's nutritional information, provide a personalized insight.
-    For example, if their goal is to lose weight, you could comment on the calorie count.
-    If their goal is to build muscle, you could comment on the protein content.
-    Always be positive and encouraging. Address the user by their name.
+    The user's question is: "{{{userQuery}}}"
+
+    Based on their profile, the meal's nutritional information, and their question, provide a personalized and conversational response.
+    Address the user by their name.
   `,
 });
 

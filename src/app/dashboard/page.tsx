@@ -544,16 +544,17 @@ const MealPlanView = () => {
   const { profile } = useUserData();
   const [scannedFood, setScannedFood] = useState<ScannedFood | null>(null);
   const [isMealLoading, setIsMealLoading] = useState(true);
-  const [insight, setInsight] = useState<string | null>(null);
-  const [isInsightLoading, setIsInsightLoading] = useState(false);
+  const [sallyResponse, setSallyResponse] = useState<string | null>(null);
+  const [isSallyLoading, setIsSallyLoading] = useState(false);
+  const [sallyProgress, setSallyProgress] = useState(0);
+  const [isRecording, setIsRecording] = useState(false);
+  const recognitionRef = useRef<any>(null);
 
   useEffect(() => {
     const fetchMealPlan = async () => {
-      console.log('MealPlanView: useEffect triggered. Starting fetch.');
       setIsMealLoading(true);
       const token = localStorage.getItem('authToken');
       if (!token) {
-        console.log('MealPlanView: No auth token found.');
         toast({
           variant: 'destructive',
           title: 'Not Authenticated',
@@ -564,19 +565,15 @@ const MealPlanView = () => {
       }
 
       try {
-        console.log('MealPlanView: Calling mealService.getLastMealPlan...');
         const meal = await mealService.getLastMealPlan(token);
-        console.log('MealPlanView: Fetched meal data:', meal);
         setScannedFood(meal);
       } catch (error: any) {
-        console.error('MealPlanView: Error fetching meal plan:', error);
         toast({
           variant: 'destructive',
           title: 'Failed to load meal plan',
           description: error.message,
         });
       } finally {
-        console.log('MealPlanView: Fetch finished. Setting isMealLoading to false.');
         setIsMealLoading(false);
       }
     };
@@ -585,45 +582,128 @@ const MealPlanView = () => {
   }, [toast]);
 
   useEffect(() => {
-    const fetchInsight = async () => {
-      if (scannedFood && profile) {
-        setIsInsightLoading(true);
-        setInsight(null);
-        try {
-          const result = await getMealInsight({
-            profile: profile,
-            meal: scannedFood,
+    if (isSallyLoading) {
+      const interval = setInterval(() => {
+        setSallyProgress((prev) => {
+          if (prev >= 90) {
+            clearInterval(interval);
+            return 90;
+          }
+          return prev + 10;
+        });
+      }, 500);
+      return () => clearInterval(interval);
+    }
+  }, [isSallyLoading]);
+
+  useEffect(() => {
+    const SpeechRecognition =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      recognitionRef.current = new SpeechRecognition();
+      recognitionRef.current.continuous = false;
+      recognitionRef.current.lang = 'en-US';
+      recognitionRef.current.interimResults = false;
+
+      recognitionRef.current.onresult = (event: any) => {
+        const transcript = event.results[0][0].transcript;
+        handleApiCall(transcript);
+      };
+
+      recognitionRef.current.onerror = (event: any) => {
+        console.error('Speech recognition error', event.error);
+        if (event.error === 'not-allowed') {
+          toast({
+            variant: 'destructive',
+            title: 'Microphone Access Denied',
+            description:
+              'Please allow microphone access in your browser settings to use this feature.',
           });
-          setInsight(result);
-        } catch (error) {
-          console.error("Failed to get meal insight:", error);
-          setInsight("Sorry, I couldn't generate an insight for this meal right now.");
-        } finally {
-          setIsInsightLoading(false);
+        } else {
+          toast({
+            variant: 'destructive',
+            title: 'Speech Error',
+            description: `Could not recognize speech: ${event.error}. Please try again.`,
+          });
         }
-      }
-    };
+        setIsRecording(false);
+      };
 
-    fetchInsight();
-  }, [scannedFood, profile]);
+      recognitionRef.current.onend = () => {
+        setIsRecording(false);
+      };
+    } else {
+      toast({
+        variant: 'destructive',
+        title: 'Not Supported',
+        description: 'Speech recognition is not supported in this browser.',
+      });
+    }
+  }, [toast]);
 
+  const handleMicClick = async () => {
+    if (isRecording) {
+      recognitionRef.current?.stop();
+      return;
+    }
+    try {
+      if (isSallyLoading) return;
+      await navigator.mediaDevices.getUserMedia({ audio: true });
+      setIsRecording(true);
+      recognitionRef.current?.start();
+    } catch (error) {
+      console.error('Microphone permission error:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Microphone Access Denied',
+        description:
+          'Please allow microphone access in your browser settings to use this feature.',
+      });
+    }
+  };
+
+  const handleApiCall = async (userInput: string) => {
+    if (!userInput.trim() || !scannedFood || !profile) {
+      setSallyResponse("I can only talk about the meal on screen. Please scan a meal first.");
+      return;
+    }
+
+    setIsSallyLoading(true);
+    setSallyProgress(10);
+    setSallyResponse(`Thinking about: "${userInput}"`);
+    try {
+      const result = await getMealInsight({
+        profile: profile,
+        meal: scannedFood,
+        userQuery: userInput,
+      });
+      setSallyResponse(result);
+    } catch (error) {
+      console.error('Failed to get meal insight:', error);
+      setSallyResponse(
+        "Sorry, I had trouble with that. Please try again."
+      );
+    } finally {
+      setIsSallyLoading(false);
+      setSallyProgress(100);
+      setTimeout(() => setSallyProgress(0), 500);
+    }
+  };
+  
   const { totalCalories, totalProtein, totalCarbs, totalFat } = useMemo(() => {
     if (!scannedFood) {
-      console.log('MealPlanView: useMemo - scannedFood is null, returning zero values.');
       return { totalCalories: 0, totalProtein: 0, totalCarbs: 0, totalFat: 0 };
     }
-    const calculated = {
+    return {
       totalCalories: scannedFood.total || 0,
       totalProtein: scannedFood.protein || 0,
       totalCarbs: scannedFood.carbs || 0,
       totalFat: scannedFood.fat || 0,
     };
-    console.log('MealPlanView: useMemo - calculated values:', calculated);
-    return calculated;
   }, [scannedFood]);
 
+
   if (isMealLoading) {
-    console.log('MealPlanView: Rendering loading state.');
     return (
       <div className="flex h-full w-full items-center justify-center bg-zinc-950 text-white">
         <div className="flex flex-col items-center gap-2">
@@ -635,7 +715,6 @@ const MealPlanView = () => {
   }
 
   if (!scannedFood) {
-    console.log('MealPlanView: Rendering "No food scanned yet" state.');
     return (
       <div className="flex h-full w-full items-center justify-center bg-zinc-950 text-white">
         <div className="flex flex-col items-center gap-4 text-center">
@@ -646,11 +725,10 @@ const MealPlanView = () => {
       </div>
     );
   }
-
-  console.log('MealPlanView: Rendering meal data.');
+  
   return (
     <div className="h-full overflow-y-auto bg-zinc-950 text-white p-4 pb-28">
-       <header className="sticky top-0 z-10 w-full p-4 mb-4">
+      <header className="sticky top-0 z-10 w-full p-4 mb-4">
         <div className="container mx-auto flex items-center justify-center">
           <h1 className="text-xl font-semibold">Your Last Meal</h1>
         </div>
@@ -677,21 +755,61 @@ const MealPlanView = () => {
           <StatCard label="Fat" value={totalFat.toFixed(1)} unit="grams" />
         </div>
 
-        <div className="frosted-card p-6">
-           <h3 className="font-semibold text-lg mb-2 flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-primary" />
-            Nutritional Insights
-            </h3>
-            {isInsightLoading ? (
-                 <div className="flex items-center gap-2 text-sm text-gray-300">
-                    <Loader2 className="h-4 w-4 animate-spin"/>
-                    Sally is analyzing your meal...
-                 </div>
-            ) : (
-                <p className="text-sm text-gray-300 leading-relaxed">
-                  {insight}
-                </p>
+        <div className="flex w-full max-w-sm flex-col items-center gap-6 rounded-3xl border border-white/40 bg-white/10 p-6 shadow-[0_20px_55px_8px_rgba(110,100,150,0.45)] backdrop-blur-2xl backdrop-saturate-150 mx-auto">
+          <div className="relative flex h-[130px] w-[130px] shrink-0 items-center justify-center">
+            <div
+              className="absolute top-1/2 left-1/2 h-[160%] w-[160%] -translate-x-1/2 -translate-y-1/2 animate-breathe-glow-sally rounded-full"
+              style={{
+                background:
+                  'radial-gradient(circle at center, rgba(255, 235, 255, 0.7) 10%, rgba(200, 190, 255, 0.8) 40%, rgba(170, 220, 255, 1.0) 65%, rgba(200, 240, 255, 1.0) 72%, rgba(135, 206, 250, 0) 80%)',
+              }}
+            />
+
+            {isRecording && (
+              <div className="pointer-events-none absolute top-1/2 left-1/2 h-[90px] w-[90px] -translate-x-1/2 -translate-y-1/2">
+                <div className="absolute top-0 left-0 h-full w-full animate-siri-wave-1 rounded-full border-2 border-white/60"></div>
+                <div className="absolute top-0 left-0 h-full w-full animate-siri-wave-2 rounded-full border-2 border-white/60"></div>
+                <div className="absolute top-0 left-0 h-full w-full animate-siri-wave-3 rounded-full border-2 border-white/60"></div>
+                <div className="absolute top-0 left-0 h-full w-full animate-siri-wave-4 rounded-full border-2 border-white/60"></div>
+              </div>
             )}
+
+            <button
+              onClick={handleMicClick}
+              disabled={isSallyLoading}
+              className={cn(
+                'relative z-10 flex h-20 w-20 items-center justify-center rounded-full bg-[#4629B0] shadow-[inset_0_2px_4px_0_rgba(255,255,255,0.4),0_0_15px_5px_rgba(255,255,255,0.8),0_0_30px_15px_rgba(255,255,255,0.5),0_0_50px_25px_rgba(220,230,255,0.3)] transition-all active:scale-95 active:bg-[#3c239a] active:shadow-[inset_0_2px_4px_0_rgba(255,255,255,0.3),0_0_10px_3px_rgba(255,255,255,0.7),0_0_20px_10px_rgba(255,255,255,0.4),0_0_40px_20px_rgba(220,230,255,0.2)]',
+                isSallyLoading && 'cursor-not-allowed'
+              )}
+              aria-label="Activate Voice AI"
+            >
+              {isSallyLoading ? (
+                <Loader2 className="h-10 w-10 animate-spin text-white" />
+              ) : (
+                <Mic
+                  className="h-10 w-10 text-white"
+                  style={{
+                    textShadow:
+                      '0 1px 2px rgba(0,0,0,0.2), 0 0 5px rgba(255,255,255,0.8), 0 0 10px rgba(180,140,255,0.7)',
+                  }}
+                />
+              )}
+            </button>
+          </div>
+
+          <div className="flex h-auto min-h-[4rem] w-full flex-col justify-center rounded-2xl border border-white/40 bg-white/80 p-3 text-left shadow-[inset_0_1px_2px_rgba(255,255,255,0.6),0_10px_30px_3px_rgba(100,90,140,0.45)] backdrop-blur-sm backdrop-saturate-150">
+            {isSallyLoading ? (
+                <div className="space-y-2 text-center">
+                  <Progress value={sallyProgress} className="w-full" />
+                  <p className="text-[13px] text-gray-600">Sally is thinking...</p>
+                </div>
+            ) : (
+              <div className="flex-grow text-[13px] leading-tight text-black">
+                <strong>Sally</strong>
+                <span className="text-gray-600"> - {sallyResponse || "Ask me anything about this meal."}</span>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
@@ -1663,5 +1781,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
-    
