@@ -11,6 +11,7 @@ const initialProfileState: Profile = {
   goals: '',
   birthDate: null,
   isSubscribed: false,
+  credits: 0,
 };
 
 export class ProfileApiRepository implements IProfileRepository {
@@ -32,6 +33,7 @@ export class ProfileApiRepository implements IProfileRepository {
                 ...p,
                 birthDate: p.BirthDate ? new Date(p.BirthDate) : null,
                 weight: p.Weight || '',
+                credits: p.Credits || 0,
             };
             // Assume subscription status comes with the profile
             isSubscribed = p.isSubscribed ?? false;

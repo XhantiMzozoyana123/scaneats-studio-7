@@ -54,6 +54,7 @@ const initialProfileState: Profile = {
   goals: '',
   birthDate: null,
   isSubscribed: false,
+  credits: 0,
 };
 
 // Instantiate repository and service

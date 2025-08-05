@@ -40,17 +40,20 @@ import {
   UserCircle,
   XCircle,
   CircleDollarSign,
+  Wallet,
 } from 'lucide-react';
 import { API_BASE_URL } from '@/app/shared/lib/api';
 
 const SettingsItem = ({
   icon: Icon,
   label,
+  value,
   href,
   onClick,
 }: {
   icon: React.ElementType;
   label: string;
+  value?: string | number;
   href?: string;
   onClick?: () => void;
 }) => {
@@ -63,6 +66,9 @@ const SettingsItem = ({
     >
       <Icon className="mr-4 h-5 w-5 text-gray-300" />
       <span className="flex-1 font-medium text-white">{label}</span>
+       {value !== undefined && (
+        <span className="text-gray-400 mr-2 font-medium">{value}</span>
+      )}
       {(href || onClick) && <ChevronRight className="h-5 w-5 text-gray-500" />}
     </div>
   );
@@ -412,6 +418,11 @@ export const SettingsView = ({
 
           <div className="space-y-4 rounded-lg bg-zinc-900 p-6">
             <h2 className="text-lg font-semibold text-white">Billing</h2>
+             <SettingsItem
+              icon={Wallet}
+              label="Your Credits"
+              value={profile?.credits ?? 0}
+            />
              <SettingsItem
               icon={CircleDollarSign}
               label="Buy Credits"
