@@ -86,6 +86,7 @@ export default function SignUpPage() {
       title: 'Login Failed',
       description: 'Google authentication failed. Please try again.',
     });
+    setIsLoading(false);
   };
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -120,6 +121,10 @@ export default function SignUpPage() {
                 const errorData = await response.json();
                 if (errorData && errorData.error) {
                     errorMessage = errorData.error;
+                } else if (errorData && errorData.errors) {
+                    // Handle validation errors from ASP.NET Core Identity
+                    const messages = Object.values(errorData.errors).flat();
+                    errorMessage = messages.join(' ');
                 }
             } catch {
                 // Keep the generic message
@@ -151,40 +156,42 @@ export default function SignUpPage() {
         </div>
 
         <form className="space-y-6" onSubmit={handleSubmit}>
-          <div className="relative border-b border-white/40">
-            <User className="absolute left-0 top-3 h-5 w-5 text-white/70" />
-            <Input
-              type="text"
-              placeholder="Username"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              required
-              className="border-0 bg-transparent pl-8 text-base placeholder:text-white/70 focus-visible:ring-0 focus-visible:ring-offset-0"
-            />
-          </div>
+          <div className="space-y-4">
+            <div className="relative border-b border-white/40">
+              <User className="absolute left-0 top-3 h-5 w-5 text-white/70" />
+              <Input
+                type="text"
+                placeholder="Username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                required
+                className="border-0 bg-transparent pl-8 text-base placeholder:text-white/70 focus-visible:ring-0 focus-visible:ring-offset-0"
+              />
+            </div>
 
-          <div className="relative border-b border-white/40">
-            <Mail className="absolute left-0 top-3 h-5 w-5 text-white/70" />
-            <Input
-              type="email"
-              placeholder="Email Address"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className="border-0 bg-transparent pl-8 text-base placeholder:text-white/70 focus-visible:ring-0 focus-visible:ring-offset-0"
-            />
-          </div>
+            <div className="relative border-b border-white/40">
+              <Mail className="absolute left-0 top-3 h-5 w-5 text-white/70" />
+              <Input
+                type="email"
+                placeholder="Email Address"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                className="border-0 bg-transparent pl-8 text-base placeholder:text-white/70 focus-visible:ring-0 focus-visible:ring-offset-0"
+              />
+            </div>
 
-          <div className="relative border-b border-white/40">
-            <KeyRound className="absolute left-0 top-3 h-5 w-5 text-white/70" />
-            <Input
-              type="password"
-              placeholder="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              className="border-0 bg-transparent pl-8 text-base placeholder:text-white/70 focus-visible:ring-0 focus-visible:ring-offset-0"
-            />
+            <div className="relative border-b border-white/40">
+              <KeyRound className="absolute left-0 top-3 h-5 w-5 text-white/70" />
+              <Input
+                type="password"
+                placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                className="border-0 bg-transparent pl-8 text-base placeholder:text-white/70 focus-visible:ring-0 focus-visible:ring-offset-0"
+              />
+            </div>
           </div>
 
           <div className="flex items-center space-x-2 pt-2">
@@ -259,5 +266,3 @@ export default function SignUpPage() {
     </div>
   );
 }
-
-    

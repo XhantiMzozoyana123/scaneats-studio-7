@@ -141,6 +141,7 @@ export default function LoginPage() {
       title: 'Login Failed',
       description: 'Google authentication failed. Please try again.',
     });
+    setIsLoading(false);
   };
 
   useEffect(() => {
@@ -162,34 +163,36 @@ export default function LoginPage() {
         </div>
 
         <form className="space-y-6" onSubmit={handleSubmit}>
-          <div className="relative border-b border-white/40">
-            <Mail className="absolute left-0 top-3 h-5 w-5 text-white/70" />
-            <Input
-              type="email"
-              placeholder="Email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className="border-0 bg-transparent pl-8 text-base placeholder:text-white/70 focus-visible:ring-0 focus-visible:ring-offset-0"
-            />
+          <div className="space-y-4">
+            <div className="relative border-b border-white/40">
+              <Mail className="absolute left-0 top-3 h-5 w-5 text-white/70" />
+              <Input
+                type="email"
+                placeholder="Email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                className="border-0 bg-transparent pl-8 text-base placeholder:text-white/70 focus-visible:ring-0 focus-visible:ring-offset-0"
+              />
+            </div>
+
+            <div className="relative border-b border-white/40">
+              <KeyRound className="absolute left-0 top-3 h-5 w-5 text-white/70" />
+              <Input
+                type="password"
+                placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                className="border-0 bg-transparent pl-8 text-base placeholder:text-white/70 focus-visible:ring-0 focus-visible:ring-offset-0"
+              />
+              <Link href="/forgot-password" className="absolute right-0 top-3 text-sm text-white/70 transition-colors hover:text-white">
+                Forgot?
+              </Link>
+            </div>
           </div>
 
-          <div className="relative border-b border-white/40">
-            <KeyRound className="absolute left-0 top-3 h-5 w-5 text-white/70" />
-            <Input
-              type="password"
-              placeholder="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              className="border-0 bg-transparent pl-8 text-base placeholder:text-white/70 focus-visible:ring-0 focus-visible:ring-offset-0"
-            />
-            <Link href="/forgot-password" className="absolute right-0 top-3 text-sm text-white/70 transition-colors hover:text-white">
-              Forgot?
-            </Link>
-          </div>
-
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between pt-2">
             <div className="flex items-center space-x-2">
               <Checkbox id="remember-me" className="border-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground" />
               <Label htmlFor="remember-me" className="text-white/70">
@@ -246,5 +249,3 @@ export default function LoginPage() {
     </div>
   );
 }
-
-    
