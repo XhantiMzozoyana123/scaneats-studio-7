@@ -144,10 +144,10 @@ export const MealPlanView = ({ onNavigate }: { onNavigate: (view: View) => void 
       return { calories: 0, protein: 0, fat: 0, carbs: 0 };
     }
     return {
-        calories: scannedFood.calories || 0,
-        protein: scannedFood.protein || 0,
-        fat: scannedFood.fat || 0,
-        carbs: scannedFood.carbohydrates || 0,
+        calories: scannedFood.Total || 0,
+        protein: scannedFood.Protien || 0,
+        fat: scannedFood.Fat || 0,
+        carbs: scannedFood.Carbs || 0,
     }
   }, [scannedFood]);
 

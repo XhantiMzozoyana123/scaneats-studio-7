@@ -24,8 +24,8 @@ export class MealApiRepository implements IMealRepository {
       }
 
       const meal = await response.json();
-      // The controller returns a list, we take the first element.
-      return meal && meal.length > 0 ? meal[0] : null;
+      // The controller now returns a single object.
+      return meal;
     } catch (error) {
       console.error('Error fetching last meal plan:', error);
       throw error;
