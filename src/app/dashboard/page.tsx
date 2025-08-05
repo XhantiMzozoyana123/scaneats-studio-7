@@ -665,15 +665,17 @@ const MealPlanView = () => {
   }
   
   return (
-    <div className="relative h-full w-full flex-grow bg-black/60 p-5 box-border flex flex-col items-center backdrop-blur-[5px] pb-[155px] overflow-y-auto">
+    <div className="relative h-full w-full flex-grow p-5 box-border flex flex-col items-center pb-[155px] overflow-y-auto">
       <div className="fixed inset-0 -z-10">
-        <Image
-          src="https://gallery.scaneats.app/images/foodchaingif.gif"
-          alt="Background"
-          fill
-          unoptimized
-          className="object-cover filter blur-[5px]"
+        <video
+          src="https://gallery.scaneats.app/images/MealPlannerPage.webm"
+          className="h-full w-full object-cover"
+          autoPlay
+          loop
+          muted
+          playsInline
         />
+        <div className="absolute inset-0 bg-black/60" />
       </div>
 
       <header className="flex justify-between items-center mb-5 w-full max-w-[600px] px-[15px] box-border shrink-0">
@@ -688,7 +690,7 @@ const MealPlanView = () => {
         </div>
       </header>
       
-      <div className="flex flex-col items-center mb-[25px] shrink-0">
+      <div className="flex flex-col items-center mb-[25px] shrink-0 text-center">
         <div className="text-3xl md:text-4xl font-medium mb-2 text-white text-shadow-[0_0_10px_white]">
             {totalCalories.toFixed(0)}
         </div>
@@ -698,15 +700,15 @@ const MealPlanView = () => {
       </div>
 
       <div className="flex justify-around items-stretch mb-[25px] w-full max-w-[550px] gap-[15px] flex-wrap shrink-0">
-        <div className="bg-[rgba(74,20,140,0.8)] rounded-xl p-5 flex flex-col items-center justify-center text-center transition-all duration-200 ease-in-out text-white flex-1 min-w-[90px] shadow-[0_0_10px_rgba(106,27,154,0.5)] border border-[rgba(255,255,255,0.1)] hover:-translate-y-1">
+        <div className="bg-primary/80 rounded-xl p-5 flex flex-col items-center justify-center text-center transition-all duration-200 ease-in-out text-white flex-1 min-w-[90px] shadow-[0_0_10px_rgba(106,27,154,0.5)] border border-[rgba(255,255,255,0.1)] hover:-translate-y-1">
           <div className="text-lg mb-2 font-normal text-shadow-[0_0_10px_white]">Protein</div>
           <div className="text-2xl font-semibold text-shadow-[0_0_10px_white]">{totalProtein.toFixed(0)}g</div>
         </div>
-        <div className="bg-[rgba(74,20,140,0.8)] rounded-xl p-5 flex flex-col items-center justify-center text-center transition-all duration-200 ease-in-out text-white flex-1 min-w-[90px] shadow-[0_0_10px_rgba(106,27,154,0.5)] border border-[rgba(255,255,255,0.1)] hover:-translate-y-1">
+        <div className="bg-primary/80 rounded-xl p-5 flex flex-col items-center justify-center text-center transition-all duration-200 ease-in-out text-white flex-1 min-w-[90px] shadow-[0_0_10px_rgba(106,27,154,0.5)] border border-[rgba(255,255,255,0.1)] hover:-translate-y-1">
           <div className="text-lg mb-2 font-normal text-shadow-[0_0_10px_white]">Fat</div>
           <div className="text-2xl font-semibold text-shadow-[0_0_10px_white]">{totalFat.toFixed(0)}g</div>
         </div>
-        <div className="bg-[rgba(74,20,140,0.8)] rounded-xl p-5 flex flex-col items-center justify-center text-center transition-all duration-200 ease-in-out text-white flex-1 min-w-[90px] shadow-[0_0_10px_rgba(106,27,154,0.5)] border border-[rgba(255,255,255,0.1)] hover:-translate-y-1">
+        <div className="bg-primary/80 rounded-xl p-5 flex flex-col items-center justify-center text-center transition-all duration-200 ease-in-out text-white flex-1 min-w-[90px] shadow-[0_0_10px_rgba(106,27,154,0.5)] border border-[rgba(255,255,255,0.1)] hover:-translate-y-1">
           <div className="text-lg mb-2 font-normal text-shadow-[0_0_10px_white]">Carbs</div>
           <div className="text-2xl font-semibold text-shadow-[0_0_10px_white]">{totalCarbs.toFixed(0)}g</div>
         </div>
@@ -897,7 +899,7 @@ const SallyView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
             className="absolute top-1/2 left-1/2 h-[160%] w-[160%] -translate-x-1/2 -translate-y-1/2 animate-breathe-glow-sally rounded-full"
             style={{
               background:
-                'radial-gradient(circle at center, rgba(255, 235, 255, 0.7) 10%, rgba(200, 190, 255, 0.8) 40%, rgba(170, 220, 255, 1.0) 65%, rgba(200, 240, 255, 1.0) 72%, rgba(135, 206, 250, 0) 80%)',
+                'radial-gradient(circle at center, hsla(var(--primary), 0.1) 10%, hsla(var(--primary), 0.2) 40%, hsla(var(--primary), 0.3) 65%, hsla(var(--primary), 0.2) 72%, hsla(var(--primary), 0) 80%)',
             }}
           />
 
@@ -933,7 +935,7 @@ const SallyView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
           </button>
         </div>
 
-        <div className="flex h-auto min-h-[4rem] w-full flex-col justify-center rounded-2xl border border-white/40 bg-white/80 p-3 text-left shadow-[inset_0_1px_2px_rgba(255,255,255,0.6),0_10px_30px_3px_rgba(100,90,140,0.45)] backdrop-blur-sm backdrop-saturate-150">
+        <div className="flex h-auto min-h-[4rem] w-full flex-col justify-center rounded-2xl p-3 text-left shadow-[inset_0_1px_2px_rgba(255,255,255,0.6),0_10px_30px_3px_rgba(100,90,140,0.45)] backdrop-blur-sm backdrop-saturate-150">
            {isLoading ? (
               <div className="space-y-2 text-center">
                 <Progress value={loadingProgress} className="w-full" />
