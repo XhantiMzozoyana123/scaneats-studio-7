@@ -88,13 +88,10 @@ export default {
             height: '0',
           },
         },
-        'breathe-glow': {
-          '0%, 100%': {
-            boxShadow: '0 0 15px 5px hsl(var(--primary)/0.4)',
-          },
-          '50%': {
-            boxShadow: '0 0 25px 10px hsl(var(--primary)/0.5)',
-          },
+        'breathing-glow': {
+          '0%': { boxShadow: '0 0 45px 15px #8e24aa' },
+          '50%': { boxShadow: '0 0 25px 5px #6a1b9a' },
+          '100%': { boxShadow: '0 0 45px 15px #8e24aa' },
         },
         'breathe-glow-white': {
           '0%, 100%': {
@@ -127,7 +124,7 @@ export default {
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
-        'breathe-glow': 'breathe-glow 2.5s ease-in-out infinite',
+        'breathe-glow': 'breathing-glow 2.5s ease-in-out infinite',
         'breathe-glow-white': 'breathe-glow-white 2.5s ease-in-out infinite',
         'breathe-glow-sally': 'breathe-glow-sally 1.8s ease-in-out infinite',
         'siri-wave-1': 'siri-wave 2s infinite ease-out',

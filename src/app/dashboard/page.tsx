@@ -495,51 +495,6 @@ const ScanView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
 const mealRepository = new MealApiRepository();
 const mealService = new MealService(mealRepository);
 
-const StatCard = ({ label, value, unit }: { label: string, value: string, unit: string }) => (
-  <div className="flex flex-col items-center justify-center rounded-lg bg-primary/20 p-4 shadow-md">
-    <div className="text-3xl font-bold text-white">{value}</div>
-    <div className="text-sm font-light text-gray-400">{label}</div>
-    <div className="text-xs text-gray-500">{unit}</div>
-  </div>
-);
-
-const MacroBreakdown = ({
-  carbs,
-  protein,
-  fat,
-}: {
-  carbs: number;
-  protein: number;
-  fat: number;
-}) => {
-  const total = carbs + protein + fat;
-  if (total === 0) return null;
-
-  const carbPercent = Math.round((carbs / total) * 100);
-  const proteinPercent = Math.round((protein / total) * 100);
-  const fatPercent = 100 - carbPercent - proteinPercent; // To ensure it adds up to 100
-
-  return (
-    <div className="mt-4 flex w-full h-4 rounded-full overflow-hidden bg-zinc-700">
-      <div
-        className="bg-green-500"
-        style={{ width: `${carbPercent}%` }}
-        title={`Carbs: ${carbPercent}%`}
-      />
-      <div
-        className="bg-red-500"
-        style={{ width: `${proteinPercent}%` }}
-        title={`Protein: ${proteinPercent}%`}
-      />
-      <div
-        className="bg-yellow-500"
-        style={{ width: `${fatPercent}%` }}
-        title={`Fat: ${fatPercent}%`}
-      />
-    </div>
-  );
-};
-
 const MealPlanView = () => {
   const { toast } = useToast();
   const { profile } = useUserData();
@@ -547,7 +502,6 @@ const MealPlanView = () => {
   const [isMealLoading, setIsMealLoading] = useState(true);
   const [sallyResponse, setSallyResponse] = useState<string | null>(null);
   const [isSallyLoading, setIsSallyLoading] = useState(false);
-  const [sallyProgress, setSallyProgress] = useState(0);
   const [isRecording, setIsRecording] = useState(false);
   const recognitionRef = useRef<any>(null);
 
@@ -582,20 +536,6 @@ const MealPlanView = () => {
     fetchMealPlan();
   }, [toast]);
 
-  useEffect(() => {
-    if (isSallyLoading) {
-      const interval = setInterval(() => {
-        setSallyProgress((prev) => {
-          if (prev >= 90) {
-            clearInterval(interval);
-            return 90;
-          }
-          return prev + 10;
-        });
-      }, 500);
-      return () => clearInterval(interval);
-    }
-  }, [isSallyLoading]);
 
   useEffect(() => {
     const SpeechRecognition =
@@ -670,7 +610,6 @@ const MealPlanView = () => {
     }
 
     setIsSallyLoading(true);
-    setSallyProgress(10);
     setSallyResponse(`Thinking about: "${userInput}"`);
     try {
       const result = await getMealInsight({
@@ -686,8 +625,6 @@ const MealPlanView = () => {
       );
     } finally {
       setIsSallyLoading(false);
-      setSallyProgress(100);
-      setTimeout(() => setSallyProgress(0), 500);
     }
   };
   
@@ -696,10 +633,10 @@ const MealPlanView = () => {
       return { totalCalories: 0, totalProtein: 0, totalCarbs: 0, totalFat: 0 };
     }
     return {
-      totalCalories: scannedFood.Total || 0,
-      totalProtein: scannedFood.Protein || 0,
-      totalCarbs: scannedFood.Carbs || 0,
-      totalFat: scannedFood.Fat || 0,
+      totalCalories: scannedFood.total || 0,
+      totalProtein: scannedFood.protein || 0,
+      totalCarbs: scannedFood.carbs || 0,
+      totalFat: scannedFood.fat || 0,
     };
   }, [scannedFood]);
 
@@ -728,108 +665,65 @@ const MealPlanView = () => {
   }
   
   return (
-    <div className="relative h-full">
-        <div className="fixed inset-0 -z-10">
-            <video
-              src="https://gallery.scaneats.app/images/MealPlannerPage.webm"
-              className="h-full w-full object-cover"
-              autoPlay
-              loop
-              muted
-              playsInline
-            />
-            <div className="absolute inset-0 bg-black/60" />
+    <div className="relative h-full w-full flex-grow bg-black/60 p-5 box-border flex flex-col items-center backdrop-blur-[5px] pb-[155px] overflow-y-auto">
+      <div className="fixed inset-0 -z-10">
+        <Image
+          src="https://gallery.scaneats.app/images/foodchaingif.gif"
+          alt="Background"
+          fill
+          unoptimized
+          className="object-cover filter blur-[5px]"
+        />
+      </div>
+
+      <header className="flex justify-between items-center mb-5 w-full max-w-[600px] px-[15px] box-border shrink-0">
+        <div className="w-[150px] h-[75px] text-left">
+          <Image
+            src="https://gallery.scaneats.app/images/ScanEatsLogo.png"
+            alt="ScanEats Logo"
+            width={150}
+            height={75}
+            className="max-w-full max-h-full block object-contain"
+          />
         </div>
-        <div className="h-full overflow-y-auto text-white p-4 pb-28">
-            <header className="sticky top-0 z-10 w-full p-4 mb-4">
-                <div className="container mx-auto flex items-center justify-center">
-                <h1 className="text-xl font-semibold">Your Last Meal</h1>
-                </div>
-            </header>
-
-            <div className="w-full max-w-2xl mx-auto space-y-6">
-                <div className="frosted-card p-6 text-center">
-                <p className="font-headline text-4xl font-bold text-white">
-                    {totalCalories.toFixed(0)}
-                    <span className="text-lg font-light text-gray-400"> cal</span>
-                </p>
-                <MacroBreakdown carbs={totalCarbs} protein={totalProtein} fat={totalFat} />
-                <div className="flex justify-center gap-2 mt-2 text-xs text-gray-400">
-                    <span className="flex items-center gap-1"><div className="h-2 w-2 rounded-full bg-green-500"/>Carbs</span>
-                    <span className="flex items-center gap-1"><div className="h-2 w-2 rounded-full bg-red-500"/>Protein</span>
-                    <span className="flex items-center gap-1"><div className="h-2 w-2 rounded-full bg-yellow-500"/>Fat</span>
-                </div>
-                </div>
-
-                <div className="grid grid-cols-3 gap-4">
-                <StatCard label="Carbs" value={totalCarbs.toFixed(1)} unit="grams" />
-                <StatCard label="Protein" value={totalProtein.toFixed(1)} unit="grams" />
-                <StatCard label="Fat" value={totalFat.toFixed(1)} unit="grams" />
-                </div>
-
-                <div className="flex w-full max-w-sm flex-col items-center gap-6 rounded-3xl bg-white/10 p-6 shadow-[0_20px_55px_8px_rgba(110,100,150,0.45)] backdrop-blur-2xl backdrop-saturate-150 mx-auto">
-                <div className="relative flex h-[130px] w-[130px] shrink-0 items-center justify-center">
-                    <div
-                    className="absolute top-1/2 left-1/2 h-[160%] w-[160%] -translate-x-1/2 -translate-y-1/2 animate-breathe-glow-sally rounded-full"
-                    style={{
-                        background:
-                        'radial-gradient(circle at center, hsl(var(--primary) / 0.4) 10%, hsl(var(--primary) / 0.2) 40%, hsl(var(--primary) / 0.1) 65%, transparent 80%)',
-                    }}
-                    />
-
-                    {isRecording && (
-                    <div className="pointer-events-none absolute top-1/2 left-1/2 h-[90px] w-[90px] -translate-x-1/2 -translate-y-1/2">
-                        <div className="absolute top-0 left-0 h-full w-full animate-siri-wave-1 rounded-full border-2 border-white/60"></div>
-                        <div className="absolute top-0 left-0 h-full w-full animate-siri-wave-2 rounded-full border-2 border-white/60"></div>
-                        <div className="absolute top-0 left-0 h-full w-full animate-siri-wave-3 rounded-full border-2 border-white/60"></div>
-                        <div className="absolute top-0 left-0 h-full w-full animate-siri-wave-4 rounded-full border-2 border-white/60"></div>
-                    </div>
-                    )}
-
-                    <button
-                    onClick={handleMicClick}
-                    disabled={isSallyLoading}
-                    className={cn(
-                        'relative z-10 flex h-20 w-20 items-center justify-center rounded-full bg-[#4629B0] shadow-[inset_0_2px_4px_0_rgba(255,255,255,0.4),0_0_15px_5px_rgba(255,255,255,0.8),0_0_30px_15px_rgba(255,255,255,0.5),0_0_50px_25px_rgba(220,230,255,0.3)] transition-all active:scale-95 active:bg-[#3c239a] active:shadow-[inset_0_2px_4px_0_rgba(255,255,255,0.3),0_0_10px_3px_rgba(255,255,255,0.7),0_0_20px_10px_rgba(255,255,255,0.4),0_0_40px_20px_rgba(220,230,255,0.2)]',
-                        isSallyLoading && 'cursor-not-allowed'
-                    )}
-                    aria-label="Activate Voice AI"
-                    >
-                    {isSallyLoading ? (
-                        <Loader2 className="h-10 w-10 animate-spin text-white" />
-                    ) : (
-                        <Mic
-                        className="h-10 w-10 text-white"
-                        style={{
-                            textShadow:
-                            '0 1px 2px rgba(0,0,0,0.2), 0 0 5px rgba(255,255,255,0.8), 0 0 10px rgba(180,140,255,0.7)',
-                        }}
-                        />
-                    )}
-                    </button>
-                </div>
-
-                <div className="flex h-auto min-h-[4rem] w-full flex-col justify-center rounded-2xl bg-white/80 p-3 text-left shadow-[inset_0_1px_2px_rgba(255,255,255,0.6),0_10px_30px_3px_rgba(100,90,140,0.45)] backdrop-blur-sm backdrop-saturate-150">
-                    {isSallyLoading ? (
-                        <div className="space-y-2 text-center">
-                        <Progress value={sallyProgress} className="w-full" />
-                        <p className="text-[13px] text-gray-600">Sally is thinking...</p>
-                        </div>
-                    ) : (
-                    <div className="flex-grow text-[13px] leading-tight text-black">
-                        <strong>Sally</strong>
-                        <span className="text-gray-600"> - {sallyResponse || "Ask me anything about this meal."}</span>
-                    </div>
-                    )}
-                </div>
-                </div>
-            </div>
+      </header>
+      
+      <div className="flex flex-col items-center mb-[25px] shrink-0">
+        <div className="text-3xl md:text-4xl font-medium mb-2 text-white text-shadow-[0_0_10px_white]">
+            {totalCalories.toFixed(0)}
         </div>
+        <div className="text-sm md:text-base text-white bg-[rgba(34,34,34,0.7)] px-3 py-1.5 rounded-full tracking-wider">
+            Total Calories
+        </div>
+      </div>
+
+      <div className="flex justify-around items-stretch mb-[25px] w-full max-w-[550px] gap-[15px] flex-wrap shrink-0">
+        <div className="bg-[rgba(74,20,140,0.8)] rounded-xl p-5 flex flex-col items-center justify-center text-center transition-all duration-200 ease-in-out text-white flex-1 min-w-[90px] shadow-[0_0_10px_rgba(106,27,154,0.5)] border border-[rgba(255,255,255,0.1)] hover:-translate-y-1">
+          <div className="text-lg mb-2 font-normal text-shadow-[0_0_10px_white]">Protein</div>
+          <div className="text-2xl font-semibold text-shadow-[0_0_10px_white]">{totalProtein.toFixed(0)}g</div>
+        </div>
+        <div className="bg-[rgba(74,20,140,0.8)] rounded-xl p-5 flex flex-col items-center justify-center text-center transition-all duration-200 ease-in-out text-white flex-1 min-w-[90px] shadow-[0_0_10px_rgba(106,27,154,0.5)] border border-[rgba(255,255,255,0.1)] hover:-translate-y-1">
+          <div className="text-lg mb-2 font-normal text-shadow-[0_0_10px_white]">Fat</div>
+          <div className="text-2xl font-semibold text-shadow-[0_0_10px_white]">{totalFat.toFixed(0)}g</div>
+        </div>
+        <div className="bg-[rgba(74,20,140,0.8)] rounded-xl p-5 flex flex-col items-center justify-center text-center transition-all duration-200 ease-in-out text-white flex-1 min-w-[90px] shadow-[0_0_10px_rgba(106,27,154,0.5)] border border-[rgba(255,255,255,0.1)] hover:-translate-y-1">
+          <div className="text-lg mb-2 font-normal text-shadow-[0_0_10px_white]">Carbs</div>
+          <div className="text-2xl font-semibold text-shadow-[0_0_10px_white]">{totalCarbs.toFixed(0)}g</div>
+        </div>
+      </div>
+
+      <button onClick={handleMicClick} className="flex flex-col justify-center items-center bg-gradient-to-r from-[#4a148c] to-[#311b92] text-white rounded-full w-[120px] h-[120px] my-10 mx-auto text-base tracking-wider cursor-pointer border-2 border-[rgba(255,255,255,0.2)] transition-transform duration-200 ease-in-out animate-breathing-glow shrink-0">
+         <Mic className="h-16 w-16" style={{textShadow: '0 0 8px rgba(255, 255, 255, 0.8)'}} />
+      </button>
+      
+      <div className="text-center mt-4 mb-8 text-white text-shadow-[0_0_6px_rgba(255,255,255,0.8),_0_0_3px_rgba(255,255,255,0.6)] text-lg font-normal bg-transparent px-5 py-3 rounded-2xl inline-block max-w-[85%] shadow-[0_0_15px_rgba(0,0,0,0.4),_0_0_5px_rgba(0,0,0,0.3)] border-l-4 border-[#a033ff] shrink-0">
+         {isSallyLoading ? 'Sally is thinking...' : (sallyResponse || "Ask me about this meal and I'll tell you everything")}
+      </div>
     </div>
   );
 };
 
-const SallyView = () => {
+const SallyView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
   const router = useRouter();
   const [sallyResponse, setSallyResponse] = useState<string>(
     "I'm your personal assistant, ask me anything about your body."
@@ -935,6 +829,7 @@ const SallyView = () => {
           title: 'Profile Incomplete',
           description: 'Please set your name in the profile before talking to Sally.'
        });
+       onNavigate('profile');
       return;
     }
 
@@ -1775,7 +1670,7 @@ export default function DashboardPage() {
       case 'meal-plan':
         return <MealPlanView />;
       case 'sally':
-        return <SallyView />;
+        return <SallyView onNavigate={handleNavigate} />;
       case 'profile':
         return <ProfileView />;
       case 'settings':
