@@ -126,7 +126,7 @@ export const ScanView = ({ onNavigate }: { onNavigate: (view: View) => void }) =
     setCapturedImage(null);
   };
 
-  const handleSendScan = async () => {
+  const handleSendScan = useCallback(async () => {
     if (!capturedImage) return;
     
     if (!profile || profile.id === null) {
@@ -218,7 +218,7 @@ export const ScanView = ({ onNavigate }: { onNavigate: (view: View) => void }) =
     } finally {
       setIsSending(false);
     }
-  };
+  }, [capturedImage, profile, toast, router, setSubscriptionModalOpen, setScannedFood, onNavigate]);
   
   return (
     <>
