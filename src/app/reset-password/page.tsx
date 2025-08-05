@@ -82,7 +82,7 @@ function ResetPasswordForm() {
                 });
                 router.push('/login');
             } else {
-                const errorData = await response.json();
+                const errorData = await response.json().catch(() => ({}));
                 throw new Error(errorData.error || 'Failed to reset password.');
             }
         } catch (error: any) {
