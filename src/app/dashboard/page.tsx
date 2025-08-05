@@ -12,6 +12,7 @@ import { ScanView } from '@/app/features/scan/presentation/scan-view';
 import { SallyView } from '@/app/features/sally/presentation/sally-view';
 import { ProfileView } from '@/app/features/profile/presentation/profile-view';
 import { SettingsView } from '@/app/features/settings/presentation/settings-view';
+import { MealPlanView } from '@/app/features/meal-plan/presentation/meal-plan-view';
 import { BottomNav } from '@/app/shared/components/bottom-nav';
 
 export default function DashboardPage() {
@@ -29,6 +30,8 @@ export default function DashboardPage() {
         return <ScanView onNavigate={handleNavigate} />;
       case 'sally':
         return <SallyView />;
+      case 'meal-plan':
+        return <MealPlanView />;
       case 'profile':
         return <ProfileView />;
       case 'settings':
