@@ -163,33 +163,31 @@ export default function LoginPage() {
         </div>
 
         <form className="space-y-6" onSubmit={handleSubmit}>
-          <div className="space-y-4">
-            <div className="relative border-b border-white/40">
-              <Mail className="absolute left-0 top-3 h-5 w-5 text-white/70" />
-              <Input
-                type="email"
-                placeholder="Email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="border-0 bg-transparent pl-8 text-base placeholder:text-white/70 focus-visible:ring-0 focus-visible:ring-offset-0"
-              />
-            </div>
+          <div className="relative border-b border-white/40">
+            <Mail className="absolute left-0 top-3 h-5 w-5 text-white/70" />
+            <Input
+              type="email"
+              placeholder="Email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              className="border-0 bg-transparent pl-8 text-base placeholder:text-white/70 focus-visible:ring-0 focus-visible:ring-offset-0"
+            />
+          </div>
 
-            <div className="relative border-b border-white/40">
-              <KeyRound className="absolute left-0 top-3 h-5 w-5 text-white/70" />
-              <Input
-                type="password"
-                placeholder="Password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="border-0 bg-transparent pl-8 text-base placeholder:text-white/70 focus-visible:ring-0 focus-visible:ring-offset-0"
-              />
-              <Link href="/forgot-password" className="absolute right-0 top-3 text-sm text-white/70 transition-colors hover:text-white">
-                Forgot?
-              </Link>
-            </div>
+          <div className="relative border-b border-white/40">
+            <KeyRound className="absolute left-0 top-3 h-5 w-5 text-white/70" />
+            <Input
+              type="password"
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              className="border-0 bg-transparent pl-8 text-base placeholder:text-white/70 focus-visible:ring-0 focus-visible:ring-offset-0"
+            />
+            <Link href="/forgot-password" className="absolute right-0 top-3 text-sm text-white/70 transition-colors hover:text-white">
+              Forgot?
+            </Link>
           </div>
 
           <div className="flex items-center justify-between pt-2">
