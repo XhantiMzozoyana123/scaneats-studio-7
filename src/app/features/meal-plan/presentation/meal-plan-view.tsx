@@ -72,15 +72,8 @@ export const MealPlanView = ({ onNavigate }: { onNavigate: (view: View) => void 
         }
     };
 
-    // Fetch meal plan when the component mounts, regardless of scannedFood state.
-    // The UserDataContext will hold the state if navigated from scan page.
-    // This ensures data is fresh if user navigates here directly.
-    if (scannedFood === undefined) {
-        fetchLastMeal();
-    } else {
-        setIsMealLoading(false);
-    }
-  }, [setScannedFood, toast, scannedFood]);
+    fetchLastMeal();
+  }, [setScannedFood, toast]);
 
 
   useEffect(() => {
@@ -336,6 +329,30 @@ export const MealPlanView = ({ onNavigate }: { onNavigate: (view: View) => void 
                     </div>
                   </div>
                 </div>
+
+                <button
+                  onClick={handleMicClick}
+                  disabled={isSallyLoading || isRecording}
+                  className={cn(
+                    'my-10 flex h-[120px] w-[120px] shrink-0 cursor-pointer flex-col items-center justify-center rounded-full bg-primary text-white shadow-[0_0_15px_5px_hsl(var(--primary)/0.4)] transition-all hover:scale-105',
+                    isRecording
+                      ? 'animate-pulse bg-red-600'
+                      : 'animate-breathe-glow'
+                  )}
+                >
+                  <Mic className="h-16 w-16" />
+                </button>
+
+                <div className="w-full max-w-md p-3 text-center text-lg font-normal text-muted-foreground">
+                  {isSallyLoading ? (
+                    <div className="space-y-2">
+                       <Progress value={sallyProgress} className="w-full" />
+                       <p className="text-sm">Sally is thinking...</p>
+                    </div>
+                  ) : (
+                    sallyResponse
+                  )}
+                </div>
               </>
             ) : (
               <div className="flex flex-1 flex-col items-center justify-center text-center">
@@ -346,34 +363,6 @@ export const MealPlanView = ({ onNavigate }: { onNavigate: (view: View) => void 
                   Scan Food
                 </Button>
               </div>
-            )}
-
-            {scannedFood && (
-            <>
-            <button
-              onClick={handleMicClick}
-              disabled={isSallyLoading || isRecording}
-              className={cn(
-                'my-10 flex h-[120px] w-[120px] shrink-0 cursor-pointer flex-col items-center justify-center rounded-full bg-primary text-white shadow-[0_0_15px_5px_hsl(var(--primary)/0.4)] transition-all hover:scale-105',
-                isRecording
-                  ? 'animate-pulse bg-red-600'
-                  : 'animate-breathe-glow'
-              )}
-            >
-              <Mic className="h-16 w-16" />
-            </button>
-
-            <div className="w-full max-w-md p-3 text-center text-lg font-normal text-muted-foreground">
-              {isSallyLoading ? (
-                <div className="space-y-2">
-                   <Progress value={sallyProgress} className="w-full" />
-                   <p className="text-sm">Sally is thinking...</p>
-                </div>
-              ) : (
-                sallyResponse
-              )}
-            </div>
-            </>
             )}
           </div>
         )}
