@@ -33,7 +33,7 @@ type UserDataContextType = {
   profile: Profile | null;
   initialProfile: Profile | null;
   setProfile: React.Dispatch<React.SetStateAction<Profile | null>>;
-  scannedFood: ScannedFood | null | undefined; // undefined for loading, null for no food
+  scannedFood: ScannedFood | null;
   setScannedFood: (food: ScannedFood | null) => void;
   isLoading: boolean;
   saveProfile: (profile: Profile) => Promise<boolean>;
@@ -66,14 +66,10 @@ export function UserDataProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
   const [profile, setProfile] = useState<Profile | null>(initialProfileState);
   const [initialProfile, setInitialProfile] = useState<Profile | null>(initialProfileState);
-  const [scannedFood, setScannedFoodState] = useState<ScannedFood | null | undefined>(undefined);
+  const [scannedFood, setScannedFood] = useState<ScannedFood | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubscriptionModalOpen, setSubscriptionModalOpen] = useState(false);
   
-  const setScannedFood = (food: ScannedFood | null) => {
-    setScannedFoodState(food);
-  }
-
   const fetchProfile = useCallback(async () => {
     setIsLoading(true);
     const token = localStorage.getItem('authToken');

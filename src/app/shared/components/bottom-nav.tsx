@@ -1,12 +1,13 @@
 
 'use client';
 
-import { Home, Mic, User, Settings } from 'lucide-react';
+import { Home, Mic, User, Settings, UtensilsCrossed } from 'lucide-react';
 import { cn } from '@/app/shared/lib/utils';
 import type { View } from '@/app/features/dashboard/dashboard.types';
 
 const navItems = [
   { view: 'home', icon: Home, label: 'Home' },
+  { view: 'meal-plan', icon: UtensilsCrossed, label: 'Meal Plan' },
   { view: 'sally', icon: Mic, label: 'SallyPA' },
   { view: 'profile', icon: User, label: 'Profile' },
   { view: 'settings', icon: Settings, label: 'Settings' },
