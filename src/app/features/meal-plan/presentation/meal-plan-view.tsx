@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -57,19 +56,17 @@ export const MealPlanView = ({ onNavigate }: { onNavigate: (view: View) => void 
         const token = localStorage.getItem('authToken');
         if (!token) {
             toast({ variant: 'destructive', title: 'Not authorized' });
-            setIsMealLoading(false);
-            setScannedFood(null); // No food if not logged in
-            return;
+            setScannedFood(null); 
+        } else {
+            try {
+                const lastMeal = await mealService.getLastMealPlan(token);
+                setScannedFood(lastMeal);
+            } catch (error) {
+                console.error('Failed to fetch last meal:', error);
+                setScannedFood(null); // Set to null on error
+            }
         }
-        try {
-            const lastMeal = await mealService.getLastMealPlan(token);
-            setScannedFood(lastMeal);
-        } catch (error) {
-            console.error('Failed to fetch last meal:', error);
-            setScannedFood(null); // Set to null on error
-        } finally {
-            setIsMealLoading(false);
-        }
+        setIsMealLoading(false);
     };
 
     fetchLastMeal();
