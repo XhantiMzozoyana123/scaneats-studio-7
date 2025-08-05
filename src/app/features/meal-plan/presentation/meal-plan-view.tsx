@@ -63,9 +63,11 @@ export const MealPlanView = () => {
 
   useEffect(() => {
     const fetchMealPlan = async () => {
+      console.log('MealPlanView: useEffect triggered. Starting fetch.');
       setIsMealLoading(true);
       const token = localStorage.getItem('authToken');
       if (!token) {
+        console.log('MealPlanView: No auth token found.');
         toast({
           variant: 'destructive',
           title: 'Not Authenticated',
@@ -76,15 +78,19 @@ export const MealPlanView = () => {
       }
 
       try {
+        console.log('MealPlanView: Calling mealService.getLastMealPlan...');
         const meal = await mealService.getLastMealPlan(token);
+        console.log('MealPlanView: Fetched meal data:', meal);
         setScannedFood(meal);
       } catch (error: any) {
+        console.error('MealPlanView: Error fetching meal plan:', error);
         toast({
           variant: 'destructive',
           title: 'Failed to load meal plan',
           description: error.message,
         });
       } finally {
+        console.log('MealPlanView: Fetch finished. Setting isMealLoading to false.');
         setIsMealLoading(false);
       }
     };
@@ -94,17 +100,21 @@ export const MealPlanView = () => {
 
   const { totalCalories, totalProtein, totalCarbs, totalFat } = useMemo(() => {
     if (!scannedFood) {
+      console.log('MealPlanView: useMemo - scannedFood is null, returning zero values.');
       return { totalCalories: 0, totalProtein: 0, totalCarbs: 0, totalFat: 0 };
     }
-    return {
+    const calculated = {
       totalCalories: scannedFood.Total || 0,
       totalProtein: scannedFood.Protein || 0,
       totalCarbs: scannedFood.Carbs || 0,
       totalFat: scannedFood.Fat || 0,
     };
+    console.log('MealPlanView: useMemo - calculated values:', calculated);
+    return calculated;
   }, [scannedFood]);
 
   if (isMealLoading) {
+    console.log('MealPlanView: Rendering loading state.');
     return (
       <div className="flex h-full w-full items-center justify-center bg-zinc-950 text-white">
         <div className="flex flex-col items-center gap-2">
@@ -116,6 +126,7 @@ export const MealPlanView = () => {
   }
 
   if (!scannedFood) {
+    console.log('MealPlanView: Rendering "No food scanned yet" state.');
     return (
       <div className="flex h-full w-full items-center justify-center bg-zinc-950 text-white">
         <div className="flex flex-col items-center gap-4 text-center">
@@ -127,6 +138,7 @@ export const MealPlanView = () => {
     );
   }
 
+  console.log('MealPlanView: Rendering meal data.');
   return (
     <div className="h-full overflow-y-auto bg-zinc-950 text-white p-4 pb-28">
        <header className="sticky top-0 z-10 w-full p-4 mb-4">
