@@ -10,7 +10,7 @@ import {
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
-import { AlertTriangle, Camera, Loader2, RefreshCw, Send, Smartphone, Upload } from 'lucide-react';
+import { AlertTriangle, Camera, Loader2, RefreshCw, Send, Upload } from 'lucide-react';
 import { useToast } from '@/app/shared/hooks/use-toast';
 import { useUserData } from '@/app/shared/context/user-data-context';
 import { cn } from '@/app/shared/lib/utils';
@@ -201,33 +201,6 @@ export const ScanView = ({ onNavigate }: { onNavigate: (view: View) => void }) =
       setIsSending(false);
     }
   };
-
-  if (!isMobile) {
-    return (
-      <div className="flex h-full flex-col items-center justify-center p-4 text-center">
-         <div className="fixed inset-0 -z-10">
-            <video
-              src="https://gallery.scaneats.app/images/ScanHomePage.webm"
-              className="h-full w-full object-cover"
-              autoPlay
-              loop
-              muted
-              playsInline
-            />
-            <div className="absolute inset-0 bg-black/60" />
-          </div>
-        <main className="z-10 rounded-lg bg-background/80 p-8 shadow-lg">
-           <Smartphone className="mx-auto h-16 w-16 text-primary" />
-          <h2 className="mt-4 text-2xl font-bold">Mobile-Only Feature</h2>
-          <p className="mt-2 text-muted-foreground">
-            The food scanner is designed for mobile devices.
-            <br /> Please open this page on your phone to use the camera.
-          </p>
-          <Button onClick={() => onNavigate('home')} className="mt-6">Go Back Home</Button>
-        </main>
-      </div>
-    );
-  }
   
   return (
     <>
@@ -254,40 +227,55 @@ export const ScanView = ({ onNavigate }: { onNavigate: (view: View) => void }) =
               />
             ) : (
                <>
-                <video
-                  ref={videoRef}
-                  className={cn("h-full w-full object-cover", {
-                     'hidden': cameraState !== 'running'
-                  })}
-                  playsInline
-                  muted
-                  autoPlay
-                />
-                {cameraState !== 'running' && (
+                {isMobile ? (
+                  <>
+                  <video
+                    ref={videoRef}
+                    className={cn("h-full w-full object-cover", {
+                       'hidden': cameraState !== 'running'
+                    })}
+                    playsInline
+                    muted
+                    autoPlay
+                  />
+                  {cameraState !== 'running' && (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center p-4 text-center text-white bg-black/50">
+                      {cameraState === 'starting' && <Loader2 className="h-12 w-12 animate-spin" />}
+                      {cameraState === 'idle' && (
+                         <Button onClick={startCamera} size="lg">
+                           <Camera className="mr-2" /> Start Camera
+                         </Button>
+                      )}
+                      {(cameraState === 'denied' || cameraState === 'error' || cameraState === 'nocamera') && (
+                         <div className="flex flex-col items-center gap-4">
+                            <AlertTriangle className="h-10 w-10 text-destructive" />
+                            <p className="font-semibold">Camera Unavailable</p>
+                            <p className="text-sm text-muted-foreground">
+                               {cameraState === 'denied'
+                                 ? 'Permission was denied. Please allow camera access in your browser settings.'
+                                 : 'Could not access the camera. You can try again or upload a photo.'}
+                            </p>
+                            <div className="flex gap-2">
+                               <Button onClick={startCamera} variant="outline" size="sm">Retry</Button>
+                               <Button onClick={() => fileInputRef.current?.click()} size="sm">
+                                  <Upload className="mr-2" /> Upload
+                                </Button>
+                            </div>
+                         </div>
+                      )}
+                    </div>
+                  )}
+                  </>
+                ) : (
                   <div className="absolute inset-0 flex flex-col items-center justify-center p-4 text-center text-white bg-black/50">
-                    {cameraState === 'starting' && <Loader2 className="h-12 w-12 animate-spin" />}
-                    {cameraState === 'idle' && (
-                       <Button onClick={startCamera} size="lg">
-                         <Camera className="mr-2" /> Start Camera
-                       </Button>
-                    )}
-                    {(cameraState === 'denied' || cameraState === 'error' || cameraState === 'nocamera') && (
-                       <div className="flex flex-col items-center gap-4">
-                          <AlertTriangle className="h-10 w-10 text-destructive" />
-                          <p className="font-semibold">Camera Unavailable</p>
-                          <p className="text-sm text-muted-foreground">
-                             {cameraState === 'denied'
-                               ? 'Permission was denied. Please allow camera access in your browser settings.'
-                               : 'Could not access the camera. You can try again or upload a photo.'}
-                          </p>
-                          <div className="flex gap-2">
-                             <Button onClick={startCamera} variant="outline" size="sm">Retry</Button>
-                             <Button onClick={() => fileInputRef.current?.click()} size="sm">
-                                <Upload className="mr-2" /> Upload
-                              </Button>
-                          </div>
-                       </div>
-                    )}
+                    <Upload className="h-16 w-16 text-primary" />
+                    <h2 className="mt-4 text-2xl font-bold">Upload a Photo</h2>
+                    <p className="mt-2 text-muted-foreground">
+                      Select an image of your food to get started.
+                    </p>
+                    <Button onClick={() => fileInputRef.current?.click()} className="mt-6" size="lg">
+                      <Upload className="mr-2" /> Select Image
+                    </Button>
                   </div>
                 )}
                </>
@@ -298,13 +286,14 @@ export const ScanView = ({ onNavigate }: { onNavigate: (view: View) => void }) =
             {capturedImage ? (
               <>
                 <Button onClick={handleRetake} variant="outline" className="text-lg py-6 flex-1">
-                  <RefreshCw className="mr-2" /> Retake
+                  <RefreshCw className="mr-2" /> {isMobile ? 'Retake' : 'Clear'}
                 </Button>
                 <Button onClick={handleSendScan} disabled={isSending} className="text-lg py-6 flex-1 bg-primary">
                   {isSending ? ( <Loader2 className="animate-spin" /> ) : ( <> <Send className="mr-2" /> Analyze </> )}
                 </Button>
               </>
             ) : (
+              isMobile && (
               <div className="flex w-full items-center gap-2">
                  <Button onClick={handleCapture} disabled={cameraState !== 'running'} className="h-16 flex-1 rounded-full text-lg bg-primary animate-breathe-glow">
                    <Camera className="mr-2" /> Capture
@@ -314,6 +303,7 @@ export const ScanView = ({ onNavigate }: { onNavigate: (view: View) => void }) =
                      <span className="sr-only">Upload Photo</span>
                   </Button>
               </div>
+              )
             )}
           </div>
           <canvas ref={canvasRef} className="hidden" />
