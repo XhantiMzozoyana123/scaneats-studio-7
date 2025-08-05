@@ -4,7 +4,7 @@
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { GoogleLogin, type CredentialResponse } from '@react-oauth/google';
+import { GoogleLogin, type CredentialResponse, useGoogleOneTapLogin } from '@react-oauth/google';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -32,6 +32,66 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+
+  const handleGoogleLogin = async (idToken: string) => {
+    if (!idToken) {
+      toast({ variant: 'destructive', title: 'Login Failed', description: 'Google ID token is missing.' });
+      return;
+    }
+    setIsLoading(true);
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/googleauth/onetap`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ IdToken: idToken }),
+        });
+
+        if (!response.ok) {
+            let errorMsg = 'Google login failed.';
+            try {
+                const errorData = await response.json();
+                if (errorData.error) errorMsg = errorData.error;
+            } catch {}
+            throw new Error(errorMsg);
+        }
+
+        const data = await response.json();
+        if (!data.token) {
+            throw new Error('Invalid response received from server.');
+        }
+        
+        const decodedToken: DecodedToken = jwtDecode(data.token);
+
+        localStorage.setItem('authToken', data.token);
+        localStorage.setItem('userId', decodedToken.nameid);
+        localStorage.setItem('userEmail', decodedToken.email);
+
+        toast({ title: 'Login Successful!', description: 'Welcome back.' });
+        router.push('/dashboard');
+    } catch (error: any) {
+        toast({
+            variant: 'destructive',
+            title: 'Login Failed',
+            description: error.message,
+        });
+    } finally {
+        setIsLoading(false);
+    }
+  };
+
+  useGoogleOneTapLogin({
+    onSuccess: (credentialResponse) => {
+        if (credentialResponse.credential) {
+            handleGoogleLogin(credentialResponse.credential);
+        }
+    },
+    onError: () => {
+        // This can be noisy if the user just closes the one-tap prompt.
+        // Consider logging this to an analytics service instead of a user-facing toast.
+        console.log('One Tap login error or closed by user.');
+    },
+  });
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -88,61 +148,14 @@ export default function LoginPage() {
       setIsLoading(false);
     }
   };
-
-  const handleGoogleSuccess = async (credentialResponse: CredentialResponse) => {
-    setIsLoading(true);
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/googleauth/onetap`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ IdToken: credentialResponse.credential }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        localStorage.setItem('authToken', data.token);
-        
-        const decodedToken: DecodedToken = jwtDecode(data.token);
-        localStorage.setItem('userId', decodedToken.nameid);
-        localStorage.setItem('userEmail', decodedToken.email);
-        
-        toast({
-          title: 'Login Successful!',
-          description: 'Welcome to ScanEats.',
-        });
-        router.push('/dashboard');
-      } else {
-        const errorData = await response.json().catch(() => ({ error: 'Google login failed.'}));
-        throw new Error(errorData.error || 'Google One Tap login failed.');
-      }
-    } catch (error: any) {
-      toast({
-        variant: 'destructive',
-        title: 'Login Failed',
-        description: error.message,
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleAppleLogin = () => {
+  
+    const handleAppleLogin = () => {
     toast({
         title: 'Coming Soon!',
         description: 'Apple Sign-In is not yet available. Please use another method.'
     })
   }
 
-  const handleGoogleError = () => {
-    toast({
-      variant: 'destructive',
-      title: 'Login Failed',
-      description: 'Google authentication failed. Please try again.',
-    });
-    setIsLoading(false);
-  };
 
   useEffect(() => {
     const token = localStorage.getItem('authToken');
@@ -220,8 +233,18 @@ export default function LoginPage() {
         <div className="flex flex-col items-center justify-center gap-4">
           <div className="flex justify-center">
             <GoogleLogin
-                onSuccess={handleGoogleSuccess}
-                onError={handleGoogleError}
+                onSuccess={(credentialResponse) => {
+                    if (credentialResponse.credential) {
+                        handleGoogleLogin(credentialResponse.credential);
+                    }
+                }}
+                onError={() => {
+                    toast({
+                        variant: 'destructive',
+                        title: 'Login Failed',
+                        description: 'Google authentication failed. Please try again.',
+                    });
+                }}
                 theme="filled_black"
                 shape="pill"
                 auto_select={false}
@@ -247,3 +270,5 @@ export default function LoginPage() {
     </div>
   );
 }
+
+    
