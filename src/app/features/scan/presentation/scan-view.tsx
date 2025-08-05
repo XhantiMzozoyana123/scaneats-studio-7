@@ -10,6 +10,7 @@ import {
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { AlertTriangle, Camera, Loader2, RefreshCw, Send, Upload, CircleDollarSign } from 'lucide-react';
 import { useToast } from '@/app/shared/hooks/use-toast';
 import { useUserData } from '@/app/shared/context/user-data-context';
@@ -266,13 +267,15 @@ export const ScanView = ({ onNavigate }: { onNavigate: (view: View) => void }) =
                       )}
                       {(cameraState === 'denied' || cameraState === 'error' || cameraState === 'nocamera') && (
                          <div className="flex flex-col items-center gap-4">
-                            <AlertTriangle className="h-10 w-10 text-destructive" />
-                            <p className="font-semibold">Camera Unavailable</p>
-                            <p className="text-sm text-muted-foreground">
-                               {cameraState === 'denied'
-                                 ? 'Permission was denied. Please allow camera access in your browser settings.'
-                                 : 'Could not access the camera. You can try again or upload a photo.'}
-                            </p>
+                            <Alert variant="destructive" className="bg-destructive/20 border-destructive/50 text-destructive-foreground">
+                                <AlertTriangle className="h-4 w-4 text-destructive" />
+                                <AlertTitle>Camera Unavailable</AlertTitle>
+                                <AlertDescription>
+                                   {cameraState === 'denied'
+                                     ? 'Permission was denied. Please allow camera access in your browser settings.'
+                                     : 'Could not access the camera. You can try again or upload a photo.'}
+                                </AlertDescription>
+                            </Alert>
                             <div className="flex gap-2">
                                <Button onClick={startCamera} variant="outline" size="sm">Retry</Button>
                                <Button onClick={() => fileInputRef.current?.click()} size="sm">

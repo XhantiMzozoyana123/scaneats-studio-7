@@ -53,7 +53,8 @@ export const MealPlanView = ({ onNavigate }: { onNavigate: (view: View) => void 
   
   useEffect(() => {
     const fetchLastMeal = async () => {
-        if (scannedFood === undefined) {
+        // Only fetch if scannedFood is undefined (initial load)
+        if (scannedFood === undefined) { 
             const token = localStorage.getItem('authToken');
             if (!token) {
                 toast({ variant: 'destructive', title: 'Not authorized' });
@@ -71,6 +72,7 @@ export const MealPlanView = ({ onNavigate }: { onNavigate: (view: View) => void 
                 setIsMealLoading(false);
             }
         } else {
+            // If scannedFood is already loaded (or null), don't show loader
             setIsMealLoading(false);
         }
     };
