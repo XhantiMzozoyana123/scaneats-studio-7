@@ -15,31 +15,34 @@ export class MealApiRepository implements IMealRepository {
       throw new Error('Session Expired');
     }
 
-    if (!response.ok) {
-      // If the response is not OK, but not a 404 (not found), throw an error
-      if (response.status !== 404) {
-        throw new Error('Failed to fetch meal plan');
-      }
-      // For 404, we return null, as it means no meal plan was found.
+    // Handle cases where no meal plan is found, which is not an error.
+    if (response.status === 404 || response.status === 204) {
       return null;
     }
 
-    // Check if the response has content
+    if (!response.ok) {
+      // For other non-successful responses, throw a generic error.
+      throw new Error('Failed to fetch meal plan');
+    }
+
+    // Check if the response has content before trying to parse it.
     const contentLength = response.headers.get('content-length');
-    if (contentLength === '0' || response.status === 204) {
-        return null;
+    if (contentLength === '0') {
+      return null;
     }
 
     try {
       const meal = await response.json();
-      // If the API returns an empty object or an object without an ID, treat it as null
+      // If the API returns an empty object or an object without an ID, treat it as null.
       if (!meal || !meal.id) {
-          return null;
+        return null;
       }
       return meal;
     } catch (e) {
-      // If JSON parsing fails, it's likely an empty response
+      // If JSON parsing fails on a successful response, it might be an issue.
       console.error('Failed to parse meal plan response', e);
+      // Depending on requirements, you might want to throw an error or return null.
+      // Returning null to avoid breaking the UI for now.
       return null;
     }
   }
