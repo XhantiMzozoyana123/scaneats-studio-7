@@ -38,10 +38,6 @@ export class MealApiRepository implements IMealRepository {
     try {
       const meal = await response.json();
       console.log('MealApiRepository: Parsed meal data:', meal);
-      if (!meal || !meal.id) {
-        console.log('MealApiRepository: Parsed data is invalid or has no ID. Returning null.');
-        return null;
-      }
       return meal;
     } catch (e) {
       console.error('MealApiRepository: Failed to parse meal plan response JSON.', e);
