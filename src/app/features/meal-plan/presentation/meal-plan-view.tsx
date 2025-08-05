@@ -53,32 +53,34 @@ export const MealPlanView = ({ onNavigate }: { onNavigate: (view: View) => void 
   
   useEffect(() => {
     const fetchLastMeal = async () => {
-        // Only fetch if scannedFood is undefined (initial load)
-        if (scannedFood === undefined) { 
-            const token = localStorage.getItem('authToken');
-            if (!token) {
-                toast({ variant: 'destructive', title: 'Not authorized' });
-                setIsMealLoading(false);
-                setScannedFood(null); // No food if not logged in
-                return;
-            }
-            try {
-                const lastMeal = await mealService.getLastMealPlan(token);
-                setScannedFood(lastMeal);
-            } catch (error) {
-                console.error('Failed to fetch last meal:', error);
-                setScannedFood(null); // Set to null on error
-            } finally {
-                setIsMealLoading(false);
-            }
-        } else {
-            // If scannedFood is already loaded (or null), don't show loader
+        setIsMealLoading(true);
+        const token = localStorage.getItem('authToken');
+        if (!token) {
+            toast({ variant: 'destructive', title: 'Not authorized' });
+            setIsMealLoading(false);
+            setScannedFood(null); // No food if not logged in
+            return;
+        }
+        try {
+            const lastMeal = await mealService.getLastMealPlan(token);
+            setScannedFood(lastMeal);
+        } catch (error) {
+            console.error('Failed to fetch last meal:', error);
+            setScannedFood(null); // Set to null on error
+        } finally {
             setIsMealLoading(false);
         }
     };
 
-    fetchLastMeal();
-  }, [scannedFood, setScannedFood, toast]);
+    // Fetch meal plan when the component mounts, regardless of scannedFood state.
+    // The UserDataContext will hold the state if navigated from scan page.
+    // This ensures data is fresh if user navigates here directly.
+    if (scannedFood === undefined) {
+        fetchLastMeal();
+    } else {
+        setIsMealLoading(false);
+    }
+  }, [setScannedFood, toast, scannedFood]);
 
 
   useEffect(() => {
