@@ -105,9 +105,9 @@ export const MealPlanView = () => {
     }
     const calculated = {
       totalCalories: scannedFood.total || 0,
-      totalProtein: scannedFood.Protein || 0,
-      totalCarbs: scannedFood.Carbs || 0,
-      totalFat: scannedFood.Fat || 0,
+      totalProtein: scannedFood.protein || 0,
+      totalCarbs: scannedFood.carbs || 0,
+      totalFat: scannedFood.fat || 0,
     };
     console.log('MealPlanView: useMemo - calculated values:', calculated);
     return calculated;
