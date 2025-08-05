@@ -754,13 +754,13 @@ const MealPlanView = () => {
           <StatCard label="Fat" value={totalFat.toFixed(1)} unit="grams" />
         </div>
 
-        <div className="flex w-full max-w-sm flex-col items-center gap-6 rounded-3xl border border-white/40 bg-white/10 p-6 shadow-[0_20px_55px_8px_rgba(110,100,150,0.45)] backdrop-blur-2xl backdrop-saturate-150 mx-auto">
+        <div className="flex w-full max-w-sm flex-col items-center gap-6 rounded-3xl bg-white/10 p-6 shadow-[0_20px_55px_8px_rgba(110,100,150,0.45)] backdrop-blur-2xl backdrop-saturate-150 mx-auto">
           <div className="relative flex h-[130px] w-[130px] shrink-0 items-center justify-center">
             <div
               className="absolute top-1/2 left-1/2 h-[160%] w-[160%] -translate-x-1/2 -translate-y-1/2 animate-breathe-glow-sally rounded-full"
               style={{
                 background:
-                  'radial-gradient(circle at center, rgba(255, 235, 255, 0.7) 10%, rgba(200, 190, 255, 0.8) 40%, rgba(170, 220, 255, 1.0) 65%, rgba(200, 240, 255, 1.0) 72%, rgba(135, 206, 250, 0) 80%)',
+                  'radial-gradient(circle at center, hsl(var(--primary) / 0.4) 10%, hsl(var(--primary) / 0.2) 40%, hsl(var(--primary) / 0.1) 65%, transparent 80%)',
               }}
             />
 
@@ -1780,5 +1780,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
-    
