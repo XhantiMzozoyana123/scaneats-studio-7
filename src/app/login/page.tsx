@@ -1,30 +1,22 @@
-
 'use client';
 
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { GoogleLogin, type CredentialResponse, useGoogleOneTapLogin } from '@react-oauth/google';
+import { useGoogleOneTapLogin, GoogleLogin } from '@react-oauth/google';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { AuthBackgroundImage } from '@/app/shared/components/auth-background-image';
+import { AuthBackgroundImage } from '@/components/auth-background-image';
 import { KeyRound, Mail, Loader2 } from 'lucide-react';
-import { useToast } from '@/app/shared/hooks/use-toast';
-import { API_BASE_URL } from '@/app/shared/lib/api';
-import { jwtDecode } from 'jwt-decode';
+import { useToast } from '@/hooks/use-toast';
+import { API_BASE_URL } from '@/lib/api';
 
-interface DecodedToken {
-  nameid: string;
-  email: string;
-}
+const GoogleIcon = () => (
+  <svg className="mr-2 h-5 w-5" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><g clipPath="url(#clip0_17_80)"><path fill="#FFC107" d="M43.611 20.083H42V20H24V28H35.303C33.674 32.69 29.213 36 24 36C17.373 36 12 30.627 12 24C12 17.373 17.373 12 24 12C27.059 12 29.842 13.154 31.961 15.039L38.414 8.586C34.823 5.312 29.821 3 24 3C12.954 3 4 11.954 4 23C4 34.046 12.954 43 24 43C34.364 43 43.103 35.532 43.611 25.083V20.083Z"/><path fill="#FF3D00" d="M6.306 14.691L12.553 19.439C14.136 15.352 18.591 12 24 12C27.059 12 29.842 13.154 31.961 15.039L38.414 8.586C34.823 5.312 29.821 3 24 3C17.433 3 11.758 6.946 8.083 12.106L6.306 14.691Z"/><path fill="#4CAF50" d="M24 44C29.482 44 34.225 42.022 37.899 38.644L32.043 33.594C30.085 35.093 27.221 36 24 36C18.673 36 14.136 32.69 12.553 28.061L6.306 32.893C9.976 39.462 16.425 44 24 44Z"/><path fill="#1976D2" d="M43.6116 24H24V32H35.3031C34.5126 34.755 32.7486 36.9993 30.4381 38.4853L30.4346 38.4886L36.3196 43.3346C36.3196 43.3346 36.3196 43.3346 36.3196 43.3346C40.4616 39.7396 43.0016 34.1876 43.0016 28C43.0016 26.4356 42.8716 25.2156 42.6116 24Z"/></g><defs><clipPath id="clip0_17_80"><rect width="48" height="48" fill="white"/></clipPath></defs></svg>
+);
 
-const AppleIcon = (props: React.SVGProps<SVGSVGElement>) => (
-    <svg height="20" width="20" viewBox="0 0 24 24" fill="currentColor" {...props}>
-        <path d="M19.35 15.62C19.34 15.62 19.34 15.62 19.35 15.62C19.35 15.62 19.34 15.62 19.34 15.62C18.17 14.93 17.38 13.78 17.38 12.48C17.38 11.14 18.23 9.94 19.46 9.25C19.46 9.25 19.46 9.25 19.46 9.25C19.46 9.25 19.46 9.25 19.46 9.25C18.66 8.08 17.65 7.18 16.4 6.71C15.06 6.2 13.73 6.87 13.03 6.87C12.33 6.87 10.96 6.18 9.59 6.77C8.36 7.3 7.39 8.23 6.73 9.49C5.35 12.09 6.06 15.63 7.42 17.63C8.08 18.62 8.9 19.64 9.97 19.64C10.99 19.64 11.3 19.03 12.93 19.03C14.55 19.03 14.87 19.64 15.94 19.62C17.02 19.61 17.75 18.67 18.4 17.67C18.82 17.02 19.14 16.32 19.35 15.62M14.59 4.98C14.95 4.54 15.26 4.07 15.48 3.58C14.73 3.69 13.92 4.04 13.33 4.53C12.98 4.82 12.63 5.16 12.39 5.54C13.1 5.48 13.91 5.2 14.59 4.98Z" />
-    </svg>
-)
 
 export default function LoginPage() {
   const router = useRouter();
@@ -35,16 +27,15 @@ export default function LoginPage() {
 
   const handleGoogleLogin = async (idToken: string) => {
     if (!idToken) {
-      toast({ variant: 'destructive', title: 'Login Failed', description: 'Google ID token is missing.' });
-      return;
+      throw new Error('Google ID token is missing.');
     }
     setIsLoading(true);
 
     try {
         const response = await fetch(`${API_BASE_URL}/api/googleauth/onetap`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ IdToken: idToken }),
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idToken }),
         });
 
         if (!response.ok) {
@@ -57,15 +48,13 @@ export default function LoginPage() {
         }
 
         const data = await response.json();
-        if (!data.token) {
+        if (!data.token || !data.user || !data.user.id || !data.user.email) {
             throw new Error('Invalid response received from server.');
         }
-        
-        const decodedToken: DecodedToken = jwtDecode(data.token);
 
         localStorage.setItem('authToken', data.token);
-        localStorage.setItem('userId', decodedToken.nameid);
-        localStorage.setItem('userEmail', decodedToken.email);
+        localStorage.setItem('userId', data.user.id);
+        localStorage.setItem('userEmail', data.user.email);
 
         toast({ title: 'Login Successful!', description: 'Welcome back.' });
         router.push('/dashboard');
@@ -87,9 +76,7 @@ export default function LoginPage() {
         }
     },
     onError: () => {
-        // This can be noisy if the user just closes the one-tap prompt.
-        // Consider logging this to an analytics service instead of a user-facing toast.
-        console.log('One Tap login error or closed by user.');
+        console.log('One Tap login error');
     },
   });
 
@@ -129,12 +116,8 @@ export default function LoginPage() {
         } else {
             try {
                 const errorData = await response.json();
-                if (errorData && errorData.error) {
-                  errorMessage = errorData.error;
-                }
-            } catch {
-                // If parsing fails, stick with the generic status-based message.
-            }
+                if (errorData.error) errorMessage = errorData.error;
+            } catch {}
         }
         throw new Error(errorMessage);
       }
@@ -148,14 +131,6 @@ export default function LoginPage() {
       setIsLoading(false);
     }
   };
-  
-    const handleAppleLogin = () => {
-    toast({
-        title: 'Coming Soon!',
-        description: 'Apple Sign-In is not yet available. Please use another method.'
-    })
-  }
-
 
   useEffect(() => {
     const token = localStorage.getItem('authToken');
@@ -203,7 +178,7 @@ export default function LoginPage() {
             </Link>
           </div>
 
-          <div className="flex items-center justify-between pt-2">
+          <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
               <Checkbox id="remember-me" className="border-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground" />
               <Label htmlFor="remember-me" className="text-white/70">
@@ -230,8 +205,7 @@ export default function LoginPage() {
           </div>
         </div>
         
-        <div className="flex flex-col items-center justify-center gap-4">
-          <div className="flex justify-center">
+        <div className="flex justify-center">
             <GoogleLogin
                 onSuccess={(credentialResponse) => {
                     if (credentialResponse.credential) {
@@ -239,25 +213,17 @@ export default function LoginPage() {
                     }
                 }}
                 onError={() => {
-                    toast({
-                        variant: 'destructive',
-                        title: 'Login Failed',
-                        description: 'Google authentication failed. Please try again.',
-                    });
+                toast({
+                    variant: 'destructive',
+                    title: 'Login Failed',
+                    description: 'Google authentication failed. Please try again.',
+                });
                 }}
                 theme="filled_black"
-                shape="pill"
-                auto_select={false}
+                shape="rectangular"
+                size="large"
+                text="continue_with"
             />
-          </div>
-            <Button
-                onClick={handleAppleLogin}
-                variant="outline"
-                className="w-full max-w-[185px] rounded-full border-white/40 bg-[#1f1f1f] text-white hover:bg-white/10 flex items-center justify-center h-[40px] px-3"
-                >
-                <AppleIcon className="mr-2 text-white" />
-                <span className="text-sm font-medium">Sign in with Apple</span>
-            </Button>
         </div>
 
         <p className="mt-8 text-center text-sm text-white/70">
@@ -270,5 +236,3 @@ export default function LoginPage() {
     </div>
   );
 }
-
-    

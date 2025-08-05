@@ -39,6 +39,7 @@ import {
   Trash2,
   UserCircle,
   XCircle,
+  CircleDollarSign,
 } from 'lucide-react';
 import { API_BASE_URL } from '@/app/shared/lib/api';
 
@@ -309,6 +310,7 @@ export const SettingsView = ({
               <Skeleton className="h-7 w-24 rounded-md" />
               <Skeleton className="h-14 w-full rounded-lg" />
               <Skeleton className="h-14 w-full rounded-lg" />
+              <Skeleton className="h-14 w-full rounded-lg" />
             </div>
             <div className="space-y-4 rounded-lg bg-zinc-900 p-6">
               <Skeleton className="h-7 w-24 rounded-md" />
@@ -410,6 +412,11 @@ export const SettingsView = ({
 
           <div className="space-y-4 rounded-lg bg-zinc-900 p-6">
             <h2 className="text-lg font-semibold text-white">Billing</h2>
+             <SettingsItem
+              icon={CircleDollarSign}
+              label="Buy Credits"
+              href="/credits"
+            />
             {isSubscribed ? (
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
