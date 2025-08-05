@@ -96,7 +96,7 @@ export const MealPlanView = () => {
     };
 
     fetchMealPlan();
-  }, [toast]);
+  }, []);
 
   const { totalCalories, totalProtein, totalCarbs, totalFat } = useMemo(() => {
     if (!scannedFood) {
@@ -104,7 +104,7 @@ export const MealPlanView = () => {
       return { totalCalories: 0, totalProtein: 0, totalCarbs: 0, totalFat: 0 };
     }
     const calculated = {
-      totalCalories: scannedFood.Total || 0,
+      totalCalories: scannedFood.total || 0,
       totalProtein: scannedFood.Protein || 0,
       totalCarbs: scannedFood.Carbs || 0,
       totalFat: scannedFood.Fat || 0,
