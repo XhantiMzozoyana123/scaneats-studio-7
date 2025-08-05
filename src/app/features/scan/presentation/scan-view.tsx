@@ -10,7 +10,7 @@ import {
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
-import { AlertTriangle, Camera, Loader2, RefreshCw, Send, Upload } from 'lucide-react';
+import { AlertTriangle, Camera, Loader2, RefreshCw, Send, Upload, CircleDollarSign } from 'lucide-react';
 import { useToast } from '@/app/shared/hooks/use-toast';
 import { useUserData } from '@/app/shared/context/user-data-context';
 import { cn } from '@/app/shared/lib/utils';
@@ -161,14 +161,28 @@ export const ScanView = ({ onNavigate }: { onNavigate: (view: View) => void }) =
       });
 
       if (response.status === 401) {
-        toast({ variant: 'destructive', title: 'Session Expired', description: 'Please log in again.' });
         router.push('/login');
-        throw new Error('Unauthorized');
+        throw new Error('Session Expired. Please log in again.');
       }
       
       if (response.status === 403) {
         setSubscriptionModalOpen(true);
         throw new Error('Subscription required');
+      }
+      
+      if (response.status === 429) {
+        toast({
+            variant: 'destructive',
+            title: 'Out of Credits',
+            description: 'You have used all your credits. Please buy more to continue scanning.',
+            action: (
+              <Button onClick={() => router.push('/credits')} className="gap-2">
+                <CircleDollarSign />
+                Buy Credits
+              </Button>
+            )
+        });
+        throw new Error('Out of credits');
       }
       
       if (!response.ok) {
@@ -190,7 +204,11 @@ export const ScanView = ({ onNavigate }: { onNavigate: (view: View) => void }) =
       onNavigate('meal-plan');
 
     } catch (error: any) {
-      if (error.message !== 'Subscription required' && error.message !== 'Unauthorized') {
+      if (
+        error.message !== 'Subscription required' && 
+        error.message !== 'Out of credits' &&
+        !error.message.includes('Session Expired')
+      ) {
         toast({
           variant: 'destructive',
           title: 'Scan Failed',
