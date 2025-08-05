@@ -98,7 +98,7 @@ export const MealPlanView = () => {
     }
     return {
       totalCalories: scannedFood.Total || 0,
-      totalProtein: scannedFood.Protien || 0,
+      totalProtein: scannedFood.Protein || 0,
       totalCarbs: scannedFood.Carbs || 0,
       totalFat: scannedFood.Fat || 0,
     };
