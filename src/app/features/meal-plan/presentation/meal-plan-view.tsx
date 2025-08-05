@@ -8,6 +8,7 @@ import { useUserData } from '@/app/shared/context/user-data-context';
 import { Loader2, Info } from 'lucide-react';
 import { MealApiRepository } from '../data/meal-api.repository';
 import { MealService } from '../application/meal.service';
+import type { ScannedFood } from '@/app/domain/scanned-food';
 
 const mealRepository = new MealApiRepository();
 const mealService = new MealService(mealRepository);
@@ -59,7 +60,7 @@ const MacroBreakdown = ({
 
 export const MealPlanView = () => {
   const { toast } = useToast();
-  const { scannedFood, setScannedFood } = useUserData();
+  const [scannedFood, setScannedFood] = useState<ScannedFood | null>(null);
   const [isMealLoading, setIsMealLoading] = useState(true);
 
   useEffect(() => {
@@ -91,7 +92,7 @@ export const MealPlanView = () => {
     };
 
     fetchMealPlan();
-  }, [setScannedFood, toast]);
+  }, [toast]);
 
   const { totalCalories, totalProtein, totalCarbs, totalFat } = useMemo(() => {
     if (!scannedFood) {
@@ -139,7 +140,7 @@ export const MealPlanView = () => {
       <div className="w-full max-w-2xl mx-auto space-y-6">
         <div className="frosted-card p-6">
           <h2 className="text-2xl font-bold text-primary mb-2">{scannedFood.name}</h2>
-          <p className="text-4xl font-headline font-bold text-white">
+          <p className="font-headline text-4xl font-bold text-white">
             {totalCalories.toFixed(0)}
             <span className="text-lg font-light text-gray-400"> cal</span>
           </p>

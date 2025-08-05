@@ -197,7 +197,6 @@ export const ScanView = ({ onNavigate }: { onNavigate: (view: View) => void }) =
       
       const scanResult = await response.json();
       
-      setScannedFood(scanResult);
       toast({
           title: 'Success!',
           description: `Identified: ${scanResult.name}.`,
@@ -219,7 +218,7 @@ export const ScanView = ({ onNavigate }: { onNavigate: (view: View) => void }) =
     } finally {
       setIsSending(false);
     }
-  }, [capturedImage, profile, toast, router, setSubscriptionModalOpen, setScannedFood, onNavigate]);
+  }, [capturedImage, profile, toast, router, setSubscriptionModalOpen, onNavigate]);
   
   return (
     <>
