@@ -2,9 +2,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import Image from 'next/image';
 import { useToast } from '@/app/shared/hooks/use-toast';
-import { useUserData } from '@/app/shared/context/user-data-context';
 import { Loader2, Info } from 'lucide-react';
 import { MealApiRepository } from '../data/meal-api.repository';
 import { MealService } from '../application/meal.service';
