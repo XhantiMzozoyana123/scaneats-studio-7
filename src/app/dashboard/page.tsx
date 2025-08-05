@@ -495,7 +495,7 @@ const mealRepository = new MealApiRepository();
 const mealService = new MealService(mealRepository);
 
 const StatCard = ({ label, value, unit }: { label: string, value: string, unit: string }) => (
-  <div className="flex flex-col items-center justify-center rounded-lg bg-zinc-800/50 p-4 shadow-md">
+  <div className="flex flex-col items-center justify-center rounded-lg bg-primary/20 p-4 shadow-md">
     <div className="text-3xl font-bold text-white">{value}</div>
     <div className="text-sm font-light text-gray-400">{label}</div>
     <div className="text-xs text-gray-500">{unit}</div>
@@ -735,8 +735,7 @@ const MealPlanView = () => {
       </header>
 
       <div className="w-full max-w-2xl mx-auto space-y-6">
-        <div className="frosted-card p-6">
-          <h2 className="text-2xl font-bold text-primary mb-2">{scannedFood.name}</h2>
+        <div className="frosted-card p-6 text-center">
           <p className="font-headline text-4xl font-bold text-white">
             {totalCalories.toFixed(0)}
             <span className="text-lg font-light text-gray-400"> cal</span>
@@ -1781,3 +1780,5 @@ export default function DashboardPage() {
     </div>
   );
 }
+
+    
