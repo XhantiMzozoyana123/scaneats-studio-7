@@ -1,2 +1,2 @@
 
-export type View = 'home' | 'meal-plan' | 'sally' | 'profile' | 'settings' | 'scan';
+export type View = 'home' | 'sally' | 'profile' | 'settings' | 'scan';

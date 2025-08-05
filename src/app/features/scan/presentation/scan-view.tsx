@@ -202,7 +202,7 @@ export const ScanView = ({ onNavigate }: { onNavigate: (view: View) => void }) =
           title: 'Success!',
           description: `Identified: ${scanResult.name}.`,
       });
-      onNavigate('meal-plan');
+      onNavigate('home');
 
     } catch (error: any) {
       if (

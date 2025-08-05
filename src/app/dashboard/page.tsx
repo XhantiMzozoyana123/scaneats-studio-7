@@ -9,7 +9,6 @@ import type { View } from '@/app/features/dashboard/dashboard.types';
 
 import { HomeView } from '@/app/features/dashboard/presentation/home-view';
 import { ScanView } from '@/app/features/scan/presentation/scan-view';
-import { MealPlanView } from '@/app/features/meal-plan/presentation/meal-plan-view';
 import { SallyView } from '@/app/features/sally/presentation/sally-view';
 import { ProfileView } from '@/app/features/profile/presentation/profile-view';
 import { SettingsView } from '@/app/features/settings/presentation/settings-view';
@@ -28,8 +27,6 @@ export default function DashboardPage() {
         return <HomeView onNavigate={handleNavigate} />;
       case 'scan':
         return <ScanView onNavigate={handleNavigate} />;
-      case 'meal-plan':
-        return <MealPlanView onNavigate={handleNavigate} />;
       case 'sally':
         return <SallyView />;
       case 'profile':
