@@ -498,7 +498,7 @@ const mealService = new MealService(mealRepository);
 
 const MealPlanView = () => {
   const { toast } = useToast();
-  const { profile } = useUserData();
+  const { profile, setSubscriptionModalOpen } = useUserData();
   const [scannedFood, setScannedFood] = useState<ScannedFood | null>(null);
   const [isMealLoading, setIsMealLoading] = useState(true);
   const [sallyResponse, setSallyResponse] = useState<string | null>(null);
@@ -506,6 +506,7 @@ const MealPlanView = () => {
   const [isRecording, setIsRecording] = useState(false);
   const recognitionRef = useRef<any>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
+  const router = useRouter();
 
 
   useEffect(() => {
@@ -607,32 +608,93 @@ const MealPlanView = () => {
   };
 
   const handleApiCall = async (userInput: string) => {
-    if (!userInput.trim() || !scannedFood || !profile) {
-      setSallyResponse("I can only talk about the meal on screen. Please scan a meal first.");
-      return;
+    if (!userInput.trim()) return;
+
+    const token = localStorage.getItem('authToken');
+    if (!token) {
+        toast({ variant: 'destructive', title: 'Not Logged In', description: 'Please log in to talk to Sally.' });
+        router.push('/login');
+        return;
+    }
+    
+    if (!profile?.name) {
+       toast({
+          variant: 'destructive',
+          title: 'Profile Incomplete',
+          description: 'Please complete your profile before talking to Sally.',
+       });
+       return;
     }
 
     setIsSallyLoading(true);
     setSallyResponse(`Thinking about: "${userInput}"`);
+
     try {
-      const insight = await getMealInsight({
-        profile: profile,
-        meal: scannedFood,
-        userQuery: userInput,
-      });
-      setSallyResponse(insight);
+        const response = await fetch(`${API_BASE_URL}/api/sally/meal-planner`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            ClientName: profile.name,
+            ClientDialogue: userInput,
+          }),
+        });
+        
+        if (response.status === 401) {
+            toast({ variant: 'destructive', title: 'Session Expired', description: 'Please log in again.' });
+            router.push('/login');
+            throw new Error('Unauthorized');
+        }
 
-      const { media: audioDataUri } = await textToSpeech(insight);
-      if (audioDataUri && audioRef.current) {
-        audioRef.current.src = audioDataUri;
-        audioRef.current.play();
+        if (response.status === 403) {
+            setSubscriptionModalOpen(true);
+            throw new Error('Subscription required');
+        }
+        
+        if (response.status === 429) {
+          toast({
+              variant: 'destructive',
+              title: 'Out of Credits',
+              description: 'You have used all your credits. Please buy more to continue scanning.',
+              action: (
+                <Button onClick={() => router.push('/credits')} className="gap-2">
+                  <CircleDollarSign />
+                  Buy Credits
+                </Button>
+              )
+          });
+          throw new Error('Out of credits');
+        }
+        
+        if (!response.ok) {
+            let errorMsg = "Sally failed to respond";
+            try {
+                const errorData = await response.json();
+                errorMsg = errorData.message || errorData.error || errorMsg;
+            } catch {}
+            throw new Error(errorMsg);
+        }
+
+        const result = await response.json();
+        setSallyResponse(result.agentDialogue);
+        
+        const { media: audioDataUri } = await textToSpeech(result.agentDialogue);
+        if (audioDataUri && audioRef.current) {
+            audioRef.current.src = audioDataUri;
+            audioRef.current.play();
+        }
+
+    } catch (error: any) {
+      if (error.message !== 'Subscription required' && error.message !== 'Unauthorized' && error.message !== 'Out of credits') {
+        setSallyResponse('Sorry, I had trouble with that. Please try again.');
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: error.message || 'An error occurred while talking to Sally.',
+        });
       }
-
-    } catch (error) {
-      console.error('Failed to get meal insight or TTS:', error);
-      setSallyResponse(
-        "Sorry, I had trouble with that. Please try again."
-      );
     } finally {
       setIsSallyLoading(false);
     }
@@ -675,64 +737,63 @@ const MealPlanView = () => {
   }
   
   return (
-    <div className="relative h-full w-full flex-grow p-5 box-border flex flex-col items-center pb-[155px] overflow-y-auto">
-      {/* @ts-ignore */}
+    <div className="relative h-full w-full flex-grow">
+      <video
+        src="https://gallery.scaneats.app/images/MealPlannerPage.webm"
+        className="fixed inset-0 -z-10 h-full w-full object-cover"
+        autoPlay
+        loop
+        muted
+        playsInline
+      />
+      <div className="fixed inset-0 -z-10 bg-black/60" />
+      
+      <div className="flex h-full w-full flex-col items-center p-5 pb-[155px] box-border overflow-y-auto">
+        <header className="flex justify-between items-center mb-5 w-full max-w-[600px] px-[15px] box-sizing-border shrink-0">
+          <div className="w-[150px] h-[75px] text-left">
+            <Image
+              src="https://gallery.scaneats.app/images/ScanEatsLogo.png"
+              alt="ScanEats Logo"
+              width={150}
+              height={75}
+              className="max-w-full max-h-full block object-contain"
+            />
+          </div>
+        </header>
+        
+        <div className="flex flex-col items-center mb-[25px] shrink-0 text-center">
+          <div className="text-3xl md:text-4xl font-medium mb-2 text-white text-shadow-[0_0_10px_white]">
+              {totalCalories.toFixed(0)}
+          </div>
+          <div className="text-sm md:text-base text-white bg-[rgba(34,34,34,0.7)] px-3 py-1.5 rounded-full tracking-wider">
+              Total Calories
+          </div>
+        </div>
+
+        <div className="flex justify-around items-stretch mb-[25px] w-full max-w-[550px] gap-[15px] flex-wrap shrink-0">
+          <div className="bg-primary/80 rounded-xl p-5 flex flex-col items-center justify-center text-center transition-all duration-200 ease-in-out text-white flex-1 min-w-[90px] shadow-[0_0_10px_rgba(106,27,154,0.5)] border border-[rgba(255,255,255,0.1)] hover:-translate-y-1">
+            <div className="text-lg mb-2 font-normal text-shadow-[0_0_10px_white]">Protein</div>
+            <div className="text-2xl font-semibold text-shadow-[0_0_10px_white]">{totalProtein.toFixed(0)}g</div>
+          </div>
+          <div className="bg-primary/80 rounded-xl p-5 flex flex-col items-center justify-center text-center transition-all duration-200 ease-in-out text-white flex-1 min-w-[90px] shadow-[0_0_10px_rgba(106,27,154,0.5)] border border-[rgba(255,255,255,0.1)] hover:-translate-y-1">
+            <div className="text-lg mb-2 font-normal text-shadow-[0_0_10px_white]">Fat</div>
+            <div className="text-2xl font-semibold text-shadow-[0_0_10px_white]">{totalFat.toFixed(0)}g</div>
+          </div>
+          <div className="bg-primary/80 rounded-xl p-5 flex flex-col items-center justify-center text-center transition-all duration-200 ease-in-out text-white flex-1 min-w-[90px] shadow-[0_0_10px_rgba(106,27,154,0.5)] border border-[rgba(255,255,255,0.1)] hover:-translate-y-1">
+            <div className="text-lg mb-2 font-normal text-shadow-[0_0_10px_white]">Carbs</div>
+            <div className="text-2xl font-semibold text-shadow-[0_0_10px_white]">{totalCarbs.toFixed(0)}g</div>
+          </div>
+        </div>
+
+        <button onClick={handleMicClick} className="flex flex-col justify-center items-center bg-gradient-to-r from-[#4a148c] to-[#311b92] text-white rounded-full w-[120px] h-[120px] my-10 mx-auto text-base tracking-wider cursor-pointer border-2 border-[rgba(255,255,255,0.2)] transition-transform duration-200 ease-in-out animate-breathe-glow shrink-0">
+           <Mic className="h-16 w-16" style={{textShadow: '0 0 8px rgba(255, 255, 255, 0.8)'}} />
+        </button>
+        
+        <div className="text-center mt-4 mb-8 text-white text-shadow-[0_0_6px_rgba(255,255,255,0.8),_0_0_3px_rgba(255,255,255,0.6)] text-lg font-normal bg-transparent px-5 py-3 rounded-2xl inline-block max-w-[85%] shadow-[0_0_15px_rgba(0,0,0,0.4),_0_0_5px_rgba(0,0,0,0.3)] border-l-4 border-[#a033ff] shrink-0">
+           {isSallyLoading ? 'Sally is thinking...' : (sallyResponse || "Ask me about this meal and I'll tell you everything")}
+        </div>
+      </div>
       <audio ref={audioRef} className="hidden" />
-      <div className="fixed inset-0 -z-10">
-        <video
-          src="https://gallery.scaneats.app/images/MealPlannerPage.webm"
-          className="h-full w-full object-cover"
-          autoPlay
-          loop
-          muted
-          playsInline
-        />
-        <div className="absolute inset-0 bg-black/60" />
-      </div>
-
-      <header className="flex justify-between items-center mb-5 w-full max-w-[600px] px-[15px] box-border shrink-0">
-        <div className="w-[150px] h-[75px] text-left">
-          <Image
-            src="https://gallery.scaneats.app/images/ScanEatsLogo.png"
-            alt="ScanEats Logo"
-            width={150}
-            height={75}
-            className="max-w-full max-h-full block object-contain"
-          />
-        </div>
-      </header>
-      
-      <div className="flex flex-col items-center mb-[25px] shrink-0 text-center">
-        <div className="text-3xl md:text-4xl font-medium mb-2 text-white text-shadow-[0_0_10px_white]">
-            {totalCalories.toFixed(0)}
-        </div>
-        <div className="text-sm md:text-base text-white bg-[rgba(34,34,34,0.7)] px-3 py-1.5 rounded-full tracking-wider">
-            Total Calories
-        </div>
-      </div>
-
-      <div className="flex justify-around items-stretch mb-[25px] w-full max-w-[550px] gap-[15px] flex-wrap shrink-0">
-        <div className="bg-primary/80 rounded-xl p-5 flex flex-col items-center justify-center text-center transition-all duration-200 ease-in-out text-white flex-1 min-w-[90px] shadow-[0_0_10px_rgba(106,27,154,0.5)] border border-[rgba(255,255,255,0.1)] hover:-translate-y-1">
-          <div className="text-lg mb-2 font-normal text-shadow-[0_0_10px_white]">Protein</div>
-          <div className="text-2xl font-semibold text-shadow-[0_0_10px_white]">{totalProtein.toFixed(0)}g</div>
-        </div>
-        <div className="bg-primary/80 rounded-xl p-5 flex flex-col items-center justify-center text-center transition-all duration-200 ease-in-out text-white flex-1 min-w-[90px] shadow-[0_0_10px_rgba(106,27,154,0.5)] border border-[rgba(255,255,255,0.1)] hover:-translate-y-1">
-          <div className="text-lg mb-2 font-normal text-shadow-[0_0_10px_white]">Fat</div>
-          <div className="text-2xl font-semibold text-shadow-[0_0_10px_white]">{totalFat.toFixed(0)}g</div>
-        </div>
-        <div className="bg-primary/80 rounded-xl p-5 flex flex-col items-center justify-center text-center transition-all duration-200 ease-in-out text-white flex-1 min-w-[90px] shadow-[0_0_10px_rgba(106,27,154,0.5)] border border-[rgba(255,255,255,0.1)] hover:-translate-y-1">
-          <div className="text-lg mb-2 font-normal text-shadow-[0_0_10px_white]">Carbs</div>
-          <div className="text-2xl font-semibold text-shadow-[0_0_10px_white]">{totalCarbs.toFixed(0)}g</div>
-        </div>
-      </div>
-
-      <button onClick={handleMicClick} className="flex flex-col justify-center items-center bg-gradient-to-r from-[#4a148c] to-[#311b92] text-white rounded-full w-[120px] h-[120px] my-10 mx-auto text-base tracking-wider cursor-pointer border-2 border-[rgba(255,255,255,0.2)] transition-transform duration-200 ease-in-out animate-breathing-glow shrink-0">
-         <Mic className="h-16 w-16" style={{textShadow: '0 0 8px rgba(255, 255, 255, 0.8)'}} />
-      </button>
-      
-      <div className="text-center mt-4 mb-8 text-white text-shadow-[0_0_6px_rgba(255,255,255,0.8),_0_0_3px_rgba(255,255,255,0.6)] text-lg font-normal bg-transparent px-5 py-3 rounded-2xl inline-block max-w-[85%] shadow-[0_0_15px_rgba(0,0,0,0.4),_0_0_5px_rgba(0,0,0,0.3)] border-l-4 border-[#a033ff] shrink-0">
-         {isSallyLoading ? 'Sally is thinking...' : (sallyResponse || "Ask me about this meal and I'll tell you everything")}
-      </div>
     </div>
   );
 };
@@ -916,15 +977,18 @@ const SallyView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
 
   return (
     <div className="flex min-h-screen w-full items-center justify-center overflow-hidden bg-gradient-to-br from-purple-50 via-indigo-100 to-blue-50 p-4">
-      {/* @ts-ignore */}
-      <audio ref={audioRef} className="hidden" />
-      <div className="flex w-full max-w-sm flex-col items-center gap-6 rounded-3xl border border-white/40 bg-white/70 p-6 shadow-[0_20px_55px_8px_rgba(110,100,150,0.45)] backdrop-blur-2xl backdrop-saturate-150">
+      <div className="flex w-full max-w-sm flex-col items-center gap-6 rounded-3xl p-6 shadow-[0_20px_55px_8px_rgba(110,100,150,0.45)] backdrop-blur-2xl backdrop-saturate-150"
+          style={{
+             background: 'hsla(0,0%,100%,.7)',
+             border: '1px solid hsla(0,0%,100%,.4)',
+          }}
+      >
         <div className="relative flex h-[130px] w-[130px] shrink-0 items-center justify-center">
           <div
             className="absolute top-1/2 left-1/2 h-[160%] w-[160%] -translate-x-1/2 -translate-y-1/2 animate-breathe-glow-sally rounded-full"
             style={{
               background:
-                'radial-gradient(circle at center, hsla(var(--primary), 0.1) 10%, hsla(var(--primary), 0.2) 40%, hsla(var(--primary), 0.3) 65%, hsla(var(--primary), 0.2) 72%, hsla(var(--primary), 0) 80%)',
+                'radial-gradient(circle at center, hsla(var(--primary), 0.05) 10%, hsla(var(--primary), 0.1) 40%, hsla(var(--primary), 0.15) 65%, hsla(var(--primary), 0.1) 72%, hsla(var(--primary), 0) 80%)',
             }}
           />
 
@@ -1062,7 +1126,7 @@ const ProfileView = () => {
 
   return (
     <div className="flex min-h-screen flex-col items-center bg-black pb-40 pt-5">
-      <div className="w-[90%] max-w-[600px] rounded-lg bg-[rgba(14,1,15,0.32)] p-5">
+      <div className="w-[90%] max-w-[600px] rounded-lg bg-[rgba(14,1_5,0.32)] p-5">
         <div className="mb-8 flex justify-center">
           <Image
             src="https://gallery.scaneats.app/images/Personal%20Pic.png"
