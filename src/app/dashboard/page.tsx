@@ -746,9 +746,14 @@ const SallyView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [loadingProgress, setLoadingProgress] = useState(0);
   const recognitionRef = useRef<any>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const { toast } = useToast();
   const { profile, setSubscriptionModalOpen } = useUserData();
   
+  useEffect(() => {
+    audioRef.current = new Audio();
+  }, []);
+
   useEffect(() => {
     if (isLoading) {
       const interval = setInterval(() => {
@@ -885,8 +890,14 @@ const SallyView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
         }
 
         const result = await response.json();
-
         setSallyResponse(result.agentDialogue);
+        
+        const { media: audioDataUri } = await textToSpeech(result.agentDialogue);
+        if (audioDataUri && audioRef.current) {
+            audioRef.current.src = audioDataUri;
+            audioRef.current.play();
+        }
+
     } catch (error: any) {
       if (error.message !== 'Subscription required' && error.message !== 'Unauthorized') {
         setSallyResponse('Sorry, I had trouble with that. Please try again.');
@@ -905,6 +916,8 @@ const SallyView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
 
   return (
     <div className="flex min-h-screen w-full items-center justify-center overflow-hidden bg-gradient-to-br from-purple-50 via-indigo-100 to-blue-50 p-4">
+      {/* @ts-ignore */}
+      <audio ref={audioRef} className="hidden" />
       <div className="flex w-full max-w-sm flex-col items-center gap-6 rounded-3xl border border-white/40 bg-white/70 p-6 shadow-[0_20px_55px_8px_rgba(110,100,150,0.45)] backdrop-blur-2xl backdrop-saturate-150">
         <div className="relative flex h-[130px] w-[130px] shrink-0 items-center justify-center">
           <div
