@@ -505,6 +505,7 @@ const MealPlanView = () => {
   const recognitionRef = useRef<any>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
   const router = useRouter();
+  const [sallyProgress, setSallyProgress] = useState(0);
 
 
   useEffect(() => {
@@ -538,6 +539,21 @@ const MealPlanView = () => {
     fetchMealPlan();
   }, [toast]);
 
+
+  useEffect(() => {
+    if (isSallyLoading) {
+      const interval = setInterval(() => {
+        setSallyProgress((prev) => {
+          if (prev >= 90) {
+            clearInterval(interval);
+            return 90;
+          }
+          return prev + 10;
+        });
+      }, 500);
+      return () => clearInterval(interval);
+    }
+  }, [isSallyLoading]);
 
   useEffect(() => {
     const SpeechRecognition =
@@ -625,6 +641,7 @@ const MealPlanView = () => {
     }
 
     setIsSallyLoading(true);
+    setSallyProgress(10);
     setSallyResponse(`Thinking about: "${userInput}"`);
 
     try {
@@ -694,7 +711,8 @@ const MealPlanView = () => {
         });
       }
     } finally {
-      setIsSallyLoading(false);
+      setSallyProgress(100);
+      setTimeout(() => setIsSallyLoading(false), 500);
     }
   };
   
@@ -759,7 +777,7 @@ const MealPlanView = () => {
           </div>
         </header>
         
-        <div className="flex flex-col items-center mb-[25px] shrink-0 text-center">
+        <div className="text-center flex flex-col items-center mb-[25px] shrink-0">
           <div className="text-3xl md:text-4xl font-medium mb-2 text-white text-shadow-[0_0_10px_white]">
               {totalCalories.toFixed(0)}
           </div>
@@ -783,12 +801,17 @@ const MealPlanView = () => {
           </div>
         </div>
 
-        <button onClick={handleMicClick} className="flex flex-col justify-center items-center bg-gradient-to-r from-[#4a148c] to-[#311b92] text-white rounded-full w-[120px] h-[120px] my-10 mx-auto text-base tracking-wider cursor-pointer border-2 border-[rgba(255,255,255,0.2)] transition-transform duration-200 ease-in-out animate-breathe-glow shrink-0">
+        <button onClick={handleMicClick} className="flex flex-col justify-center items-center bg-gradient-to-r from-[#4a148c] to-[#311b92] text-white rounded-full w-[120px] h-[120px] my-10 mx-auto text-base tracking-wider cursor-pointer border-2 border-[rgba(255,255,255,0.2)] transition-transform duration-200 ease-in-out shrink-0">
            <Mic className="h-16 w-16" style={{textShadow: '0 0 8px rgba(255, 255, 255, 0.8)'}} />
         </button>
         
         <div className="text-center mt-4 mb-8 text-white text-shadow-[0_0_6px_rgba(255,255,255,0.8),_0_0_3px_rgba(255,255,255,0.6)] text-lg font-normal bg-transparent px-5 py-3 rounded-2xl inline-block max-w-[85%] shadow-[0_0_15px_rgba(0,0,0,0.4),_0_0_5px_rgba(0,0,0,0.3)] border-l-4 border-[#a033ff] shrink-0">
-           {isSallyLoading ? 'Sally is thinking...' : (sallyResponse || "Ask me about this meal and I'll tell you everything")}
+           {isSallyLoading ? (
+               <div className="space-y-2 text-center">
+                 <Progress value={sallyProgress} className="w-full" />
+                 <p className="text-sm text-gray-400">Sally is thinking...</p>
+               </div>
+            ) : (sallyResponse || "Ask me about this meal and I'll tell you everything")}
         </div>
       </div>
       <audio ref={audioRef} className="hidden" />
