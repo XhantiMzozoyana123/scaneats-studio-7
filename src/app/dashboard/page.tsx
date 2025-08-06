@@ -92,6 +92,7 @@ import { BottomNav } from '@/app/shared/components/bottom-nav';
 import { API_BASE_URL } from '@/app/shared/lib/api';
 import { useIsMobile } from '@/app/shared/hooks/use-mobile';
 import { getMealInsight } from '@/ai/flows/meal-insight-flow';
+import { textToSpeech } from '@/ai/flows/tts-flow';
 import { MealService } from '@/app/features/meal-plan/application/meal.service';
 import { MealApiRepository } from '@/app/features/meal-plan/data/meal-api.repository';
 import type { ScannedFood } from '@/app/domain/scanned-food';
@@ -504,6 +505,8 @@ const MealPlanView = () => {
   const [isSallyLoading, setIsSallyLoading] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const recognitionRef = useRef<any>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
+
 
   useEffect(() => {
     const fetchMealPlan = async () => {
@@ -612,14 +615,21 @@ const MealPlanView = () => {
     setIsSallyLoading(true);
     setSallyResponse(`Thinking about: "${userInput}"`);
     try {
-      const result = await getMealInsight({
+      const insight = await getMealInsight({
         profile: profile,
         meal: scannedFood,
         userQuery: userInput,
       });
-      setSallyResponse(result);
+      setSallyResponse(insight);
+
+      const { media: audioDataUri } = await textToSpeech(insight);
+      if (audioDataUri && audioRef.current) {
+        audioRef.current.src = audioDataUri;
+        audioRef.current.play();
+      }
+
     } catch (error) {
-      console.error('Failed to get meal insight:', error);
+      console.error('Failed to get meal insight or TTS:', error);
       setSallyResponse(
         "Sorry, I had trouble with that. Please try again."
       );
@@ -666,6 +676,8 @@ const MealPlanView = () => {
   
   return (
     <div className="relative h-full w-full flex-grow p-5 box-border flex flex-col items-center pb-[155px] overflow-y-auto">
+      {/* @ts-ignore */}
+      <audio ref={audioRef} className="hidden" />
       <div className="fixed inset-0 -z-10">
         <video
           src="https://gallery.scaneats.app/images/MealPlannerPage.webm"
