@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import {
@@ -979,7 +978,6 @@ const SallyView = ({ onNavigate }: { onNavigate: (view: View) => void }) => {
       <div className="flex w-full max-w-sm flex-col items-center gap-6 rounded-3xl p-6 shadow-[0_20px_55px_8px_rgba(110,100,150,0.45)] backdrop-blur-2xl backdrop-saturate-150"
           style={{
              background: 'hsla(0,0%,100%,.7)',
-             border: '1px solid hsla(0,0%,100%,.4)',
           }}
       >
         <div className="relative flex h-[130px] w-[130px] shrink-0 items-center justify-center">
