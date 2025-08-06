@@ -91,7 +91,6 @@ import { cn } from '@/app/shared/lib/utils';
 import { BottomNav } from '@/app/shared/components/bottom-nav';
 import { API_BASE_URL } from '@/app/shared/lib/api';
 import { useIsMobile } from '@/app/shared/hooks/use-mobile';
-import { getMealInsight } from '@/ai/flows/meal-insight-flow';
 import { textToSpeech } from '@/ai/flows/tts-flow';
 import { MealService } from '@/app/features/meal-plan/application/meal.service';
 import { MealApiRepository } from '@/app/features/meal-plan/data/meal-api.repository';
