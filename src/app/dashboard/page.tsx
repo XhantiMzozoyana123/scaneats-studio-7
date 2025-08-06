@@ -507,37 +507,45 @@ const MealPlanView = () => {
   const router = useRouter();
   const [sallyProgress, setSallyProgress] = useState(0);
 
-
-  useEffect(() => {
-    const fetchMealPlan = async () => {
-      setIsMealLoading(true);
-      const token = localStorage.getItem('authToken');
-      if (!token) {
+  const fetchMealPlan = useCallback(async () => {
+    setIsMealLoading(true);
+    const token = localStorage.getItem('authToken');
+    if (!token) {
+      toast({
+        variant: 'destructive',
+        title: 'Not Authenticated',
+        description: 'Please log in to view your meal plan.',
+      });
+      setIsMealLoading(false);
+      return;
+    }
+  
+    try {
+      const meal = await mealService.getLastMealPlan(token);
+      setScannedFood(meal);
+    } catch (error: any) {
+      if (error.message === 'Session Expired') {
         toast({
           variant: 'destructive',
-          title: 'Not Authenticated',
-          description: 'Please log in to view your meal plan.',
+          title: 'Session Expired',
+          description: 'Please log in to continue.',
         });
-        setIsMealLoading(false);
-        return;
-      }
-
-      try {
-        const meal = await mealService.getLastMealPlan(token);
-        setScannedFood(meal);
-      } catch (error: any) {
+        router.push('/login');
+      } else {
         toast({
           variant: 'destructive',
           title: 'Failed to load meal plan',
           description: error.message,
         });
-      } finally {
-        setIsMealLoading(false);
       }
-    };
+    } finally {
+      setIsMealLoading(false);
+    }
+  }, [router, toast]);
 
+  useEffect(() => {
     fetchMealPlan();
-  }, [toast]);
+  }, [fetchMealPlan]);
 
 
   useEffect(() => {
