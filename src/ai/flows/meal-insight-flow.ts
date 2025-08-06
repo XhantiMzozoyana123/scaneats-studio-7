@@ -14,11 +14,11 @@ import { z } from 'genkit';
 
 // Define the Zod schemas for validation
 const ProfileSchema = z.object({
-  name: z.string().describe('The user\'s name.'),
-  gender: z.string().describe('The user\'s gender.'),
-  weight: z.union([z.number(), z.string()]).describe('The user\'s weight in kilograms.'),
-  goals: z.string().describe('The user\'s health and fitness goals.'),
-  birthDate: z.date().nullable().describe('The user\'s birth date.'),
+  name: z.string().describe("The user's name."),
+  gender: z.string().describe("The user's gender."),
+  weight: z.union([z.number(), z.string()]).describe("The user's weight in kilograms."),
+  goals: z.string().describe("The user's health and fitness goals."),
+  birthDate: z.date().nullable().describe("The user's birth date."),
 });
 
 const ScannedFoodSchema = z.object({
@@ -33,14 +33,14 @@ const ScannedFoodSchema = z.object({
 const MealInsightInputSchema = z.object({
   profile: ProfileSchema,
   meal: ScannedFoodSchema,
-  userQuery: z.string().describe('The user\'s question about the meal.'),
+  userQuery: z.string().describe("The user's question about the meal."),
 });
 export type MealInsightInput = z.infer<typeof MealInsightInputSchema>;
 
 // This is the main exported function that the UI will call
 export async function getMealInsight(input: MealInsightInput): Promise<string> {
-  const { output } = await mealInsightFlow(input);
-  return output!;
+  const insight = await mealInsightFlow(input);
+  return insight;
 }
 
 // Define the Genkit prompt for the AI
