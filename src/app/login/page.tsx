@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -11,7 +12,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { AuthBackgroundImage } from '@/app/shared/components/auth-background-image';
 import { KeyRound, Mail, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { API_BASE_URL } from '@/lib/api';
+import { API_BASE_URL } from '@/app/shared/lib/api';
 
 declare global {
     interface Window {
@@ -37,11 +38,14 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    if (typeof window.AppleID !== 'undefined') {
+    const appleClientId = process.env.NEXT_PUBLIC_APPLE_CLIENT_ID;
+    const appleRedirectUri = process.env.NEXT_PUBLIC_APPLE_REDIRECT_URI;
+
+    if (typeof window.AppleID !== 'undefined' && appleClientId && appleRedirectUri) {
         window.AppleID.auth.init({
-            clientId: process.env.NEXT_PUBLIC_APPLE_CLIENT_ID,
+            clientId: appleClientId,
             scope: 'email name',
-            redirectURI: process.env.NEXT_PUBLIC_APPLE_REDIRECT_URI,
+            redirectURI: appleRedirectUri,
             state: 'login',
             usePopup: true
         });
