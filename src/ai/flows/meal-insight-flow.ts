@@ -39,13 +39,10 @@ export type MealInsightInput = z.infer<typeof MealInsightInputSchema>;
 
 // This is the main exported function that the UI will call
 export async function getMealInsight(input: MealInsightInput): Promise<string> {
-<<<<<<< HEAD
   const output = await mealInsightFlow(input);
   return output!;
-=======
   const insight = await mealInsightFlow(input);
   return insight;
->>>>>>> 2ba9e961e17e312e82ffd811256b0bd38f6bd5f9
 }
 
 // Define the Genkit prompt for the AI
