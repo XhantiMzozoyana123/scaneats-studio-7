@@ -20,13 +20,9 @@ declare global {
     }
 }
 
-const GoogleIcon = () => (
-  <svg className="mr-2 h-5 w-5" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><g clipPath="url(#clip0_17_80)"><path fill="#FFC107" d="M43.611 20.083H42V20H24V28H35.303C33.674 32.69 29.213 36 24 36C17.373 36 12 30.627 12 24C12 17.373 17.373 12 24 12C27.059 12 29.842 13.154 31.961 15.039L38.414 8.586C34.823 5.312 29.821 3 24 3C12.954 3 4 11.954 4 23C4 34.046 12.954 43 24 43C34.364 43 43.103 35.532 43.611 25.083V20.083Z"/><path fill="#FF3D00" d="M6.306 14.691L12.553 19.439C14.136 15.352 18.591 12 24 12C27.059 12 29.842 13.154 31.961 15.039L38.414 8.586C34.823 5.312 29.821 3 24 3C17.433 3 11.758 6.946 8.083 12.106L6.306 14.691Z"/><path fill="#4CAF50" d="M24 44C29.482 44 34.225 42.022 37.899 38.644L32.043 33.594C30.085 35.093 27.221 36 24 36C18.673 36 14.136 32.69 12.553 28.061L6.306 32.893C9.976 39.462 16.425 44 24 44Z"/><path fill="#1976D2" d="M43.6116 24H24V32H35.3031C34.5126 34.755 32.7486 36.9993 30.4381 38.4853L30.4346 38.4886L36.3196 43.3346C36.3196 43.3346 36.3196 43.3346 36.3196 43.3346C40.4616 39.7396 43.0016 34.1876 43.0016 28C43.0016 26.4356 42.8716 25.2156 42.6116 24Z"/></g><defs><clipPath id="clip0_17_80"><rect width="48" height="48" fill="white"/></clipPath></defs></svg>
-);
-
 const AppleIcon = () => (
     <svg className="mr-2 h-5 w-5" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-        <path d="M12.232,1.764a4.134,4.134,0,0,1,3.468,2.1,4.41,4.41,0,0,0-3.35,1.6A4.14,4.14,0,0,1,8.88,3.9a4.4,4.4,0,0,0,3.352-2.132M13.2,7.019c.8-.948,1.3-2.2,1.219-3.488a4.42,4.42,0,0,0-2.82,1.3,4.132,4.132,0,0,0-1.2,3.368,4.52,4.52,0,0,0,2.8,2.28m6.352,5.568A4.47,4.47,0,0,1,22,14.659c0,2.62-1.9,4.24-4.6,4.272a4.2,4.2,0,0,1-2.132-.612,4.44,4.44,0,0,1-1.632-3.8,4.152,4.152,0,0,1,3.32-2.16A4.54,4.54,0,0,1,19.58,12.587Z"/>
+        <path d="M12.001 16.568C11.025 16.568 9.947 16.248 8.994 15.65C8.01 15.04 7.23 14.15 6.84 13.128C5.604 10.057 6.81 6.558 9.21 4.72C10.27 3.912 11.58 3.5 12.825 3.5C13.161 3.501 14.956 3.57 16.128 4.632C16.173 4.671 16.215 4.715 16.254 4.764C16.293 4.715 16.335 4.671 16.38 4.632C17.552 3.57 19.347 3.501 19.683 3.5C20.928 3.5 22.238 3.912 23.298 4.72C24.088 5.378 24.639 6.242 24.908 7.2C24.819 7.245 24.731 7.288 24.645 7.33C22.758 8.412 21.804 10.592 22.254 12.69C22.99 15.893 25.532 17.5 26.5 17.78C26.476 17.832 26.452 17.885 26.427 17.937C25.414 20.985 23.082 23.518 20.016 23.94C18.914 24.088 17.794 23.639 17.004 22.86C16.142 22.012 15.702 20.942 15.756 19.84C16.427 16.712 14.492 15.228 12.001 15.228" transform="translate(-4.512 -1.452)"/>
     </svg>
 );
 
@@ -285,26 +281,28 @@ export default function LoginPage() {
           </div>
         </div>
         
-        <div className="flex flex-col space-y-2 justify-center">
-            <GoogleLogin
-                onSuccess={(credentialResponse) => {
-                    if (credentialResponse.credential) {
-                        handleGoogleLogin(credentialResponse.credential);
-                    }
-                }}
-                onError={() => {
-                toast({
-                    variant: 'destructive',
-                    title: 'Login Failed',
-                    description: 'Google authentication failed. Please try again.',
-                });
-                }}
-                theme="filled_black"
-                shape="rectangular"
-                size="large"
-                width="320px"
-            />
-             <Button onClick={triggerAppleSignIn} disabled={isLoading} variant="outline" className="w-full bg-white text-black hover:bg-gray-200">
+        <div className="flex flex-col items-center space-y-2">
+            <div className="w-full max-w-[320px]">
+                <GoogleLogin
+                    onSuccess={(credentialResponse) => {
+                        if (credentialResponse.credential) {
+                            handleGoogleLogin(credentialResponse.credential);
+                        }
+                    }}
+                    onError={() => {
+                    toast({
+                        variant: 'destructive',
+                        title: 'Login Failed',
+                        description: 'Google authentication failed. Please try again.',
+                    });
+                    }}
+                    theme="filled_black"
+                    shape="rectangular"
+                    size="large"
+                    width="320px"
+                />
+            </div>
+             <Button onClick={triggerAppleSignIn} disabled={isLoading} variant="outline" className="w-full max-w-[320px] bg-white text-black hover:bg-gray-200">
                 <AppleIcon /> Continue with Apple
             </Button>
         </div>
