@@ -39,7 +39,7 @@ export type MealInsightInput = z.infer<typeof MealInsightInputSchema>;
 
 // This is the main exported function that the UI will call
 export async function getMealInsight(input: MealInsightInput): Promise<string> {
-  const { output } = await mealInsightFlow(input);
+  const output = await mealInsightFlow(input);
   return output!;
 }
 

@@ -107,21 +107,29 @@ export const MealPlanView = () => {
     const fetchInsight = async () => {
       if (scannedFood && profile) {
         setIsInsightLoading(true);
-        setInsight(null);
-        try {
-          const result = await getMealInsight({
-            profile: profile,
-            meal: scannedFood,
-          });
-          setInsight(result);
-        } catch (error) {
-          console.error("Failed to get meal insight:", error);
-          setInsight("Sorry, I couldn't generate an insight for this meal right now.");
-        } finally {
-          setIsInsightLoading(false);
-        }
-      }
-    };
+            setInsight(null);
+            try {
+              const result = await getMealInsight({
+                profile: profile,
+                meal: {
+                  id: scannedFood.id,
+                  name: scannedFood.name,
+                  total: scannedFood.Total,
+                  protein: scannedFood.Protein,
+                  fat: scannedFood.Fat,
+                  carbs: scannedFood.Carbs,
+                },
+                userQuery: "What is a nutritional insight for this meal?",
+              });
+              setInsight(result);
+            } catch (error) {
+              console.error("Failed to get meal insight:", error);
+              setInsight("Sorry, I couldn't generate an insight for this meal right now.");
+            } finally {
+              setIsInsightLoading(false);
+            }
+          }
+        };
 
     fetchInsight();
   }, [scannedFood, profile]);
@@ -132,11 +140,11 @@ export const MealPlanView = () => {
       return { totalCalories: 0, totalProtein: 0, totalCarbs: 0, totalFat: 0 };
     }
     const calculated = {
-      totalCalories: scannedFood.total || 0,
-      totalProtein: scannedFood.protein || 0,
-      totalCarbs: scannedFood.carbs || 0,
-      totalFat: scannedFood.fat || 0,
-    };
+          totalCalories: scannedFood.Total || 0,
+          totalProtein: scannedFood.Protein || 0,
+          totalCarbs: scannedFood.Carbs || 0,
+          totalFat: scannedFood.Fat || 0,
+        };
     console.log('MealPlanView: useMemo - calculated values:', calculated);
     return calculated;
   }, [scannedFood]);

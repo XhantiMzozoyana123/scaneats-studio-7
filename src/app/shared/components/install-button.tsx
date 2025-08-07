@@ -9,7 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
-} from '@/app/shared/components/ui/dialog';
+} from '@/components/ui/dialog';
 import { InstallationGuide } from './installation-guide';
 
 

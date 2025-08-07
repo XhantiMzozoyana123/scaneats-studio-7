@@ -729,10 +729,10 @@ const MealPlanView = () => {
       return { totalCalories: 0, totalProtein: 0, totalCarbs: 0, totalFat: 0 };
     }
     return {
-      totalCalories: scannedFood.total || 0,
-      totalProtein: scannedFood.protein || 0,
-      totalCarbs: scannedFood.carbs || 0,
-      totalFat: scannedFood.fat || 0,
+      totalCalories: scannedFood.Total || 0,
+      totalProtein: scannedFood.Protein || 0,
+            totalCarbs: scannedFood.Carbs || 0,
+            totalFat: scannedFood.Fat || 0,
     };
   }, [scannedFood]);
 

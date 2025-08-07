@@ -22,5 +22,5 @@ export const ai = genkit({
   // The log level can be set to 'debug' for more detailed output.
   // logLevel: 'debug',
   // This option prevents flow execution data from being stored, which is useful for privacy.
-  flowStateStore: 'noop',
+  // flowStateStore: 'noop',
 });
