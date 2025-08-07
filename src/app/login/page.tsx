@@ -8,15 +8,26 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { AuthBackgroundImage } from '@/components/auth-background-image';
+import { AuthBackgroundImage } from '@/app/shared/components/auth-background-image';
 import { KeyRound, Mail, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { API_BASE_URL } from '@/lib/api';
+
+declare global {
+    interface Window {
+        AppleID: any;
+    }
+}
 
 const GoogleIcon = () => (
   <svg className="mr-2 h-5 w-5" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><g clipPath="url(#clip0_17_80)"><path fill="#FFC107" d="M43.611 20.083H42V20H24V28H35.303C33.674 32.69 29.213 36 24 36C17.373 36 12 30.627 12 24C12 17.373 17.373 12 24 12C27.059 12 29.842 13.154 31.961 15.039L38.414 8.586C34.823 5.312 29.821 3 24 3C12.954 3 4 11.954 4 23C4 34.046 12.954 43 24 43C34.364 43 43.103 35.532 43.611 25.083V20.083Z"/><path fill="#FF3D00" d="M6.306 14.691L12.553 19.439C14.136 15.352 18.591 12 24 12C27.059 12 29.842 13.154 31.961 15.039L38.414 8.586C34.823 5.312 29.821 3 24 3C17.433 3 11.758 6.946 8.083 12.106L6.306 14.691Z"/><path fill="#4CAF50" d="M24 44C29.482 44 34.225 42.022 37.899 38.644L32.043 33.594C30.085 35.093 27.221 36 24 36C18.673 36 14.136 32.69 12.553 28.061L6.306 32.893C9.976 39.462 16.425 44 24 44Z"/><path fill="#1976D2" d="M43.6116 24H24V32H35.3031C34.5126 34.755 32.7486 36.9993 30.4381 38.4853L30.4346 38.4886L36.3196 43.3346C36.3196 43.3346 36.3196 43.3346 36.3196 43.3346C40.4616 39.7396 43.0016 34.1876 43.0016 28C43.0016 26.4356 42.8716 25.2156 42.6116 24Z"/></g><defs><clipPath id="clip0_17_80"><rect width="48" height="48" fill="white"/></clipPath></defs></svg>
 );
 
+const AppleIcon = () => (
+    <svg className="mr-2 h-5 w-5" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12.232,1.764a4.134,4.134,0,0,1,3.468,2.1,4.41,4.41,0,0,0-3.35,1.6A4.14,4.14,0,0,1,8.88,3.9a4.4,4.4,0,0,0,3.352-2.132M13.2,7.019c.8-.948,1.3-2.2,1.219-3.488a4.42,4.42,0,0,0-2.82,1.3,4.132,4.132,0,0,0-1.2,3.368,4.52,4.52,0,0,0,2.8,2.28m6.352,5.568A4.47,4.47,0,0,1,22,14.659c0,2.62-1.9,4.24-4.6,4.272a4.2,4.2,0,0,1-2.132-.612,4.44,4.44,0,0,1-1.632-3.8,4.152,4.152,0,0,1,3.32-2.16A4.54,4.54,0,0,1,19.58,12.587Z"/>
+    </svg>
+);
 
 export default function LoginPage() {
   const router = useRouter();
@@ -24,6 +35,71 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    if (typeof window.AppleID !== 'undefined') {
+        window.AppleID.auth.init({
+            clientId: process.env.NEXT_PUBLIC_APPLE_CLIENT_ID,
+            scope: 'email name',
+            redirectURI: process.env.NEXT_PUBLIC_APPLE_REDIRECT_URI,
+            state: 'login',
+            usePopup: true
+        });
+    }
+  }, []);
+
+  const handleAppleLogin = async (idToken: string) => {
+    if (!idToken) {
+        toast({ variant: 'destructive', title: 'Login Failed', description: 'Apple ID token is missing.' });
+        return;
+    }
+    setIsLoading(true);
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/AppleAuth/signin`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ idToken }),
+        });
+
+        if (!response.ok) {
+            let errorMsg = 'Apple login failed.';
+            try {
+                const errorData = await response.json();
+                if (errorData.error) errorMsg = errorData.error;
+            } catch {}
+            throw new Error(errorMsg);
+        }
+
+        const data = await response.json();
+        if (!data.token || !data.user || !data.user.id || !data.user.email) {
+            throw new Error('Invalid response received from server.');
+        }
+
+        localStorage.setItem('authToken', data.token);
+        localStorage.setItem('userId', data.user.id);
+        localStorage.setItem('userEmail', data.user.email);
+
+        toast({ title: 'Login Successful!', description: 'Welcome back.' });
+        router.push('/dashboard');
+    } catch (error: any) {
+        toast({ variant: 'destructive', title: 'Login Failed', description: error.message });
+    } finally {
+        setIsLoading(false);
+    }
+  };
+
+  const triggerAppleSignIn = async () => {
+    try {
+        const data = await window.AppleID.auth.signIn();
+        if (data.authorization && data.authorization.id_token) {
+            handleAppleLogin(data.authorization.id_token);
+        }
+    } catch (error) {
+        console.error('Apple Sign-In error:', error);
+        toast({ variant: 'destructive', title: 'Login Failed', description: 'Could not complete Sign In with Apple.' });
+    }
+  };
 
   const handleGoogleLogin = async (idToken: string) => {
     if (!idToken) {
@@ -205,7 +281,7 @@ export default function LoginPage() {
           </div>
         </div>
         
-        <div className="flex justify-center">
+        <div className="flex flex-col space-y-2 justify-center">
             <GoogleLogin
                 onSuccess={(credentialResponse) => {
                     if (credentialResponse.credential) {
@@ -222,8 +298,11 @@ export default function LoginPage() {
                 theme="filled_black"
                 shape="rectangular"
                 size="large"
-                text="continue_with"
+                width="320px"
             />
+             <Button onClick={triggerAppleSignIn} disabled={isLoading} variant="outline" className="w-full bg-white text-black hover:bg-gray-200">
+                <AppleIcon /> Continue with Apple
+            </Button>
         </div>
 
         <p className="mt-8 text-center text-sm text-white/70">

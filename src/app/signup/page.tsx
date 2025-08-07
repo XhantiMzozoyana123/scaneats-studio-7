@@ -2,7 +2,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { GoogleLogin, type CredentialResponse } from '@react-oauth/google';
 import { Button } from '@/components/ui/button';
@@ -14,6 +14,19 @@ import { User, Mail, KeyRound, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { API_BASE_URL } from '@/lib/api';
 
+declare global {
+    interface Window {
+        AppleID: any;
+    }
+}
+
+const AppleIcon = () => (
+    <svg className="mr-2 h-5 w-5" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12.232,1.764a4.134,4.134,0,0,1,3.468,2.1,4.41,4.41,0,0,0-3.35,1.6A4.14,4.14,0,0,1,8.88,3.9a4.4,4.4,0,0,0,3.352-2.132M13.2,7.019c.8-.948,1.3-2.2,1.219-3.488a4.42,4.42,0,0,0-2.82,1.3,4.132,4.132,0,0,0-1.2,3.368,4.52,4.52,0,0,0,2.8,2.28m6.352,5.568A4.47,4.47,0,0,1,22,14.659c0,2.62-1.9,4.24-4.6,4.272a4.2,4.2,0,0,1-2.132-.612,4.44,4.44,0,0,1-1.632-3.8,4.152,4.152,0,0,1,3.32-2.16A4.54,4.54,0,0,1,19.58,12.587Z"/>
+    </svg>
+);
+
+
 export default function SignUpPage() {
   const router = useRouter();
   const { toast } = useToast();
@@ -21,6 +34,71 @@ export default function SignUpPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    if (typeof window.AppleID !== 'undefined') {
+        window.AppleID.auth.init({
+            clientId: process.env.NEXT_PUBLIC_APPLE_CLIENT_ID,
+            scope: 'email name',
+            redirectURI: process.env.NEXT_PUBLIC_APPLE_REDIRECT_URI,
+            state: 'signup',
+            usePopup: true
+        });
+    }
+  }, []);
+
+  const handleAppleLogin = async (idToken: string) => {
+    if (!idToken) {
+        toast({ variant: 'destructive', title: 'Login Failed', description: 'Apple ID token is missing.' });
+        return;
+    }
+    setIsLoading(true);
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/AppleAuth/signin`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ idToken }),
+        });
+
+        if (!response.ok) {
+            let errorMsg = 'Apple login failed.';
+            try {
+                const errorData = await response.json();
+                if (errorData.error) errorMsg = errorData.error;
+            } catch {}
+            throw new Error(errorMsg);
+        }
+
+        const data = await response.json();
+        if (!data.token || !data.user || !data.user.id || !data.user.email) {
+            throw new Error('Invalid response received from server.');
+        }
+
+        localStorage.setItem('authToken', data.token);
+        localStorage.setItem('userId', data.user.id);
+        localStorage.setItem('userEmail', data.user.email);
+
+        toast({ title: 'Login Successful!', description: 'Welcome to ScanEats.' });
+        router.push('/dashboard');
+    } catch (error: any) {
+        toast({ variant: 'destructive', title: 'Login Failed', description: error.message });
+    } finally {
+        setIsLoading(false);
+    }
+  };
+
+  const triggerAppleSignIn = async () => {
+    try {
+        const data = await window.AppleID.auth.signIn();
+        if (data.authorization && data.authorization.id_token) {
+            handleAppleLogin(data.authorization.id_token);
+        }
+    } catch (error) {
+        console.error('Apple Sign-In error:', error);
+        toast({ variant: 'destructive', title: 'Sign Up Failed', description: 'Could not complete Sign In with Apple.' });
+    }
+  };
 
   const handleGoogleSuccess = async (credentialResponse: CredentialResponse) => {
     setIsLoading(true);
@@ -204,14 +282,18 @@ export default function SignUpPage() {
           </div>
         </div>
         
-        <div className="flex justify-center">
+        <div className="flex flex-col space-y-2 justify-center">
             <GoogleLogin
                 onSuccess={handleGoogleSuccess}
                 onError={handleGoogleError}
                 theme="filled_black"
                 shape="rectangular"
                 size="large"
+                width="320px"
             />
+            <Button onClick={triggerAppleSignIn} disabled={isLoading} variant="outline" className="w-full bg-white text-black hover:bg-gray-200">
+                <AppleIcon /> Continue with Apple
+            </Button>
         </div>
 
         <p className="mt-8 text-center text-sm text-white/70">
